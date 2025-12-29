@@ -1,0 +1,121 @@
+{
+  "name": "bamoe",
+  "displayName": "BAMOE - BPMN Editor",
+  "description": "Visual BPMN 2.0 editor for VS Code with validation support",
+  "version": "0.1.0",
+  "publisher": "bamoe",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.79.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "bpmn",
+    "bpmn2",
+    "workflow",
+    "process",
+    "diagram",
+    "modeler"
+  ],
+  "activationEvents": [
+    "onCommand:bamoe.newBpmnFile",
+    "onCustomEditor:bamoe.bpmnEditor"
+  ],
+  "main": "./dist/extension/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "bamoe.bpmnEditor",
+        "displayName": "BPMN Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.bpmn"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "bamoe.newBpmnFile",
+        "title": "Create New BPMN Diagram",
+        "category": "BPMN"
+      },
+      {
+        "command": "bamoe.showKeyboardShortcuts",
+        "title": "Show Keyboard Shortcuts",
+        "category": "BPMN"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "bamoe.showKeyboardShortcuts",
+        "key": "ctrl+shift+/",
+        "mac": "cmd+shift+/",
+        "when": "activeCustomEditorId == bamoe.bpmnEditor"
+      }
+    ],
+    "languages": [
+      {
+        "id": "bpmn",
+        "extensions": [
+          ".bpmn"
+        ],
+        "aliases": [
+          "BPMN",
+          "bpmn"
+        ]
+      }
+    ],
+    "icons": {
+      "bpmn-icon": {
+        "description": "BPMN file icon",
+        "default": {
+          "fontPath": "",
+          "fontCharacter": ""
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "copy-assets": "mkdir -p dist/font && cp node_modules/bpmn-js/dist/assets/bpmn-font/font/* dist/font/",
+    "build": "rollup -c && npm run copy-assets",
+    "watch": "rollup -c -w",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@bpmn-io/properties-panel": "^3.35.1",
+    "bpmn-js": "^18.9.1",
+    "bpmn-js-bpmnlint": "^0.23.0",
+    "bpmn-js-properties-panel": "^5.45.0",
+    "bpmn-js-token-simulation": "^0.38.2",
+    "bpmnlint": "^11.6.0",
+    "diagram-js-grid": "^1.1.0",
+    "diagram-js-minimap": "^5.2.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.79.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.0",
+    "@vscode/vsce": "^2.22.0",
+    "eslint": "^8.56.0",
+    "rollup": "^4.9.0",
+    "rollup-plugin-css-only": "^4.5.2",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3"
+  }
+}

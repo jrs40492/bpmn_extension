@@ -1,0 +1,18 @@
+{
+  "extends": "bpmnlint:recommended",
+  "rules": {
+    "no-disconnected": "error",
+    "no-implicit-split": "warn",
+    "start-event-required": "error",
+    "end-event-required": "error",
+    "fake-join": "warn",
+    "label-required": "off",
+    "no-complex-gateway": "warn",
+    "no-duplicate-sequence-flows": "error",
+    "no-gateway-join-fork": "warn",
+    "no-inclusive-gateway": "off",
+    "single-blank-start-event": "warn",
+    "single-event-definition": "error",
+    "sub-process-blank-start-event": "warn"
+  }
+}
