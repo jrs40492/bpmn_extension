@@ -1,7 +1,7 @@
 {
   "name": "bamoe",
-  "displayName": "BAMOE - BPMN Editor",
-  "description": "Visual BPMN 2.0 editor for VS Code with validation support",
+  "displayName": "BAMOE - BPMN & DMN Editor",
+  "description": "Visual BPMN 2.0 and DMN 1.3 editors for VS Code with validation support",
   "version": "0.1.0",
   "publisher": "bamoe",
   "license": "MIT",
@@ -15,6 +15,8 @@
   "keywords": [
     "bpmn",
     "bpmn2",
+    "dmn",
+    "decision",
     "workflow",
     "process",
     "diagram",
@@ -22,7 +24,9 @@
   ],
   "activationEvents": [
     "onCommand:bamoe.newBpmnFile",
-    "onCustomEditor:bamoe.bpmnEditor"
+    "onCommand:bamoe.newDmnFile",
+    "onCustomEditor:bamoe.bpmnEditor",
+    "onCustomEditor:bamoe.dmnEditor"
   ],
   "main": "./dist/extension/extension.js",
   "contributes": {
@@ -36,6 +40,16 @@
           }
         ],
         "priority": "default"
+      },
+      {
+        "viewType": "bamoe.dmnEditor",
+        "displayName": "DMN Editor",
+        "selector": [
+          {
+            "filenamePattern": "*.dmn"
+          }
+        ],
+        "priority": "default"
       }
     ],
     "commands": [
@@ -43,6 +57,11 @@
         "command": "bamoe.newBpmnFile",
         "title": "Create New BPMN Diagram",
         "category": "BPMN"
+      },
+      {
+        "command": "bamoe.newDmnFile",
+        "title": "Create New DMN Decision",
+        "category": "DMN"
       },
       {
         "command": "bamoe.showKeyboardShortcuts",
@@ -68,6 +87,16 @@
           "BPMN",
           "bpmn"
         ]
+      },
+      {
+        "id": "dmn",
+        "extensions": [
+          ".dmn"
+        ],
+        "aliases": [
+          "DMN",
+          "dmn"
+        ]
       }
     ],
     "icons": {
@@ -77,12 +106,19 @@
           "fontPath": "",
           "fontCharacter": ""
         }
+      },
+      "dmn-icon": {
+        "description": "DMN file icon",
+        "default": {
+          "fontPath": "",
+          "fontCharacter": ""
+        }
       }
     }
   },
   "scripts": {
     "vscode:prepublish": "npm run build",
-    "copy-assets": "mkdir -p dist/font && cp node_modules/bpmn-js/dist/assets/bpmn-font/font/* dist/font/",
+    "copy-assets": "mkdir -p dist/font && cp node_modules/bpmn-js/dist/assets/bpmn-font/font/* dist/font/ && cp -r node_modules/dmn-js/dist/assets/dmn-font/font/* dist/font/ 2>/dev/null || true",
     "build": "rollup -c && npm run copy-assets",
     "watch": "rollup -c -w",
     "lint": "eslint src --ext ts",
@@ -97,12 +133,15 @@
     "bpmn-js-token-simulation": "^0.38.2",
     "bpmnlint": "^11.6.0",
     "diagram-js-grid": "^1.1.0",
-    "diagram-js-minimap": "^5.2.0"
+    "diagram-js-minimap": "^5.2.0",
+    "dmn-js": "^17.5.0",
+    "dmn-js-properties-panel": "^3.9.0"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^6.0.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/node": "^20.10.0",

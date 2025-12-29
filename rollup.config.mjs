@@ -3,6 +3,7 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 import json from '@rollup/plugin-json';
 import terser from '@rollup/plugin-terser';
+import replace from '@rollup/plugin-replace';
 import css from 'rollup-plugin-css-only';
 
 const production = !process.env.ROLLUP_WATCH;
@@ -38,8 +39,8 @@ const extensionConfig = {
   ]
 };
 
-// Webview bundle (Browser)
-const webviewConfig = {
+// BPMN Webview bundle (Browser)
+const bpmnWebviewConfig = {
   input: 'src/webview/index.ts',
   output: {
     file: 'dist/webview/webview.js',
@@ -48,6 +49,10 @@ const webviewConfig = {
     sourcemap: true
   },
   plugins: [
+    replace({
+      preventAssignment: true,
+      'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development')
+    }),
     typescript({
       tsconfig: './tsconfig.webview.json',
       sourceMap: true,
@@ -64,4 +69,35 @@ const webviewConfig = {
   ]
 };
 
-export default [extensionConfig, webviewConfig];
+// DMN Webview bundle (Browser)
+const dmnWebviewConfig = {
+  input: 'src/dmn-webview/index.ts',
+  output: {
+    file: 'dist/webview/dmn-webview.js',
+    format: 'iife',
+    name: 'dmnWebview',
+    sourcemap: true,
+    banner: 'var process = { env: {} };' // Define process for browser compatibility
+  },
+  plugins: [
+    replace({
+      preventAssignment: true,
+      'process.env.NODE_ENV': JSON.stringify(production ? 'production' : 'development')
+    }),
+    typescript({
+      tsconfig: './tsconfig.webview.json',
+      sourceMap: true,
+      inlineSources: !production
+    }),
+    resolve({
+      browser: true,
+      preferBuiltins: false
+    }),
+    commonjs(),
+    json(),
+    css({ output: 'dmn-webview.css' }),
+    production && terser()
+  ]
+};
+
+export default [extensionConfig, bpmnWebviewConfig, dmnWebviewConfig];

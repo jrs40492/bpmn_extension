@@ -1,0 +1,285 @@
+/* DMN Editor Styles */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+.dmn-editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+}
+
+/* Toolbar */
+.dmn-toolbar {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--vscode-titleBar-activeBackground, #3c3c3c);
+  border-bottom: 1px solid var(--vscode-panel-border, #454545);
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.toolbar-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--vscode-titleBar-activeForeground, #ffffff);
+  margin-right: 16px;
+}
+
+.toolbar-tabs {
+  flex: 1;
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.toolbar-tab {
+  padding: 6px 14px;
+  border: none;
+  background: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #cccccc);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.toolbar-tab:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.toolbar-tab.active {
+  background: var(--vscode-button-background, #0e639c);
+  color: var(--vscode-button-foreground, #ffffff);
+}
+
+.toolbar-btn {
+  padding: 6px 10px;
+  border: none;
+  background: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #cccccc);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s ease;
+  min-width: 32px;
+}
+
+.toolbar-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+/* Main editor area */
+.dmn-editor-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.dmn-canvas {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+/* Properties Panel */
+.dmn-properties-panel {
+  width: 320px;
+  min-width: 280px;
+  max-width: 450px;
+  border-left: 1px solid var(--vscode-panel-border, #454545);
+  background: var(--vscode-sideBar-background, #252526);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* DMN-specific overrides for dark theme */
+.dmn-editor-container .djs-palette {
+  background: var(--vscode-sideBar-background, #252526);
+  border-color: var(--vscode-panel-border, #454545);
+}
+
+.dmn-editor-container .djs-palette .entry:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+/* Decision table styling */
+.dmn-editor-container .tjs-container {
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+.dmn-editor-container .tjs-table {
+  border-color: var(--vscode-panel-border, #454545);
+}
+
+.dmn-editor-container .tjs-table th,
+.dmn-editor-container .tjs-table td {
+  border-color: var(--vscode-panel-border, #454545);
+  background: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+.dmn-editor-container .tjs-table th {
+  background: var(--vscode-sideBar-background, #252526);
+}
+
+.dmn-editor-container .tjs-table tr:hover td {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.dmn-editor-container .tjs-table input,
+.dmn-editor-container .tjs-table textarea {
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border-color: var(--vscode-input-border, #3c3c3c);
+}
+
+/* Hit policy indicator */
+.dmn-editor-container .hit-policy {
+  background: var(--vscode-badge-background, #4d4d4d);
+  color: var(--vscode-badge-foreground, #ffffff);
+}
+
+/* DRD elements */
+.dmn-editor-container .djs-element .djs-visual rect,
+.dmn-editor-container .djs-element .djs-visual polygon {
+  fill: var(--vscode-editor-background, #1e1e1e);
+  stroke: var(--vscode-foreground, #cccccc);
+}
+
+.dmn-editor-container .djs-element.selected .djs-visual rect,
+.dmn-editor-container .djs-element.selected .djs-visual polygon {
+  stroke: var(--vscode-focusBorder, #007fd4);
+  stroke-width: 2px;
+}
+
+/* Context pad */
+.dmn-editor-container .djs-context-pad {
+  background: var(--vscode-menu-background, #252526);
+  border-color: var(--vscode-menu-border, #454545);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dmn-editor-container .djs-context-pad .entry:hover {
+  background: var(--vscode-menu-selectionBackground, #094771);
+}
+
+/* Popup menu */
+.dmn-editor-container .djs-popup {
+  background: var(--vscode-menu-background, #252526);
+  border-color: var(--vscode-menu-border, #454545);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dmn-editor-container .djs-popup .entry:hover {
+  background: var(--vscode-menu-selectionBackground, #094771);
+}
+
+/* Literal expression editor */
+.dmn-editor-container .literal-expression-editor {
+  background: var(--vscode-editor-background, #1e1e1e);
+  padding: 20px;
+}
+
+.dmn-editor-container .literal-expression-editor textarea {
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 4px;
+  padding: 12px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 13px;
+  width: 100%;
+  min-height: 200px;
+  resize: vertical;
+}
+
+.dmn-editor-container .literal-expression-editor textarea:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+/* Properties panel styling */
+.dmn-properties-panel .bio-properties-panel {
+  background: var(--vscode-sideBar-background, #252526);
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+.dmn-properties-panel .bio-properties-panel-header {
+  background: var(--vscode-sideBar-background, #252526);
+  border-bottom: 1px solid var(--vscode-panel-border, #454545);
+}
+
+.dmn-properties-panel .bio-properties-panel-group-header {
+  background: var(--vscode-sideBar-background, #252526);
+  border-bottom: 1px solid var(--vscode-panel-border, #454545);
+}
+
+.dmn-properties-panel .bio-properties-panel-input {
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border-color: var(--vscode-input-border, #3c3c3c);
+}
+
+.dmn-properties-panel .bio-properties-panel-input:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+/* Scrollbar styling */
+.dmn-properties-panel::-webkit-scrollbar,
+.dmn-canvas::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.dmn-properties-panel::-webkit-scrollbar-track,
+.dmn-canvas::-webkit-scrollbar-track {
+  background: var(--vscode-scrollbarSlider-background, #4e4e4e33);
+}
+
+.dmn-properties-panel::-webkit-scrollbar-thumb,
+.dmn-canvas::-webkit-scrollbar-thumb {
+  background: var(--vscode-scrollbarSlider-background, #4e4e4e);
+  border-radius: 5px;
+}
+
+.dmn-properties-panel::-webkit-scrollbar-thumb:hover,
+.dmn-canvas::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, #5e5e5e);
+}
+
+/* Empty state */
+.dmn-canvas:empty::after {
+  content: 'Loading DMN Editor...';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--vscode-descriptionForeground, #8b8b8b);
+  font-size: 14px;
+}

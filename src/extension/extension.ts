@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { BpmnEditorProvider } from './bpmn-editor-provider';
+import { DmnEditorProvider } from './dmn-editor-provider';
 
 export function activate(context: vscode.ExtensionContext): void {
-  // Register the custom editor provider
+  // Register the BPMN custom editor provider
   context.subscriptions.push(BpmnEditorProvider.register(context));
+
+  // Register the DMN custom editor provider
+  context.subscriptions.push(DmnEditorProvider.register(context));
 
   // Register command to create new BPMN file
   context.subscriptions.push(
@@ -28,6 +32,33 @@ export function activate(context: vscode.ExtensionContext): void {
 
         // Open the file with our custom editor
         await vscode.commands.executeCommand('vscode.openWith', uri, 'bamoe.bpmnEditor');
+      }
+    })
+  );
+
+  // Register command to create new DMN file
+  context.subscriptions.push(
+    vscode.commands.registerCommand('bamoe.newDmnFile', async () => {
+      const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+      const defaultUri = workspaceFolder
+        ? vscode.Uri.joinPath(workspaceFolder.uri, 'new-decision.dmn')
+        : undefined;
+
+      const uri = await vscode.window.showSaveDialog({
+        defaultUri,
+        filters: {
+          'DMN Files': ['dmn']
+        },
+        saveLabel: 'Create DMN Decision'
+      });
+
+      if (uri) {
+        // Write the default DMN template
+        const defaultDmn = getDefaultDmnContent();
+        await vscode.workspace.fs.writeFile(uri, Buffer.from(defaultDmn, 'utf-8'));
+
+        // Open the file with our custom editor
+        await vscode.commands.executeCommand('vscode.openWith', uri, 'bamoe.dmnEditor');
       }
     })
   );
@@ -121,4 +152,44 @@ function getDefaultBpmnContent(): string {
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>`;
+}
+
+/**
+ * Returns the default DMN 1.3 XML template for new decisions
+ */
+function getDefaultDmnContent(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+             id="Definitions_1"
+             name="Decision"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="Decision_1" name="Decision 1">
+    <decisionTable id="DecisionTable_1" hitPolicy="UNIQUE">
+      <input id="Input_1" label="Input">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text></text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Output" typeRef="string" />
+      <rule id="Rule_1">
+        <inputEntry id="InputEntry_1">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_1">
+          <text></text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
+        <dc:Bounds x="160" y="80" width="180" height="80" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>`;
 }
