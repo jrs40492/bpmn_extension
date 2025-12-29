@@ -127,9 +127,10 @@ html, body {
   color: var(--vscode-foreground, #cccccc) !important;
 }
 
-/* Selection styling */
-.djs-visual > :nth-child(1) {
+/* Selection styling - only apply to selected elements, not all elements */
+.djs-element.selected .djs-outline {
   stroke: var(--vscode-focusBorder, #007fd4) !important;
+  stroke-width: 2px !important;
 }
 
 /* Label styling for dark themes */
@@ -281,37 +282,13 @@ html, body {
    Canvas Element Colors
    ======================================== */
 
-/* Start Events - Green */
-.djs-visual [data-element-id^="StartEvent"] circle,
-.djs-visual [data-element-id^="Start"] circle,
-g[data-element-id^="StartEvent"] .djs-visual > circle,
-g[data-element-id^="Start_"] .djs-visual > circle {
-  stroke: #52c41a !important;
-}
-
-[data-element-id^="StartEvent"] .djs-visual > circle,
-[data-element-id^="Start_"] .djs-visual > circle {
-  stroke: #52c41a !important;
-}
-
-/* End Events - Red */
-[data-element-id^="EndEvent"] .djs-visual > circle,
-[data-element-id^="End_"] .djs-visual > circle {
-  stroke: #ff4d4f !important;
-}
-
-[data-element-id^="EndEvent"] .djs-visual > circle:nth-child(2),
-[data-element-id^="End_"] .djs-visual > circle:nth-child(2) {
-  stroke: #ff4d4f !important;
-  fill: #ff4d4f !important;
-}
-
-/* Intermediate Events - Orange */
-[data-element-id*="IntermediateThrow"] .djs-visual > circle,
-[data-element-id*="IntermediateCatch"] .djs-visual > circle,
-[data-element-id*="Intermediate"] .djs-visual > circle {
-  stroke: #fa8c16 !important;
-}
+/* Note: Start, End, and Intermediate Events are colored by the
+   custom EventColorsRenderer (src/webview/extensions/event-colors/renderer.ts)
+   Colors used:
+   - Start Events: #52c41a (green)
+   - End Events: #ff4d4f (red)
+   - Intermediate Events: #fa8c16 (orange)
+*/
 
 /* Tasks - Blue border */
 [data-element-id^="Task"] .djs-visual > rect,
@@ -411,17 +388,25 @@ g[data-element-id^="Start_"] .djs-visual > circle {
 }
 
 .bio-properties-panel-header {
-  background: var(--vscode-sideBarSectionHeader-background, #37373d) !important;
+  background: var(--vscode-sideBar-background, #252526) !important;
   border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c) !important;
 }
 
+.bio-properties-panel-group {
+  background: var(--vscode-sideBar-background, #252526) !important;
+}
+
 .bio-properties-panel-group-header {
-  background: var(--vscode-sideBarSectionHeader-background, #37373d) !important;
+  background: var(--vscode-sideBar-background, #252526) !important;
   color: var(--vscode-foreground, #cccccc) !important;
 }
 
 .bio-properties-panel-group-header:hover {
   background: var(--vscode-list-hoverBackground, #2a2d2e) !important;
+}
+
+.bio-properties-panel-group-entries {
+  background: var(--vscode-sideBar-background, #252526) !important;
 }
 
 .bio-properties-panel-entry {

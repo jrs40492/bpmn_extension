@@ -185,7 +185,7 @@ async function init(): Promise<void> {
   // Initialize Phase 4 features
 
   // File name tracking
-  let currentFileName = 'diagram.bpmn';
+  const currentFileName = 'diagram.bpmn';
 
   // Deploy panel
   const deployPanel = initDeployPanel(
@@ -203,9 +203,9 @@ async function init(): Promise<void> {
 
   // Projects panel
   const projectsPanel = initProjectsPanel(
-    (filePath) => {
-      // This would need VS Code message passing to open other files
-      console.log('Open file:', filePath);
+    (_filePath) => {
+      // TODO: Implement VS Code message passing to open other files
+      // This would require adding 'openFile' message type to shared/message-types.ts
     },
     async () => {
       // This would need VS Code message passing to list project files

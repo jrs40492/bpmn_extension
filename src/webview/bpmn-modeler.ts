@@ -15,6 +15,9 @@ import restTaskModule, { restTaskDescriptor } from './extensions/rest-task';
 // Custom Kafka task extension
 import kafkaTaskModule, { kafkaTaskDescriptor } from './extensions/kafka-task';
 
+// Custom event colors extension
+import eventColorsModule from './extensions/event-colors';
+
 // Type definitions for bpmn-js
 interface BpmnModelerInstance {
   importXML(xml: string): Promise<{ warnings: string[] }>;
@@ -58,12 +61,17 @@ interface ToggleMode {
   isActive(): boolean;
 }
 
+export interface Modeling {
+  updateProperties: (element: unknown, props: Record<string, unknown>) => void;
+}
+
 export interface Modeler extends BpmnModelerInstance {
   get(name: 'canvas'): Canvas;
   get(name: 'eventBus'): EventBus;
   get(name: 'elementRegistry'): ElementRegistry;
   get(name: 'selection'): Selection;
   get(name: 'toggleMode'): ToggleMode;
+  get(name: 'modeling'): Modeling;
   get<T>(name: string): T;
 }
 
@@ -79,6 +87,7 @@ export function createModeler(
     gridModule,
     restTaskModule,
     kafkaTaskModule,
+    eventColorsModule,
     tokenSimulationModule
   ];
 
