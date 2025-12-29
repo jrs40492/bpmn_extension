@@ -25,8 +25,12 @@ interface BpmnFactory {
   create: (type: string, attrs?: Record<string, unknown>) => unknown;
 }
 
+interface ModdleElement {
+  $parent?: ModdleElement;
+}
+
 interface Moddle {
-  create: (type: string, attrs?: Record<string, unknown>) => unknown;
+  create: (type: string, attrs?: Record<string, unknown>) => ModdleElement;
 }
 
 export default class KafkaTaskPaletteProvider {

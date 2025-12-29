@@ -60,9 +60,12 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     // Generate the webview HTML
     webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
 
-    // Track if we should skip the next document change
-    // (to prevent update loops when we modify the document from webview changes)
-    let skipNextDocumentChange = false;
+    // Track the last XML content we know about to prevent update loops
+    let lastKnownXml = document.getText();
+
+    // Track if we should skip document change events
+    // Use a counter to handle multiple rapid changes
+    let skipDocumentChangeCount = 0;
 
     // Handle messages from the webview
     const messageHandler = webviewPanel.webview.onDidReceiveMessage(
@@ -70,16 +73,22 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         switch (message.type) {
           case 'ready':
             // Webview is ready, send initial content
+            lastKnownXml = document.getText();
             this.postMessage(webviewPanel.webview, {
               type: 'init',
-              xml: document.getText(),
+              xml: lastKnownXml,
               isUntitled: document.isUntitled
             });
             break;
 
           case 'change':
             // Webview content changed, update document
-            skipNextDocumentChange = true;
+            // Skip if the content is the same (prevents loops)
+            if (message.xml === lastKnownXml) {
+              break;
+            }
+            lastKnownXml = message.xml;
+            skipDocumentChangeCount++;
             await this.updateTextDocument(document, message.xml);
             break;
 
@@ -98,15 +107,23 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
       }
 
       // Skip if this change originated from our webview
-      if (skipNextDocumentChange) {
-        skipNextDocumentChange = false;
+      if (skipDocumentChangeCount > 0) {
+        skipDocumentChangeCount--;
         return;
       }
 
-      // Send updated content to webview (e.g., for undo/redo or external changes)
+      const currentXml = document.getText();
+
+      // Skip if the content is the same as what we already know
+      if (currentXml === lastKnownXml) {
+        return;
+      }
+
+      // Update our tracking and send to webview (e.g., for undo/redo or external changes)
+      lastKnownXml = currentXml;
       this.postMessage(webviewPanel.webview, {
         type: 'update',
-        xml: document.getText()
+        xml: currentXml
       });
     });
 

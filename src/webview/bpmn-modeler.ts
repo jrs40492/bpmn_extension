@@ -15,6 +15,12 @@ import restTaskModule, { restTaskDescriptor } from './extensions/rest-task';
 // Custom Kafka task extension
 import kafkaTaskModule, { kafkaTaskDescriptor } from './extensions/kafka-task';
 
+// Custom Script task extension
+import scriptTaskModule from './extensions/script-task';
+
+// Custom Process Variables extension
+import processVariablesModule, { processVariablesDescriptor } from './extensions/process-variables';
+
 // Custom event colors extension
 import eventColorsModule from './extensions/event-colors';
 
@@ -87,6 +93,8 @@ export function createModeler(
     gridModule,
     restTaskModule,
     kafkaTaskModule,
+    scriptTaskModule,
+    processVariablesModule,
     eventColorsModule,
     tokenSimulationModule
   ];
@@ -107,7 +115,8 @@ export function createModeler(
     additionalModules,
     moddleExtensions: {
       rest: restTaskDescriptor,
-      kafka: kafkaTaskDescriptor
+      kafka: kafkaTaskDescriptor,
+      bamoe: processVariablesDescriptor
     },
     propertiesPanel: propertiesContainer ? {
       parent: propertiesContainer
@@ -151,6 +160,7 @@ function getEmptyDiagram(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:bamoe="http://bamoe.io/schema/process"
                   id="Definitions_empty"
                   targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="false" />
