@@ -55,7 +55,7 @@ interface ModdleElement {
  */
 export const REST_PARAMS = {
   inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],
-  outputs: ['Result']
+  outputs: ['Result', 'StatusCode', 'StatusMsg']
 } as const;
 
 /**
@@ -130,14 +130,19 @@ export default class RestTaskPaletteProvider {
           dataInputRefs.push(dataInput);
         }
 
-        // Create data outputs
+        // Create data outputs with appropriate types
         for (const paramName of REST_PARAMS.outputs) {
           const dataOutput = (bpmnFactory as any).create('bpmn:DataOutput', {
             id: `${taskId}_${paramName}Output`,
             name: paramName
           });
           // Set drools:dtype for Kogito compatibility
-          dataOutput.set('drools:dtype', 'java.lang.String');
+          // StatusCode is an Integer, others are String
+          if (paramName === 'StatusCode') {
+            dataOutput.set('drools:dtype', 'java.lang.Integer');
+          } else {
+            dataOutput.set('drools:dtype', 'java.lang.String');
+          }
           dataOutputs.set(paramName, dataOutput);
           dataOutputRefs.push(dataOutput);
         }
@@ -415,15 +420,15 @@ export function updateResultOutputType(element: any, resultClass: string): void 
 }
 
 /**
- * Get the target process variable name from the Result output association
+ * Get the target process variable name from an output association by output name
  */
-export function getResultVariableName(element: any): string | null {
+export function getOutputVariableName(element: any, outputName: string): string | null {
   const bo = element.businessObject;
   const outputAssocs = bo.dataOutputAssociations || [];
 
   for (const assoc of outputAssocs) {
     const sourceRef = assoc.sourceRef?.[0];
-    if (sourceRef?.name === 'Result') {
+    if (sourceRef?.name === outputName) {
       // targetRef could be a string (variable name) or a reference to a property element
       const targetRef = assoc.targetRef;
       if (typeof targetRef === 'string') {
@@ -436,6 +441,27 @@ export function getResultVariableName(element: any): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Get the target process variable name from the Result output association
+ */
+export function getResultVariableName(element: any): string | null {
+  return getOutputVariableName(element, 'Result');
+}
+
+/**
+ * Get the target process variable name from the StatusCode output association
+ */
+export function getStatusCodeVariableName(element: any): string | null {
+  return getOutputVariableName(element, 'StatusCode');
+}
+
+/**
+ * Get the target process variable name from the StatusMsg output association
+ */
+export function getStatusMsgVariableName(element: any): string | null {
+  return getOutputVariableName(element, 'StatusMsg');
 }
 
 /**
@@ -483,16 +509,16 @@ export function getAvailableProcessVariables(element: any): Array<{ id: string; 
 }
 
 /**
- * Update the REST task output association to target a different process variable
+ * Update an output association to target a different process variable
  */
-export function updateResultVariable(element: any, variableName: string, modeling: any, bpmnFactory: any): void {
+export function updateOutputVariable(element: any, outputName: string, variableName: string, modeling: any, bpmnFactory: any, variableType?: string): void {
   const bo = element.businessObject;
   const outputAssocs = bo.dataOutputAssociations || [];
 
-  // Find the Result output association
+  // Find the output association for this output
   for (const assoc of outputAssocs) {
     const sourceRef = assoc.sourceRef?.[0];
-    if (sourceRef?.name === 'Result') {
+    if (sourceRef?.name === outputName) {
       // Update targetRef to the new variable name
       assoc.targetRef = variableName;
 
@@ -500,16 +526,64 @@ export function updateResultVariable(element: any, variableName: string, modelin
       modeling.updateProperties(element, { name: bo.name || '' });
 
       // Also ensure the process variable and itemDefinition exist
-      ensureProcessVariable(element, variableName, bpmnFactory, modeling);
+      ensureProcessVariable(element, variableName, bpmnFactory, modeling, variableType);
       return;
     }
   }
+
+  // If no existing association, create one
+  const ioSpec = bo.ioSpecification;
+  if (!ioSpec) return;
+
+  // Find the dataOutput
+  const dataOutputs = ioSpec.dataOutputs || [];
+  const dataOutput = dataOutputs.find((d: any) => d.name === outputName);
+  if (!dataOutput) return;
+
+  // Create new output association
+  const newAssoc = bpmnFactory.create('bpmn:DataOutputAssociation', {
+    sourceRef: [dataOutput],
+    targetRef: variableName
+  });
+  newAssoc.$parent = bo;
+
+  if (!bo.dataOutputAssociations) {
+    bo.dataOutputAssociations = [];
+  }
+  bo.dataOutputAssociations.push(newAssoc);
+
+  // Ensure the process variable exists
+  ensureProcessVariable(element, variableName, bpmnFactory, modeling, variableType);
+
+  // Trigger change
+  modeling.updateProperties(element, { name: bo.name || '' });
+}
+
+/**
+ * Update the REST task output association to target a different process variable
+ */
+export function updateResultVariable(element: any, variableName: string, modeling: any, bpmnFactory: any): void {
+  updateOutputVariable(element, 'Result', variableName, modeling, bpmnFactory, 'java.util.Map');
+}
+
+/**
+ * Update the StatusCode output association to target a different process variable
+ */
+export function updateStatusCodeVariable(element: any, variableName: string, modeling: any, bpmnFactory: any): void {
+  updateOutputVariable(element, 'StatusCode', variableName, modeling, bpmnFactory, 'java.lang.Integer');
+}
+
+/**
+ * Update the StatusMsg output association to target a different process variable
+ */
+export function updateStatusMsgVariable(element: any, variableName: string, modeling: any, bpmnFactory: any): void {
+  updateOutputVariable(element, 'StatusMsg', variableName, modeling, bpmnFactory, 'java.lang.String');
 }
 
 /**
  * Ensure a process variable exists with the given name
  */
-function ensureProcessVariable(element: any, variableName: string, bpmnFactory: any, modeling: any): void {
+function ensureProcessVariable(element: any, variableName: string, bpmnFactory: any, modeling: any, variableType?: string): void {
   const bo = element.businessObject;
 
   // Navigate up to find the process
@@ -539,7 +613,7 @@ function ensureProcessVariable(element: any, variableName: string, bpmnFactory: 
   if (!itemDef && bpmnFactory) {
     itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
       id: itemDefId,
-      structureRef: 'java.util.Map'
+      structureRef: variableType || 'java.util.Map'
     });
     itemDef.$parent = definitions;
     if (!definitions.rootElements) {

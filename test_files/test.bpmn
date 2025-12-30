@@ -13,11 +13,12 @@
   <bpmn:itemDefinition id="_Activity_1im8ao1_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_drugResponseInputXItem" structureRef="java.lang.Object" />
-  <bpmn:process id="drugs" isExecutable="true">
+  <bpmn:process id="drugs" name="" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true" />
         <bamoe:variable name="drugResponse" />
+        <bamoe:variable name="drugStatus" type="number" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid" />

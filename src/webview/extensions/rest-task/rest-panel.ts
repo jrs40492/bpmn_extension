@@ -3,7 +3,7 @@
  * Uses STANDARD BPMN data input/output associations - no custom extensions
  */
 
-import { isRestTask, getRestConfig, updateRestParam, updateResultOutputType, updateResultVariableType, getResultVariableName, getAvailableProcessVariables, updateResultVariable, REST_PARAMS } from './palette-provider';
+import { isRestTask, getRestConfig, updateRestParam, updateResultOutputType, updateResultVariableType, getResultVariableName, getStatusCodeVariableName, getAvailableProcessVariables, updateResultVariable, updateStatusCodeVariable, REST_PARAMS } from './palette-provider';
 
 interface Modeling {
   updateProperties: (element: any, props: Record<string, unknown>) => void;
@@ -84,11 +84,18 @@ function createRestPanelHTML(): HTMLDivElement {
         <input type="number" id="rest-timeout" placeholder="30000" />
       </div>
       <div class="rest-field">
-        <label for="rest-output-variable">Output Variable</label>
+        <label for="rest-output-variable">Response Body Variable</label>
         <select id="rest-output-variable">
           <option value="">-- Select Variable --</option>
         </select>
-        <small class="rest-hint">Process variable to store the response</small>
+        <small class="rest-hint">Process variable to store the response body</small>
+      </div>
+      <div class="rest-field">
+        <label for="rest-status-code-variable">Status Code Variable (optional)</label>
+        <select id="rest-status-code-variable">
+          <option value="">-- None --</option>
+        </select>
+        <small class="rest-hint">Process variable to store the HTTP status code (e.g., 200, 404)</small>
       </div>
     </div>
   `;
@@ -113,6 +120,7 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
   const resultClassSelect = panel.querySelector('#rest-result-class') as HTMLSelectElement;
   const timeoutInput = panel.querySelector('#rest-timeout') as HTMLInputElement;
   const outputVariableSelect = panel.querySelector('#rest-output-variable') as HTMLSelectElement;
+  const statusCodeVariableSelect = panel.querySelector('#rest-status-code-variable') as HTMLSelectElement;
   const closeButton = panel.querySelector('.rest-panel-close') as HTMLButtonElement;
 
   // Close button handler
@@ -197,6 +205,33 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
     eventBus.fire('commandStack.changed', {});
   });
 
+  statusCodeVariableSelect.addEventListener('change', () => {
+    if (!currentElement) return;
+    const selectedValue = statusCodeVariableSelect.value;
+
+    if (selectedValue === '__new__') {
+      // Prompt for new variable name
+      const newVarName = prompt('Enter new variable name:', 'httpStatusCode');
+      if (newVarName && newVarName.trim()) {
+        updateStatusCodeVariable(currentElement, newVarName.trim(), modeling, bpmnFactory);
+        // Add the new option and select it
+        const newOption = document.createElement('option');
+        newOption.value = newVarName.trim();
+        newOption.textContent = newVarName.trim();
+        statusCodeVariableSelect.insertBefore(newOption, statusCodeVariableSelect.lastElementChild);
+        statusCodeVariableSelect.value = newVarName.trim();
+        // Also update output variable dropdown to include the new variable
+        populateOutputVariableSelect(currentElement);
+      } else {
+        // Reset to current value if cancelled
+        statusCodeVariableSelect.value = getStatusCodeVariableName(currentElement) || '';
+      }
+    } else if (selectedValue) {
+      updateStatusCodeVariable(currentElement, selectedValue, modeling, bpmnFactory);
+    }
+    eventBus.fire('commandStack.changed', {});
+  });
+
   // Helper to populate output variable dropdown
   const populateOutputVariableSelect = (element: any) => {
     // Clear existing options
@@ -240,6 +275,49 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
     outputVariableSelect.value = currentVariable;
   };
 
+  // Helper to populate status code variable dropdown
+  const populateStatusCodeVariableSelect = (element: any) => {
+    // Clear existing options
+    statusCodeVariableSelect.innerHTML = '';
+
+    // Get current value
+    const currentVariable = getStatusCodeVariableName(element) || '';
+
+    // Get available variables
+    const availableVariables = getAvailableProcessVariables(element);
+
+    // Add "None" option (status code is optional)
+    const noneOption = document.createElement('option');
+    noneOption.value = '';
+    noneOption.textContent = '-- None --';
+    statusCodeVariableSelect.appendChild(noneOption);
+
+    // Add existing variables
+    for (const v of availableVariables) {
+      const option = document.createElement('option');
+      option.value = v.name;
+      option.textContent = v.name;
+      statusCodeVariableSelect.appendChild(option);
+    }
+
+    // If current variable is not in the list, add it
+    if (currentVariable && !availableVariables.find(v => v.name === currentVariable)) {
+      const currentOption = document.createElement('option');
+      currentOption.value = currentVariable;
+      currentOption.textContent = `${currentVariable} (current)`;
+      statusCodeVariableSelect.appendChild(currentOption);
+    }
+
+    // Add "Create new" option
+    const newOption = document.createElement('option');
+    newOption.value = '__new__';
+    newOption.textContent = '+ Create New Variable...';
+    statusCodeVariableSelect.appendChild(newOption);
+
+    // Set current value
+    statusCodeVariableSelect.value = currentVariable;
+  };
+
   // Listen for selection changes
   eventBus.on('selection.changed', (event: unknown) => {
     const selectionEvent = event as { newSelection?: any[] };
@@ -262,8 +340,9 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
           resultClassSelect.value = config['ResultClass'] || '';
           timeoutInput.value = config['ReadTimeout'] || '30000';
 
-          // Populate output variable dropdown
+          // Populate output variable dropdowns
           populateOutputVariableSelect(element);
+          populateStatusCodeVariableSelect(element);
 
           // Show panel
           panel!.classList.add('visible');

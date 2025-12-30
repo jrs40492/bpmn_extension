@@ -5,6 +5,9 @@
     <informationRequirement id="InformationRequirement_1plso4s">
       <requiredInput href="#InputData_0kn62gf" />
     </informationRequirement>
+    <informationRequirement id="InformationRequirement_1wa85ob">
+      <requiredInput href="#InputData_0o7subf" />
+    </informationRequirement>
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="boolean">
@@ -13,12 +16,12 @@
       </input>
       <input id="InputClause_0r4skj8">
         <inputExpression id="LiteralExpression_0plw1vo" typeRef="boolean">
-          <text>matches(drugResponse.status, "410")</text>
+          <text>matches(drugStatus, "410")</text>
         </inputExpression>
       </input>
       <input id="InputClause_0mv7q0v">
         <inputExpression id="LiteralExpression_1l1f5vw" typeRef="boolean">
-          <text>matches(drugResponse.status, "500")</text>
+          <text>matches(drugStatus, "500")</text>
         </inputExpression>
       </input>
       <output id="Output_1" name="decision" typeRef="string" />
@@ -83,6 +86,9 @@
   <inputData id="InputData_0kn62gf" name="drugResponse">
     <variable id="InputData_0kn62gf_variable" name="drugResponse" typeRef="Any" />
   </inputData>
+  <inputData id="InputData_0o7subf" name="drugStatus">
+    <variable id="InputData_0o7subf_variable" name="drugStatus" />
+  </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
       <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
@@ -95,6 +101,14 @@
         <di:waypoint x="273" y="201" />
         <di:waypoint x="350" y="200" />
         <di:waypoint x="370" y="200" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNShape id="DMNShape_04t0ijy" dmnElementRef="InputData_0o7subf">
+        <dc:Bounds height="45" width="125" x="149" y="288" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_17u67sr" dmnElementRef="InformationRequirement_1wa85ob">
+        <di:waypoint x="212" y="288" />
+        <di:waypoint x="460" y="260" />
+        <di:waypoint x="460" y="240" />
       </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
