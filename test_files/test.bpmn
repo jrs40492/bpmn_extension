@@ -17,6 +17,7 @@
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true"/>
         <bamoe:variable name="drugResponse"/>
+        <bamoe:variable name="decision"/>
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid"/>
