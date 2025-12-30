@@ -27,7 +27,7 @@
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_12vdxhy" sourceRef="StartEvent_1" targetRef="Activity_0as8h27" />
     <bpmn:sequenceFlow id="Flow_0qb9lii" sourceRef="Activity_0as8h27" targetRef="Activity_09bhh76" />
-    <bpmn:exclusiveGateway id="Gateway_1dpe896" name="Step 4 Route">
+    <bpmn:exclusiveGateway id="Gateway_1dpe896" name="Step 4 Route" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_1vz8zap</bpmn:incoming>
       <bpmn:outgoing>Flow_1du2ysb</bpmn:outgoing>
       <bpmn:outgoing>Flow_191lbsq</bpmn:outgoing>

@@ -33,6 +33,9 @@ import compensationTaskModule from './extensions/compensation-task';
 // Custom sequence flow condition extension
 import sequenceFlowConditionModule from './extensions/sequence-flow-condition';
 
+// Custom gateway direction extension
+import gatewayDirectionModule from './extensions/gateway-direction';
+
 // Type definitions for bpmn-js
 interface BpmnModelerInstance {
   importXML(xml: string): Promise<{ warnings: string[] }>;
@@ -115,7 +118,8 @@ export function createModeler(
     additionalModules.push(
       BpmnPropertiesPanelModule,
       BpmnPropertiesProviderModule,
-      sequenceFlowConditionModule
+      sequenceFlowConditionModule,
+      gatewayDirectionModule
     );
   }
 
