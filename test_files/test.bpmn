@@ -79,7 +79,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_1luj5n3">
         <bpmn:targetRef>Activity_1sh2xqa_modelInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">test.dmn</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1sh2xqa_modelInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>

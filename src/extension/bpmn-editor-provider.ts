@@ -189,6 +189,9 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         // Parse namespace from the DMN XML (required for Kogito/jBPM)
         const namespace = this.parseNamespaceFromDmn(content);
 
+        // Parse model name from the DMN XML (required for Kogito/jBPM model input)
+        const modelName = this.parseModelNameFromDmn(content);
+
         // Get relative path for display
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
         const relativePath = workspaceFolder
@@ -198,6 +201,7 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         dmnFiles.push({
           path: file.fsPath,
           name: relativePath,
+          modelName,
           namespace,
           decisions
         });
@@ -218,6 +222,19 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     // Matches: <definitions namespace="..." or <dmn:definitions namespace="..."
     const namespaceRegex = /<(?:dmn:)?definitions[^>]*\snamespace\s*=\s*["']([^"']+)["']/i;
     const match = namespaceRegex.exec(xml);
+    return match?.[1];
+  }
+
+  /**
+   * Parse model name from DMN XML content
+   * The model name is in the definitions element's name attribute
+   * Kogito/jBPM uses this name (not the filename) to identify the DMN model
+   */
+  private parseModelNameFromDmn(xml: string): string | undefined {
+    // Try to find name attribute in definitions element
+    // Matches: <definitions name="..." or <dmn:definitions name="..."
+    const nameRegex = /<(?:dmn:)?definitions[^>]*\sname\s*=\s*["']([^"']+)["']/i;
+    const match = nameRegex.exec(xml);
     return match?.[1];
   }
 

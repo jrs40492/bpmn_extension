@@ -5,7 +5,8 @@
 // DMN file information for Business Rule Task linking
 export interface DmnFileInfo {
   path: string;
-  name: string;
+  name: string; // Relative file path for display
+  modelName?: string; // DMN model name from <definitions name="..."> (required for Kogito/jBPM model input)
   namespace?: string; // DMN model namespace (required for Kogito/jBPM)
   decisions: Array<{
     id: string;

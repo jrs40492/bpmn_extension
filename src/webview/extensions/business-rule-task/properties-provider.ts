@@ -125,7 +125,8 @@ declare global {
 
 export interface DmnFileInfo {
   path: string;
-  name: string;
+  name: string; // Relative file path for display
+  modelName?: string; // DMN model name from <definitions name="..."> (required for Kogito/jBPM model input)
   namespace?: string;
   decisions: Array<{
     id: string;
@@ -487,11 +488,14 @@ function DmnFileSelect(props: { element: BpmnElement; id: string }) {
     // Ensure ioSpecification exists
     ensureIoSpecification(element, bpmnFactory, commandStack);
 
-    // Set the model value
+    // Find the selected file by modelName (dropdown value is now modelName)
+    const selectedFile = availableDmnFiles.find(f => (f.modelName || f.name) === value);
+
+    // Set the model value - this is now the modelName for Kogito/jBPM compatibility
+    // Kogito expects the DMN model name (from <definitions name="...">) not the filename
     setDataInputValue(element, DMN_DATA_INPUTS.MODEL, value, bpmnFactory, commandStack);
 
-    // Find the selected file to get its namespace
-    const selectedFile = availableDmnFiles.find(f => f.name === value);
+    // Set the namespace
     if (selectedFile?.namespace) {
       setDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE, selectedFile.namespace, bpmnFactory, commandStack);
     }
@@ -506,9 +510,11 @@ function DmnFileSelect(props: { element: BpmnElement; id: string }) {
     ];
 
     for (const file of availableDmnFiles) {
+      // Use modelName as value for Kogito compatibility, show filename for user clarity
+      const modelName = file.modelName || file.name;
       options.push({
-        value: file.name,
-        label: file.name
+        value: modelName,
+        label: `${file.name}${file.modelName ? ` (${file.modelName})` : ''}`
       });
     }
 
@@ -547,19 +553,20 @@ function DecisionSelect(props: { element: BpmnElement; id: string }) {
   };
 
   const getOptions = () => {
-    const currentFile = getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
+    const currentModel = getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
 
     const options = [
       { value: '', label: translate('-- Select Decision --') }
     ];
 
-    if (currentFile) {
-      // Match by relative path (name)
+    if (currentModel) {
+      // Match by modelName (primary), then fall back to filename matching for backward compatibility
       const selectedFile = availableDmnFiles.find(f =>
-        f.name === currentFile ||
-        f.path === currentFile ||
-        f.name.endsWith(currentFile) ||
-        currentFile.endsWith(f.name)
+        (f.modelName || f.name) === currentModel ||
+        f.name === currentModel ||
+        f.path === currentModel ||
+        f.name.endsWith(currentModel) ||
+        currentModel.endsWith(f.name)
       );
       if (selectedFile?.decisions) {
         for (const decision of selectedFile.decisions) {
