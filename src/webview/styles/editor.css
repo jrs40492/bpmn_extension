@@ -424,6 +424,98 @@ html, body {
   font-size: var(--vscode-font-size, 13px) !important;
 }
 
+/* ========================================
+   Properties Panel Header Icon Colors
+   ======================================== */
+
+/* Start Events - Green */
+.bio-properties-panel-header [class*="bpmn-icon-start-event"]::before,
+.bio-properties-panel [class*="bpmn-icon-start-event"]::before {
+  color: #52c41a !important;
+}
+
+/* End Events - Red */
+.bio-properties-panel-header [class*="bpmn-icon-end-event"]::before,
+.bio-properties-panel [class*="bpmn-icon-end-event"]::before {
+  color: #ff4d4f !important;
+}
+
+/* Intermediate Events - Orange/Amber */
+.bio-properties-panel-header [class*="bpmn-icon-intermediate-event"]::before,
+.bio-properties-panel [class*="bpmn-icon-intermediate-event"]::before {
+  color: #fa8c16 !important;
+}
+
+/* Tasks - Blue */
+.bio-properties-panel-header .bpmn-icon-task::before,
+.bio-properties-panel-header .bpmn-icon-service-task::before,
+.bio-properties-panel-header .bpmn-icon-user-task::before,
+.bio-properties-panel-header .bpmn-icon-script-task::before,
+.bio-properties-panel-header .bpmn-icon-business-rule-task::before,
+.bio-properties-panel-header .bpmn-icon-send-task::before,
+.bio-properties-panel-header .bpmn-icon-receive-task::before,
+.bio-properties-panel-header .bpmn-icon-manual-task::before,
+.bio-properties-panel .bpmn-icon-task::before,
+.bio-properties-panel .bpmn-icon-service-task::before,
+.bio-properties-panel .bpmn-icon-user-task::before,
+.bio-properties-panel .bpmn-icon-script-task::before,
+.bio-properties-panel .bpmn-icon-business-rule-task::before,
+.bio-properties-panel .bpmn-icon-send-task::before,
+.bio-properties-panel .bpmn-icon-receive-task::before,
+.bio-properties-panel .bpmn-icon-manual-task::before {
+  color: #1890ff !important;
+}
+
+/* Gateways - Gold/Yellow */
+.bio-properties-panel-header [class*="bpmn-icon-gateway"]::before,
+.bio-properties-panel [class*="bpmn-icon-gateway"]::before {
+  color: #faad14 !important;
+}
+
+/* Subprocess - Indigo */
+.bio-properties-panel-header .bpmn-icon-subprocess-expanded::before,
+.bio-properties-panel-header .bpmn-icon-subprocess-collapsed::before,
+.bio-properties-panel .bpmn-icon-subprocess-expanded::before,
+.bio-properties-panel .bpmn-icon-subprocess-collapsed::before {
+  color: #722ed1 !important;
+}
+
+/* Data Objects/Stores - Cyan */
+.bio-properties-panel-header .bpmn-icon-data-object::before,
+.bio-properties-panel-header .bpmn-icon-data-store::before,
+.bio-properties-panel .bpmn-icon-data-object::before,
+.bio-properties-panel .bpmn-icon-data-store::before {
+  color: #13c2c2 !important;
+}
+
+/* Participants/Pools - Teal */
+.bio-properties-panel-header .bpmn-icon-participant::before,
+.bio-properties-panel-header .bpmn-icon-lane::before,
+.bio-properties-panel .bpmn-icon-participant::before,
+.bio-properties-panel .bpmn-icon-lane::before {
+  color: #08979c !important;
+}
+
+/* Text Annotation - Light Purple */
+.bio-properties-panel-header .bpmn-icon-text-annotation::before,
+.bio-properties-panel .bpmn-icon-text-annotation::before {
+  color: #b37feb !important;
+}
+
+/* Group - Pink */
+.bio-properties-panel-header .bpmn-icon-group::before,
+.bio-properties-panel .bpmn-icon-group::before {
+  color: #eb2f96 !important;
+}
+
+/* Connections/Flows - Gray */
+.bio-properties-panel-header .bpmn-icon-connection::before,
+.bio-properties-panel-header .bpmn-icon-connection-multi::before,
+.bio-properties-panel .bpmn-icon-connection::before,
+.bio-properties-panel .bpmn-icon-connection-multi::before {
+  color: #8c8c8c !important;
+}
+
 .bio-properties-panel-header {
   background: var(--vscode-sideBar-background, #252526) !important;
   border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c) !important;

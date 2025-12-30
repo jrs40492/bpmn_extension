@@ -27,6 +27,9 @@ import processVariablesModule, { processVariablesDescriptor } from './extensions
 // Custom event colors extension
 import eventColorsModule from './extensions/event-colors';
 
+// Custom properties panel colors extension
+import propertiesPanelColorsModule from './extensions/properties-panel-colors';
+
 // Custom compensation task context pad extension
 import compensationTaskModule from './extensions/compensation-task';
 
@@ -119,7 +122,8 @@ export function createModeler(
       BpmnPropertiesPanelModule,
       BpmnPropertiesProviderModule,
       sequenceFlowConditionModule,
-      gatewayDirectionModule
+      gatewayDirectionModule,
+      propertiesPanelColorsModule
     );
   }
 
