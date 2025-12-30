@@ -245,16 +245,8 @@ export default class RestTaskPaletteProvider {
         // Create the REST task configuration using moddle (for UI state)
         const restConfig = moddle.create('rest:RestTaskConfig', config);
 
-        // Build extension elements - start with just the REST config
+        // Build extension elements with REST config
         const extensionValues: ModdleElement[] = [restConfig];
-
-        // Try to create drools:taskName element for Kogito handler identification
-        try {
-          const droolsTaskName = moddle.create('drools:taskName', { body: 'Rest' });
-          extensionValues.unshift(droolsTaskName);
-        } catch (e) {
-          console.warn('Could not create drools:taskName element:', e);
-        }
 
         // Create extension elements container
         const extensionElements = moddle.create('bpmn:ExtensionElements', {
@@ -282,12 +274,15 @@ export default class RestTaskPaletteProvider {
         }
 
         // Create the task business object (bpmn:Task, NOT bpmn:ServiceTask)
-        // Kogito uses bpmn:Task with drools:taskName for work item handlers
+        // Kogito uses bpmn:Task with drools:taskName attribute for work item handlers
         // bpmn:ServiceTask expects WSDL interface/operation definitions
         const businessObjectAttrs: Record<string, unknown> = {
           id: taskId,
           name: 'REST API Call',
-          extensionElements
+          extensionElements,
+          // Set drools:taskName as an attribute on the task element
+          // This is required by Kogito to identify the work item handler
+          'drools:taskName': 'Rest'
         };
 
         // Only add ioSpecification if it was created successfully

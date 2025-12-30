@@ -3,6 +3,7 @@
  * Required for Kogito runtime compatibility
  *
  * Note: Element names match exactly what Kogito expects in XML
+ * The taskName is defined as an extension attribute on bpmn:Task elements
  */
 export const droolsDescriptor = {
   name: 'Drools',
@@ -10,7 +11,7 @@ export const droolsDescriptor = {
   uri: 'http://www.jboss.org/drools',
   types: [
     {
-      // Produces <drools:taskName>Rest</drools:taskName>
+      // Extension element for taskName (used in extensionElements)
       name: 'taskName',
       superClass: ['Element'],
       properties: [
@@ -18,6 +19,19 @@ export const droolsDescriptor = {
           name: 'body',
           type: 'String',
           isBody: true
+        }
+      ]
+    },
+    {
+      // Extends bpmn:Task to add drools:taskName attribute
+      name: 'TaskExtension',
+      isAbstract: true,
+      extends: ['bpmn:Task'],
+      properties: [
+        {
+          name: 'taskName',
+          type: 'String',
+          isAttr: true
         }
       ]
     },
