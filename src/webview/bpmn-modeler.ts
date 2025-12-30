@@ -168,7 +168,44 @@ export async function importDiagram(modeler: Modeler, xml: string): Promise<void
  */
 export async function exportDiagram(modeler: Modeler): Promise<string> {
   const result = await modeler.saveXML({ format: true });
-  return result.xml;
+  let xml = result.xml;
+
+  // Fix element name casing for BPMN 2.0 compliance
+  // bpmn-js sometimes outputs uppercase element names like <bpmn:Task>
+  // but BPMN 2.0 XSD requires lowercase like <bpmn:task>
+  xml = fixBpmnElementCasing(xml);
+
+  return xml;
+}
+
+/**
+ * Fix BPMN element casing to match BPMN 2.0 XSD requirements
+ * Converts uppercase element names to lowercase (e.g., Task -> task)
+ */
+function fixBpmnElementCasing(xml: string): string {
+  // List of BPMN elements that need lowercase first letter
+  const elementsToFix = [
+    'Task',
+    'DataInput',
+    'DataOutput',
+    'InputSet',
+    'OutputSet',
+    'InputOutputSpecification',
+    'DataInputAssociation',
+    'DataOutputAssociation',
+    'Assignment',
+    'FormalExpression'
+  ];
+
+  for (const element of elementsToFix) {
+    const lowercaseElement = element.charAt(0).toLowerCase() + element.slice(1);
+    // Fix opening tags: <bpmn:Task -> <bpmn:task
+    xml = xml.replace(new RegExp(`<bpmn:${element}([ >\/])`, 'g'), `<bpmn:${lowercaseElement}$1`);
+    // Fix closing tags: </bpmn:Task> -> </bpmn:task>
+    xml = xml.replace(new RegExp(`</bpmn:${element}>`, 'g'), `</bpmn:${lowercaseElement}>`);
+  }
+
+  return xml;
 }
 
 /**

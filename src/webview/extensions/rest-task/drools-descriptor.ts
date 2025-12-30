@@ -9,19 +9,10 @@ export const droolsDescriptor = {
   name: 'Drools',
   prefix: 'drools',
   uri: 'http://www.jboss.org/drools',
+  xml: {
+    tagAlias: 'lowerCase'
+  },
   types: [
-    {
-      // Extension element for taskName (used in extensionElements)
-      name: 'taskName',
-      superClass: ['Element'],
-      properties: [
-        {
-          name: 'body',
-          type: 'String',
-          isBody: true
-        }
-      ]
-    },
     {
       // Extends bpmn:Task to add drools:taskName attribute
       name: 'TaskExtension',
