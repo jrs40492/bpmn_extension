@@ -3,7 +3,7 @@
  * Uses STANDARD BPMN data input/output associations - no custom extensions
  */
 
-import { isRestTask, getRestConfig, updateRestParam, REST_PARAMS } from './palette-provider';
+import { isRestTask, getRestConfig, updateRestParam, updateResultOutputType, updateResultVariableType, REST_PARAMS } from './palette-provider';
 
 interface Modeling {
   updateProperties: (element: any, props: Record<string, unknown>) => void;
@@ -143,7 +143,16 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
   });
 
   resultClassSelect.addEventListener('change', () => {
-    updateAndNotify('ResultClass', resultClassSelect.value);
+    if (!currentElement) return;
+    const resultClass = resultClassSelect.value;
+    // Update the ResultClass input parameter
+    updateRestParam(currentElement, 'ResultClass', resultClass, modeling, bpmnFactory);
+    // Update the Result output's drools:dtype to match
+    updateResultOutputType(currentElement, resultClass);
+    // Update the process variable's type to match
+    updateResultVariableType(currentElement, resultClass, bpmnFactory);
+    // Trigger save
+    eventBus.fire('commandStack.changed', {});
   });
 
   timeoutInput.addEventListener('input', () => {

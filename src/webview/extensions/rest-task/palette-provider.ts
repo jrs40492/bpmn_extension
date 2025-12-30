@@ -391,3 +391,139 @@ export function updateRestParam(element: any, paramName: string, value: string, 
     console.error('Error creating REST parameter:', error);
   }
 }
+
+/**
+ * Update the Result output's drools:dtype to match the ResultClass
+ * This ensures the output type matches what the REST handler will return
+ */
+export function updateResultOutputType(element: any, resultClass: string): void {
+  const bo = element.businessObject;
+  const ioSpec = bo.ioSpecification;
+  if (!ioSpec) return;
+
+  // Find the Result dataOutput
+  const dataOutputs = ioSpec.dataOutputs || [];
+  for (const dataOutput of dataOutputs) {
+    if (dataOutput.name === 'Result') {
+      // Map ResultClass to the appropriate dtype
+      const dtype = resultClass || 'java.lang.String';
+      dataOutput.set('drools:dtype', dtype);
+      console.log(`Updated Result output dtype to: ${dtype}`);
+      return;
+    }
+  }
+}
+
+/**
+ * Get the target process variable name from the Result output association
+ */
+export function getResultVariableName(element: any): string | null {
+  const bo = element.businessObject;
+  const outputAssocs = bo.dataOutputAssociations || [];
+
+  for (const assoc of outputAssocs) {
+    const sourceRef = assoc.sourceRef?.[0];
+    if (sourceRef?.name === 'Result') {
+      // targetRef could be a string (variable name) or a reference to a property element
+      const targetRef = assoc.targetRef;
+      if (typeof targetRef === 'string') {
+        return targetRef;
+      } else if (targetRef?.id) {
+        return targetRef.id;
+      } else if (targetRef?.name) {
+        return targetRef.name;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Update or create the process variable that receives the REST result
+ * This updates the itemDefinition structureRef to match ResultClass
+ */
+export function updateResultVariableType(element: any, resultClass: string, bpmnFactory: any): void {
+  const bo = element.businessObject;
+
+  // Get the variable name from the output association
+  const varName = getResultVariableName(element);
+  if (!varName) {
+    console.warn('No result variable found in output association');
+    return;
+  }
+
+  // Navigate up to find the process
+  let process = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) {
+    console.warn('Could not find parent process');
+    return;
+  }
+
+  // Navigate up to find definitions
+  const definitions = process.$parent;
+  if (!definitions || definitions.$type !== 'bpmn:Definitions') {
+    console.warn('Could not find definitions');
+    return;
+  }
+
+  const dtype = resultClass || 'java.lang.String';
+  const itemDefId = `_${varName}Item`;
+
+  // Find or create the itemDefinition
+  let itemDef = null;
+  const rootElements = definitions.rootElements || [];
+  for (const elem of rootElements) {
+    if (elem.$type === 'bpmn:ItemDefinition' && elem.id === itemDefId) {
+      itemDef = elem;
+      break;
+    }
+  }
+
+  if (itemDef) {
+    // Update existing itemDefinition
+    itemDef.structureRef = dtype;
+    console.log(`Updated itemDefinition ${itemDefId} structureRef to: ${dtype}`);
+  } else if (bpmnFactory) {
+    // Create new itemDefinition
+    itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemDefId,
+      structureRef: dtype
+    });
+    itemDef.$parent = definitions;
+    if (!definitions.rootElements) {
+      definitions.rootElements = [];
+    }
+    definitions.rootElements.push(itemDef);
+    console.log(`Created itemDefinition ${itemDefId} with structureRef: ${dtype}`);
+
+    // Also create the property on the process if it doesn't exist
+    let property = null;
+    const properties = process.properties || [];
+    for (const prop of properties) {
+      if (prop.id === varName || prop.name === varName) {
+        property = prop;
+        break;
+      }
+    }
+
+    if (!property) {
+      property = bpmnFactory.create('bpmn:Property', {
+        id: varName,
+        name: varName,
+        itemSubjectRef: itemDef
+      });
+      property.$parent = process;
+      if (!process.properties) {
+        process.properties = [];
+      }
+      process.properties.push(property);
+      console.log(`Created process property: ${varName}`);
+    } else {
+      // Update existing property to reference the itemDefinition
+      property.itemSubjectRef = itemDef;
+    }
+  }
+}
