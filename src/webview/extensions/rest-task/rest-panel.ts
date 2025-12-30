@@ -208,6 +208,7 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
   statusCodeVariableSelect.addEventListener('change', () => {
     if (!currentElement) return;
     const selectedValue = statusCodeVariableSelect.value;
+    console.log(`[REST Panel] Status code variable change event, selectedValue: "${selectedValue}"`);
 
     if (selectedValue === '__new__') {
       // Prompt for new variable name

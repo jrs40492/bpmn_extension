@@ -509,35 +509,109 @@ export function getAvailableProcessVariables(element: any): Array<{ id: string; 
 }
 
 /**
+ * Find an existing Property element on the process, or create one if it doesn't exist
+ */
+function findOrCreateProperty(element: any, variableName: string, bpmnFactory: any, variableType?: string): any {
+  const bo = element.businessObject;
+
+  // Navigate up to find the process
+  let process = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) return null;
+
+  // Look for existing property
+  const properties = process.properties || [];
+  for (const prop of properties) {
+    if (prop.id === variableName || prop.name === variableName) {
+      return prop;
+    }
+  }
+
+  // Property doesn't exist - create it
+  // First, navigate to definitions to create itemDefinition
+  const definitions = process.$parent;
+  if (!definitions || definitions.$type !== 'bpmn:Definitions') return null;
+
+  const itemDefId = `_${variableName}Item`;
+
+  // Check if itemDefinition exists
+  let itemDef = null;
+  const rootElements = definitions.rootElements || [];
+  for (const elem of rootElements) {
+    if (elem.$type === 'bpmn:ItemDefinition' && elem.id === itemDefId) {
+      itemDef = elem;
+      break;
+    }
+  }
+
+  // Create itemDefinition if missing
+  if (!itemDef) {
+    itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemDefId,
+      structureRef: variableType || 'java.lang.Object'
+    });
+    itemDef.$parent = definitions;
+    if (!definitions.rootElements) {
+      definitions.rootElements = [];
+    }
+    // Insert before first process
+    const processIndex = definitions.rootElements.findIndex((el: any) => el.$type === 'bpmn:Process');
+    if (processIndex >= 0) {
+      definitions.rootElements.splice(processIndex, 0, itemDef);
+    } else {
+      definitions.rootElements.push(itemDef);
+    }
+  }
+
+  // Create the property
+  const property = bpmnFactory.create('bpmn:Property', {
+    id: variableName,
+    name: variableName,
+    itemSubjectRef: itemDef
+  });
+  property.$parent = process;
+
+  if (!process.properties) {
+    process.properties = [];
+  }
+  process.properties.push(property);
+
+  console.log(`[REST Task] Created new property: ${variableName}`);
+  return property;
+}
+
+/**
  * Update an output association to target a different process variable
  */
 export function updateOutputVariable(element: any, outputName: string, variableName: string, modeling: any, bpmnFactory: any, variableType?: string): void {
   const bo = element.businessObject;
-  const outputAssocs = bo.dataOutputAssociations || [];
+  // Create a COPY of the array - modifying the original reference won't trigger bpmn-js change detection
+  let outputAssocs = [...(bo.dataOutputAssociations || [])];
 
-  // Find the output association for this output
-  for (const assoc of outputAssocs) {
-    const sourceRef = assoc.sourceRef?.[0];
+  // Find existing association for this output
+  let existingAssocIndex = -1;
+  let dataOutput: any = null;
+
+  for (let i = 0; i < outputAssocs.length; i++) {
+    const sourceRef = outputAssocs[i].sourceRef?.[0];
     if (sourceRef?.name === outputName) {
-      // Update targetRef to the new variable name
-      assoc.targetRef = variableName;
-
-      // Trigger change
-      modeling.updateProperties(element, { name: bo.name || '' });
-
-      // Also ensure the process variable and itemDefinition exist
-      ensureProcessVariable(element, variableName, bpmnFactory, modeling, variableType);
-      return;
+      existingAssocIndex = i;
+      dataOutput = sourceRef;
+      break;
     }
   }
 
-  // If no existing association, we need to create one
+  // Get or create ioSpecification
   let ioSpec = bo.ioSpecification;
   if (!ioSpec) return;
 
-  // Find or create the dataOutput
-  let dataOutputs = ioSpec.dataOutputs || [];
-  let dataOutput = dataOutputs.find((d: any) => d.name === outputName);
+  // If we didn't find the dataOutput from the association, look in ioSpec
+  if (!dataOutput) {
+    const dataOutputs = ioSpec.dataOutputs || [];
+    dataOutput = dataOutputs.find((d: any) => d.name === outputName);
+  }
 
   // If dataOutput doesn't exist, create it (for existing REST tasks without StatusCode/StatusMsg)
   if (!dataOutput) {
@@ -575,23 +649,44 @@ export function updateOutputVariable(element: any, outputName: string, variableN
     console.log(`[REST Task] Created missing dataOutput: ${outputName}`);
   }
 
-  // Create new output association
+  // Remove existing association if found (we'll create a new one)
+  if (existingAssocIndex >= 0) {
+    outputAssocs.splice(existingAssocIndex, 1);
+  }
+
+  // Create new output association with proper references
+  console.log(`[REST Task] Creating output association: ${outputName} -> ${variableName}`);
+  console.log(`[REST Task] dataOutput:`, dataOutput?.id, dataOutput?.name);
+
+  // Find or create the Property element for the target variable
+  // bpmn-js requires targetRef to be an element reference, not just a string
+  let targetProperty = findOrCreateProperty(element, variableName, bpmnFactory, variableType);
+  console.log(`[REST Task] Target property:`, targetProperty?.id, targetProperty?.name);
+
   const newAssoc = bpmnFactory.create('bpmn:DataOutputAssociation', {
     sourceRef: [dataOutput],
-    targetRef: variableName
+    targetRef: targetProperty || variableName  // Fall back to string if property not found
   });
   newAssoc.$parent = bo;
 
-  if (!bo.dataOutputAssociations) {
-    bo.dataOutputAssociations = [];
-  }
-  bo.dataOutputAssociations.push(newAssoc);
+  console.log(`[REST Task] New association targetRef:`, newAssoc.targetRef);
+
+  // Add the new association
+  outputAssocs.push(newAssoc);
+
+  // Directly assign to business object - modeling.updateProperties doesn't work for complex arrays
+  bo.dataOutputAssociations = outputAssocs;
+
+  console.log(`[REST Task] Updated dataOutputAssociations, count: ${outputAssocs.length}`);
+  console.log(`[REST Task] Verifying - first assoc targetRef:`, bo.dataOutputAssociations[0]?.targetRef);
+  console.log(`[REST Task] Verifying - second assoc targetRef:`, bo.dataOutputAssociations[1]?.targetRef);
+
+  // Trigger change notification by updating a simple property
+  // This forces bpmn-js to recognize that the element has changed
+  modeling.updateProperties(element, { name: bo.name || '' });
 
   // Ensure the process variable exists
   ensureProcessVariable(element, variableName, bpmnFactory, modeling, variableType);
-
-  // Trigger change
-  modeling.updateProperties(element, { name: bo.name || '' });
 }
 
 /**
