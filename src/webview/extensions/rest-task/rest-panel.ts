@@ -42,11 +42,13 @@ interface EventBus {
 }
 
 // Get REST config from element
+// Kogito uses bpmn:Task (not bpmn:ServiceTask) for work item handlers
 function getRestConfig(element: Element | null): RestConfig | null {
   if (!element?.businessObject) return null;
 
   const bo = element.businessObject;
-  if (bo.$type !== 'bpmn:ServiceTask') return null;
+  // Support both bpmn:Task (Kogito-compatible) and bpmn:ServiceTask (legacy)
+  if (bo.$type !== 'bpmn:Task' && bo.$type !== 'bpmn:ServiceTask') return null;
 
   const extensionElements = bo.extensionElements;
   if (!extensionElements?.values) return null;

@@ -281,7 +281,9 @@ export default class RestTaskPaletteProvider {
           console.warn('Could not create Kogito data mappings:', e);
         }
 
-        // Create the service task business object
+        // Create the task business object (bpmn:Task, NOT bpmn:ServiceTask)
+        // Kogito uses bpmn:Task with drools:taskName for work item handlers
+        // bpmn:ServiceTask expects WSDL interface/operation definitions
         const businessObjectAttrs: Record<string, unknown> = {
           id: taskId,
           name: 'REST API Call',
@@ -295,7 +297,7 @@ export default class RestTaskPaletteProvider {
           businessObjectAttrs.dataOutputAssociations = dataOutputAssociations;
         }
 
-        const businessObject = moddle.create('bpmn:ServiceTask', businessObjectAttrs);
+        const businessObject = moddle.create('bpmn:Task', businessObjectAttrs);
 
         // Set parent references
         extensionElements.$parent = businessObject;
@@ -311,16 +313,16 @@ export default class RestTaskPaletteProvider {
         }
 
         const shape = elementFactory.createShape({
-          type: 'bpmn:ServiceTask',
+          type: 'bpmn:Task',
           businessObject
         });
 
         create.start(event, shape);
       } catch (error) {
         console.error('Error creating REST task:', error);
-        // Fallback to simple service task creation
+        // Fallback to simple task creation
         const simpleShape = elementFactory.createShape({
-          type: 'bpmn:ServiceTask'
+          type: 'bpmn:Task'
         });
         create.start(event, simpleShape);
       }
@@ -329,7 +331,7 @@ export default class RestTaskPaletteProvider {
     return {
       'create.rest-task': {
         group: 'activity',
-        className: 'bpmn-icon-service-task rest-task-icon',
+        className: 'bpmn-icon-task rest-task-icon',
         title: 'Create REST API Task',
         action: {
           dragstart: createRestTask,

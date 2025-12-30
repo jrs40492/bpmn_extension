@@ -28,9 +28,11 @@ interface Shape {
 }
 
 // Helper to check if element is a REST task
+// Kogito uses bpmn:Task (not bpmn:ServiceTask) for work item handlers
 function isRestTask(element: Element): boolean {
   const bo = element.businessObject;
-  if (bo.$type !== 'bpmn:ServiceTask') return false;
+  // Support both bpmn:Task (Kogito-compatible) and bpmn:ServiceTask (legacy)
+  if (bo.$type !== 'bpmn:Task' && bo.$type !== 'bpmn:ServiceTask') return false;
 
   const extensionElements = bo.extensionElements;
   if (!extensionElements?.values) return false;
