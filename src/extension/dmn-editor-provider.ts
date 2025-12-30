@@ -81,12 +81,25 @@ export class DmnEditorProvider implements vscode.CustomTextEditorProvider {
 
           case 'change':
             // Webview content changed, update document
+            console.log('[DmnEditorProvider] Received change message');
+            console.log('[DmnEditorProvider] message.xml length:', message.xml.length);
+            console.log('[DmnEditorProvider] lastKnownXml length:', lastKnownXml.length);
+            console.log('[DmnEditorProvider] xml === lastKnownXml:', message.xml === lastKnownXml);
             if (message.xml === lastKnownXml) {
+              console.log('[DmnEditorProvider] Skipping change - same as lastKnownXml');
               break;
+            }
+            console.log('[DmnEditorProvider] Updating document with new XML');
+            // Check if variable element is in the XML
+            if (message.xml.includes('variable')) {
+              console.log('[DmnEditorProvider] New XML contains "variable" element');
+            } else {
+              console.log('[DmnEditorProvider] New XML does NOT contain "variable" element');
             }
             lastKnownXml = message.xml;
             skipDocumentChangeCount++;
             await this.updateTextDocument(document, message.xml);
+            console.log('[DmnEditorProvider] Document updated');
             break;
 
           case 'validation':

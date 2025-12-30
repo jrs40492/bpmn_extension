@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
   <decision id="Decision_1" name="Decision">
+    <variable id="Decision_1_variable" name="Decision" typeRef="string" />
     <informationRequirement id="InformationRequirement_1qthh2i">
       <requiredInput href="#InputData_1v2gek9" />
     </informationRequirement>

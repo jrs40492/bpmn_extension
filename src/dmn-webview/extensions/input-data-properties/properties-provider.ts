@@ -65,35 +65,34 @@ function createTypeRefEntry(injector: any) {
       console.log('[TypeRefEntry] Setting value:', value);
 
       // Get or create the variable (InformationItem)
-      let variable = bo.variable;
+      const variable = bo.variable;
 
       if (!variable) {
         // Create InformationItem using drdFactory with the same name as the InputData
-        variable = drdFactory.create('dmn:InformationItem', {
+        const newVariable = drdFactory.create('dmn:InformationItem', {
           id: `${bo.id}_variable`,
           name: bo.name || bo.id,
           typeRef: value || undefined
         });
-        variable.$parent = bo;
+        newVariable.$parent = bo;
 
         // Update InputData with the new variable
         modeling.updateProperties(element, {
-          variable: variable
+          variable: newVariable
         });
       } else {
-        // Update existing variable's typeRef by updating the element
-        // We need to create a new variable with updated typeRef
-        const updatedVariable = drdFactory.create('dmn:InformationItem', {
-          id: variable.id || `${bo.id}_variable`,
-          name: variable.name || bo.name || bo.id,
+        // Update existing variable's typeRef using updateModdleProperties
+        // This properly updates the property on the moddle element and triggers command stack
+        modeling.updateModdleProperties(element, variable, {
           typeRef: value || undefined
         });
-        updatedVariable.$parent = bo;
-
-        modeling.updateProperties(element, {
-          variable: updatedVariable
-        });
       }
+
+      // Dispatch a custom DOM event to notify the main webview code
+      // This is needed because the DRD viewer's eventBus is isolated from the main modeler
+      window.dispatchEvent(new CustomEvent('dmn-properties-changed', {
+        detail: { source: 'input-data' }
+      }));
     };
 
     const getOptions = () => {

@@ -235,16 +235,47 @@ function fixIncompleteDataAssociations(xml: string): string {
     }
   }
 
-  // Fix DataInputAssociations that have targetRef but no sourceRef and no assignment
-  // These are meant to map process variables to task inputs
+  // Fix DataInputAssociations that map process variables to task inputs
+  // Convert sourceRef/targetRef format to assignment format for jBPM compatibility
+  // jBPM handles assignment-based mappings more reliably
   const inputAssocs = doc.querySelectorAll('dataInputAssociation, DataInputAssociation');
   for (const assoc of inputAssocs) {
     const sourceRef = assoc.querySelector('sourceRef');
     const targetRef = assoc.querySelector('targetRef');
     const assignment = assoc.querySelector('assignment, Assignment');
 
-    // If it has targetRef but no sourceRef and no assignment, it's incomplete
-    if (targetRef && !sourceRef && !assignment) {
+    // Case 1: Has sourceRef/targetRef but no assignment - convert to assignment format
+    if (sourceRef && targetRef && !assignment) {
+      const varName = sourceRef.textContent || '';
+      const targetId = targetRef.textContent || '';
+
+      // Only convert if sourceRef looks like a variable name (not a dataOutput reference)
+      // Variable names don't contain underscores typically used in IDs
+      if (varName && !varName.includes('_') && targetId) {
+        // Create assignment-based mapping
+        const assignmentElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
+
+        const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
+        fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
+        fromExpr.textContent = varName;
+
+        const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
+        toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
+        toExpr.textContent = targetId;
+
+        assignmentElem.appendChild(fromExpr);
+        assignmentElem.appendChild(toExpr);
+
+        // Remove sourceRef (keep targetRef for BPMN compliance)
+        assoc.removeChild(sourceRef);
+        assoc.appendChild(assignmentElem);
+
+        modified = true;
+        console.log(`Converted DataInputAssociation to assignment format: "${varName}" -> "${targetId}"`);
+      }
+    }
+    // Case 2: Has targetRef but no sourceRef and no assignment - add assignment
+    else if (targetRef && !sourceRef && !assignment) {
       const targetId = targetRef.textContent || '';
       // Extract variable name from targetId (e.g., "Activity_05jwo4m_ddidInput" -> "ddid")
       let varName = 'input';
@@ -254,12 +285,23 @@ function fixIncompleteDataAssociations(xml: string): string {
         varName = inputName.toLowerCase() || 'input';
       }
 
-      const sourceRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sourceRef');
-      sourceRefElem.textContent = varName;
-      // Insert sourceRef before targetRef
-      assoc.insertBefore(sourceRefElem, targetRef);
+      // Use assignment-based format for better jBPM compatibility
+      const assignmentElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
+
+      const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
+      fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
+      fromExpr.textContent = varName;
+
+      const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
+      toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
+      toExpr.textContent = targetId;
+
+      assignmentElem.appendChild(fromExpr);
+      assignmentElem.appendChild(toExpr);
+      assoc.appendChild(assignmentElem);
+
       modified = true;
-      console.log(`Fixed DataInputAssociation: added sourceRef="${varName}"`);
+      console.log(`Fixed DataInputAssociation: added assignment for "${varName}" -> "${targetId}"`);
     }
   }
 

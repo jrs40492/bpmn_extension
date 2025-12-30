@@ -24,6 +24,9 @@ import { initFeelSupport, type FeelSupportController } from './extensions/feel-s
 // Import custom InputData properties extension
 import inputDataPropertiesModule from './extensions/input-data-properties';
 
+// Import custom Decision Output properties extension
+import decisionOutputPropertiesModule from './extensions/decision-output-properties';
+
 // Types
 interface DmnView {
   id: string;
@@ -108,7 +111,8 @@ async function init(): Promise<void> {
       additionalModules: [
         DmnPropertiesPanelModule,
         DmnPropertiesProviderModule,
-        inputDataPropertiesModule
+        inputDataPropertiesModule,
+        decisionOutputPropertiesModule
       ]
     },
     common: {
@@ -148,11 +152,20 @@ async function init(): Promise<void> {
 
   // Debounced function to send changes to extension
   const sendChange = debounce(async () => {
+    console.log('[DMN Editor] sendChange executing...');
     try {
       const { xml } = await dmnModeler.saveXML({ format: true });
+      console.log('[DMN Editor] saveXML completed, xml length:', xml.length);
+      // Log a snippet of the XML to see if variable is included
+      if (xml.includes('variable')) {
+        console.log('[DMN Editor] XML contains "variable" element');
+      } else {
+        console.log('[DMN Editor] XML does NOT contain "variable" element');
+      }
       // Normalize empty cells to "-" for IBM BPMN compatibility
       const normalizedXml = normalizeEmptyCells(xml);
       // Always send changes - extension-side handles deduplication
+      console.log('[DMN Editor] Posting change message to extension');
       postMessage({ type: 'change', xml: normalizedXml });
     } catch (err) {
       console.error('Failed to export DMN:', err);
@@ -161,15 +174,25 @@ async function init(): Promise<void> {
 
   // Handler for command stack changes
   const handleCommandStackChanged = () => {
+    console.log('[DMN Editor] commandStack.changed event fired');
     if (skipNextChange) {
+      console.log('[DMN Editor] Skipping change (skipNextChange=true)');
       skipNextChange = false;
       return;
     }
+    console.log('[DMN Editor] Calling sendChange()');
     sendChange();
   };
 
   // Listen for changes on the main modeler (for DRD changes)
   dmnModeler.on('commandStack.changed', handleCommandStackChanged);
+
+  // Listen for custom properties changed events from extensions
+  // This is needed because the DRD viewer's eventBus is isolated from the main modeler
+  window.addEventListener('dmn-properties-changed', (event) => {
+    console.log('[DMN Editor] Received dmn-properties-changed event:', (event as CustomEvent).detail);
+    sendChange();
+  });
 
   // Track the current active viewer to manage event listeners
   let currentActiveViewer: any = null;
