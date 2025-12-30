@@ -1,7 +1,10 @@
 /**
  * REST Task Properties Provider
  * Adds custom REST properties to the properties panel
+ * Syncs changes to Kogito-compatible data mappings
  */
+
+import { createKogitoDataMappings, KOGITO_REST_PARAMS } from './palette-provider';
 
 // Helper to get REST config from element
 function getRestConfig(element: any): any {
@@ -21,6 +24,56 @@ function isRestTask(element: any): boolean {
   const bo = element.businessObject;
   if (bo.$type !== 'bpmn:ServiceTask') return false;
   return getRestConfig(element) !== null;
+}
+
+/**
+ * Updates a specific Kogito data input association value
+ */
+function updateKogitoDataInput(element: any, paramName: string, value: string): void {
+  const bo = element.businessObject;
+  if (!bo.dataInputAssociations) return;
+
+  // Find the association for this parameter
+  const association = bo.dataInputAssociations.find((assoc: any) => {
+    const targetRef = assoc.targetRef;
+    return targetRef && targetRef.name === paramName;
+  });
+
+  if (association && association.assignment && association.assignment[0]) {
+    const assignment = association.assignment[0];
+    if (assignment.from) {
+      assignment.from.body = value;
+    }
+  }
+}
+
+/**
+ * Updates Kogito data output association (for response variable)
+ */
+function updateKogitoDataOutput(element: any, responseVariable: string): void {
+  const bo = element.businessObject;
+  if (!bo.dataOutputAssociations || bo.dataOutputAssociations.length === 0) return;
+
+  const association = bo.dataOutputAssociations[0];
+  if (association) {
+    association.targetRef = responseVariable;
+  }
+}
+
+/**
+ * Converts JSON headers to Kogito format
+ */
+function convertHeadersToKogitoFormat(headersJson: string): string {
+  if (!headersJson || headersJson === '{}') return '';
+
+  try {
+    const headersObj = JSON.parse(headersJson);
+    return Object.entries(headersObj)
+      .map(([k, v]) => `${k}=${v}`)
+      .join(';');
+  } catch {
+    return headersJson;
+  }
 }
 
 // Helper to get or create REST config
@@ -151,6 +204,18 @@ function RestPropertiesGroup(element: any, injector: any) {
   };
 }
 
+/**
+ * Property to Kogito parameter mapping
+ */
+const PROPERTY_TO_KOGITO_PARAM: Record<string, string> = {
+  url: 'Url',
+  method: 'Method',
+  body: 'Content',
+  headers: 'Headers',
+  timeout: 'ReadTimeout',
+  responseVariable: 'Result' // Special handling - this updates output association
+};
+
 function createTextInput(property: string, config: any, modeling: any, element: any) {
   return function TextInput(props: any) {
     const html = (window as any).html;
@@ -162,7 +227,19 @@ function createTextInput(property: string, config: any, modeling: any, element: 
     const value = config[property] || '';
 
     const onChange = (event: any) => {
-      config[property] = event.target.value;
+      const newValue = event.target.value;
+      config[property] = newValue;
+
+      // Sync to Kogito data mappings
+      if (property === 'responseVariable') {
+        updateKogitoDataOutput(element, newValue);
+      } else {
+        const kogitoParam = PROPERTY_TO_KOGITO_PARAM[property];
+        if (kogitoParam) {
+          updateKogitoDataInput(element, kogitoParam, newValue);
+        }
+      }
+
       modeling.updateProperties(element, {});
     };
 
@@ -185,7 +262,15 @@ function createSelectInput(property: string, config: any, modeling: any, element
     const value = config[property] || options[0].value;
 
     const onChange = (event: any) => {
-      config[property] = event.target.value;
+      const newValue = event.target.value;
+      config[property] = newValue;
+
+      // Sync to Kogito data mappings
+      const kogitoParam = PROPERTY_TO_KOGITO_PARAM[property];
+      if (kogitoParam) {
+        updateKogitoDataInput(element, kogitoParam, newValue);
+      }
+
       modeling.updateProperties(element, {});
     };
 
@@ -209,7 +294,21 @@ function createTextAreaInput(property: string, config: any, modeling: any, eleme
     const value = config[property] || '';
 
     const onChange = (event: any) => {
-      config[property] = event.target.value;
+      const newValue = event.target.value;
+      config[property] = newValue;
+
+      // Sync to Kogito data mappings
+      const kogitoParam = PROPERTY_TO_KOGITO_PARAM[property];
+      if (kogitoParam) {
+        // Special handling for headers - convert JSON to Kogito format
+        if (property === 'headers') {
+          const kogitoHeaders = convertHeadersToKogitoFormat(newValue);
+          updateKogitoDataInput(element, kogitoParam, kogitoHeaders);
+        } else {
+          updateKogitoDataInput(element, kogitoParam, newValue);
+        }
+      }
+
       modeling.updateProperties(element, {});
     };
 

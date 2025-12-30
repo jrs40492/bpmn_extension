@@ -9,8 +9,8 @@ import gridModule from 'diagram-js-grid';
 // @ts-expect-error - no type definitions available
 import tokenSimulationModule from 'bpmn-js-token-simulation';
 
-// Custom REST task extension
-import restTaskModule, { restTaskDescriptor } from './extensions/rest-task';
+// Custom REST task extension (includes Kogito-compatible data mappings)
+import restTaskModule, { restTaskDescriptor, droolsDescriptor } from './extensions/rest-task';
 
 // Custom Kafka task extension
 import kafkaTaskModule, { kafkaTaskDescriptor } from './extensions/kafka-task';
@@ -133,7 +133,8 @@ export function createModeler(
       rest: restTaskDescriptor,
       kafka: kafkaTaskDescriptor,
       dmn: businessRuleTaskDescriptor,
-      bamoe: processVariablesDescriptor
+      bamoe: processVariablesDescriptor,
+      drools: droolsDescriptor
     },
     propertiesPanel: propertiesContainer ? {
       parent: propertiesContainer
@@ -177,10 +178,14 @@ function getEmptyDiagram(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
                   xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:drools="http://www.jboss.org/drools"
+                  xmlns:rest="http://bamoe.io/schema/rest"
                   xmlns:bamoe="http://bamoe.io/schema/process"
                   id="Definitions_empty"
                   targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:process id="Process_1" isExecutable="false" />
+  <bpmn:process id="Process_1" isExecutable="true" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1" />
   </bpmndi:BPMNDiagram>
