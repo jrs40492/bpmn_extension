@@ -179,8 +179,94 @@ export async function exportDiagram(modeler: Modeler): Promise<string> {
   // but BPMN 2.0 XSD requires lowercase like <bpmn:task>
   xml = fixBpmnElementCasing(xml);
 
+  // Fix incomplete DataAssociations (missing sourceRef/targetRef)
+  // This prevents NullPointerException in jBPM when getTarget() or getLabel() is called
+  xml = fixIncompleteDataAssociations(xml);
+
   // Add process variable mappings for REST tasks that use {variableName} placeholders
   xml = addRestTaskVariableMappings(xml);
+
+  return xml;
+}
+
+/**
+ * Fix incomplete DataAssociations that are missing required sourceRef or targetRef elements.
+ *
+ * jBPM requires:
+ * - DataInputAssociation: must have sourceRef (process variable) and targetRef (task input)
+ * - DataOutputAssociation: must have sourceRef (task output) and targetRef (process variable)
+ *
+ * This function adds missing elements to prevent NullPointerException in jBPM.
+ */
+function fixIncompleteDataAssociations(xml: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) {
+    console.warn('Failed to parse XML for data association fix:', parseError.textContent);
+    return xml;
+  }
+
+  let modified = false;
+
+  // Fix DataOutputAssociations missing targetRef
+  const outputAssocs = doc.querySelectorAll('dataOutputAssociation, DataOutputAssociation');
+  for (const assoc of outputAssocs) {
+    const sourceRef = assoc.querySelector('sourceRef');
+    const targetRef = assoc.querySelector('targetRef');
+
+    if (sourceRef && !targetRef) {
+      // Missing targetRef - add a default one based on the output name
+      const sourceId = sourceRef.textContent || '';
+      // Extract variable name from sourceId (e.g., "Activity_05jwo4m_ResultOutput" -> "result")
+      let varName = 'result';
+      if (sourceId.includes('_')) {
+        const parts = sourceId.split('_');
+        const outputName = parts[parts.length - 1].replace('Output', '');
+        varName = outputName.toLowerCase() || 'result';
+      }
+
+      const targetRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:targetRef');
+      targetRefElem.textContent = varName;
+      assoc.appendChild(targetRefElem);
+      modified = true;
+      console.log(`Fixed DataOutputAssociation: added targetRef="${varName}"`);
+    }
+  }
+
+  // Fix DataInputAssociations that have targetRef but no sourceRef and no assignment
+  // These are meant to map process variables to task inputs
+  const inputAssocs = doc.querySelectorAll('dataInputAssociation, DataInputAssociation');
+  for (const assoc of inputAssocs) {
+    const sourceRef = assoc.querySelector('sourceRef');
+    const targetRef = assoc.querySelector('targetRef');
+    const assignment = assoc.querySelector('assignment, Assignment');
+
+    // If it has targetRef but no sourceRef and no assignment, it's incomplete
+    if (targetRef && !sourceRef && !assignment) {
+      const targetId = targetRef.textContent || '';
+      // Extract variable name from targetId (e.g., "Activity_05jwo4m_ddidInput" -> "ddid")
+      let varName = 'input';
+      if (targetId.includes('_')) {
+        const parts = targetId.split('_');
+        const inputName = parts[parts.length - 1].replace('Input', '');
+        varName = inputName.toLowerCase() || 'input';
+      }
+
+      const sourceRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sourceRef');
+      sourceRefElem.textContent = varName;
+      // Insert sourceRef before targetRef
+      assoc.insertBefore(sourceRefElem, targetRef);
+      modified = true;
+      console.log(`Fixed DataInputAssociation: added sourceRef="${varName}"`);
+    }
+  }
+
+  if (modified) {
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(doc);
+  }
 
   return xml;
 }
