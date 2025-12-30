@@ -109,6 +109,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="Activity_1nbpf3m_ResultAssociation">
         <bpmn:sourceRef>Activity_1nbpf3m_ResultOutput</bpmn:sourceRef>
+        <bpmn:targetRef>restResult</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_131mnuw" sourceRef="Activity_1nbpf3m" targetRef="Activity_1qz1b6m" />
