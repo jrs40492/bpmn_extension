@@ -210,14 +210,18 @@ function fixIncompleteDataAssociations(xml: string): string {
 
   let modified = false;
 
-  // Fix DataOutputAssociations missing targetRef
+  // Fix DataOutputAssociations missing targetRef or with invalid targetRef value
   const outputAssocs = doc.querySelectorAll('dataOutputAssociation, DataOutputAssociation');
   for (const assoc of outputAssocs) {
     const sourceRef = assoc.querySelector('sourceRef');
     const targetRef = assoc.querySelector('targetRef');
+    const targetRefValue = targetRef?.textContent?.trim() || '';
 
-    if (sourceRef && !targetRef) {
-      // Missing targetRef - add a default one based on the output name
+    // Fix if targetRef is missing OR has invalid value like "undefined", "null", or empty
+    const needsFix = !targetRef || !targetRefValue || targetRefValue === 'undefined' || targetRefValue === 'null';
+
+    if (sourceRef && needsFix) {
+      // Missing or invalid targetRef - add/fix with a default one based on the output name
       const sourceId = sourceRef.textContent || '';
       // Extract variable name from sourceId (e.g., "Activity_05jwo4m_ResultOutput" -> "result")
       let varName = 'result';
@@ -227,11 +231,17 @@ function fixIncompleteDataAssociations(xml: string): string {
         varName = outputName.toLowerCase() || 'result';
       }
 
-      const targetRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:targetRef');
-      targetRefElem.textContent = varName;
-      assoc.appendChild(targetRefElem);
+      if (targetRef) {
+        // Update existing targetRef with proper value
+        targetRef.textContent = varName;
+      } else {
+        // Create new targetRef element
+        const targetRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:targetRef');
+        targetRefElem.textContent = varName;
+        assoc.appendChild(targetRefElem);
+      }
       modified = true;
-      console.log(`Fixed DataOutputAssociation: added targetRef="${varName}"`);
+      console.log(`Fixed DataOutputAssociation: set targetRef="${varName}"`);
     }
   }
 
@@ -378,8 +388,9 @@ function addRestTaskVariableMappings(xml: string): string {
 
       const value = fromExpr.textContent || '';
 
-      // Extract all {variableName} patterns
-      const regex = /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
+      // Extract all {variableName} and ${variableName} patterns
+      // Supports both {var} (BPMN style) and ${var} (jBPM/Kogito expression style)
+      const regex = /\$?\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
       let match;
       while ((match = regex.exec(value)) !== null) {
         const varName = match[1];
