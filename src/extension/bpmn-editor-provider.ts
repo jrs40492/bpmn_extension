@@ -195,6 +195,9 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         // Parse input data from the DMN XML (required for Kogito/jBPM input mapping)
         const inputData = this.parseInputDataFromDmn(content);
 
+        // Parse output data from the DMN XML (required for Kogito/jBPM output mapping)
+        const outputData = this.parseOutputDataFromDmn(content, decisions);
+
         // Get relative path for display
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
         const relativePath = workspaceFolder
@@ -207,7 +210,8 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
           modelName,
           namespace,
           decisions,
-          inputData
+          inputData,
+          outputData
         });
       } catch (error) {
         console.error(`Error reading DMN file ${file.fsPath}:`, error);
@@ -285,6 +289,59 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
       seen.add(d.id);
       return true;
     });
+  }
+
+  /**
+   * Parse output data (decision variables) from DMN XML content
+   * Each decision has a variable element that defines its output
+   */
+  private parseOutputDataFromDmn(xml: string, decisions: Array<{ id: string; name: string }>): Array<{ decisionId: string; decisionName: string; variableName: string; typeRef?: string }> {
+    const outputData: Array<{ decisionId: string; decisionName: string; variableName: string; typeRef?: string }> = [];
+
+    for (const decision of decisions) {
+      // Find the decision element and extract its variable
+      // Pattern: <decision id="Decision_1" ...> ... <variable ... name="..." typeRef="..." /> ... </decision>
+      const decisionPattern = new RegExp(
+        `<(?:dmn:)?decision[^>]*\\sid\\s*=\\s*["']${decision.id}["'][^>]*>[\\s\\S]*?<(?:dmn:)?variable[^>]*\\sname\\s*=\\s*["']([^"']+)["'][^>]*(?:\\stypeRef\\s*=\\s*["']([^"']+)["'])?[^>]*\\/>[\\s\\S]*?<\\/(?:dmn:)?decision>`,
+        'i'
+      );
+
+      // Also try with typeRef before name
+      const decisionPatternAlt = new RegExp(
+        `<(?:dmn:)?decision[^>]*\\sid\\s*=\\s*["']${decision.id}["'][^>]*>[\\s\\S]*?<(?:dmn:)?variable[^>]*(?:\\stypeRef\\s*=\\s*["']([^"']+)["'])?[^>]*\\sname\\s*=\\s*["']([^"']+)["'][^>]*\\/>[\\s\\S]*?<\\/(?:dmn:)?decision>`,
+        'i'
+      );
+
+      let match = decisionPattern.exec(xml);
+      if (match) {
+        outputData.push({
+          decisionId: decision.id,
+          decisionName: decision.name,
+          variableName: match[1],
+          typeRef: match[2]
+        });
+      } else {
+        match = decisionPatternAlt.exec(xml);
+        if (match) {
+          outputData.push({
+            decisionId: decision.id,
+            decisionName: decision.name,
+            variableName: match[2],
+            typeRef: match[1]
+          });
+        } else {
+          // If no variable found, use the decision name as the output variable name
+          // This is the default behavior in DMN
+          outputData.push({
+            decisionId: decision.id,
+            decisionName: decision.name,
+            variableName: decision.name
+          });
+        }
+      }
+    }
+
+    return outputData;
   }
 
   /**

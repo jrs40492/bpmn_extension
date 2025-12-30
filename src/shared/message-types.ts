@@ -17,6 +17,12 @@ export interface DmnFileInfo {
     name: string;
     typeRef?: string;
   }>;
+  outputData?: Array<{
+    decisionId: string;
+    decisionName: string;
+    variableName: string;
+    typeRef?: string;
+  }>;
 }
 
 // Extension -> Webview messages
