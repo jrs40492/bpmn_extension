@@ -134,27 +134,44 @@ html, body {
 }
 
 /* Label styling for dark themes */
-/* External labels (on canvas, sequence flows) - light color for dark background */
+/* Default: External labels (on canvas) - light color for dark background */
 .djs-label {
   fill: var(--vscode-editor-foreground, #d4d4d4) !important;
 }
 
-/* Internal labels (inside tasks, events with light backgrounds) - dark color */
-/* Tasks have white/light fill, so text needs to be dark */
-.djs-element .djs-label,
-.djs-visual + .djs-label,
-.djs-group .djs-label {
+/* Internal labels for Tasks/Activities (inside elements with light backgrounds) - dark color */
+/* Only target Task types which have internal labels and white/light fill */
+.djs-element[data-element-id*="Task"] .djs-label,
+.djs-element[data-element-id*="Activity"] .djs-label,
+.djs-element[data-element-id*="SubProcess"] .djs-label,
+.djs-element[data-element-id*="CallActivity"] .djs-label {
   fill: #1e1e1e !important;
 }
 
-/* Labels for sequence flows and associations stay light (they're on dark canvas) */
+/* Participant/Lane labels (inside pools with light backgrounds) - dark text */
+.djs-element[data-element-id*="Participant"] .djs-label,
+.djs-element[data-element-id*="Lane"] .djs-label {
+  fill: #1e1e1e !important;
+}
+
+/* Gateway labels are EXTERNAL (on dark canvas) - keep light */
+.djs-element[data-element-id*="Gateway"] .djs-label {
+  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+/* Event labels are EXTERNAL (on dark canvas) - keep light */
+.djs-element[data-element-id*="Event"] .djs-label {
+  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+/* Sequence flow and association labels (on dark canvas) - light */
 .djs-connection .djs-label {
   fill: var(--vscode-editor-foreground, #d4d4d4) !important;
 }
 
-/* Participant/Lane labels (inside pools) - dark text */
-.djs-element[data-element-id*="Participant"] .djs-label,
-.djs-element[data-element-id*="Lane"] .djs-label {
+/* Data objects/stores have light fill, so dark text */
+.djs-element[data-element-id*="DataObject"] .djs-label,
+.djs-element[data-element-id*="DataStore"] .djs-label {
   fill: #1e1e1e !important;
 }
 
