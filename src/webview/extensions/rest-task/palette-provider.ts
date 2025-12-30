@@ -45,22 +45,32 @@ interface ModdleElement {
 
 /**
  * Kogito REST WorkItemHandler expected parameters
+ *
+ * Additional parameters supported by Kogito:
+ * - AcceptHeader: Sets the Accept HTTP header for the request
+ * - AcceptCharset: Sets the Accept-Charset header
+ * - ResultClass: Java class to deserialize JSON response into (e.g., "java.util.Map")
+ * - HandleResponseErrors: Whether to throw exception on HTTP errors (default: true)
+ * - Headers: Custom headers as JSON object
  */
 export const REST_PARAMS = {
-  inputs: ['Url', 'Method', 'ContentType', 'Content', 'ConnectTimeout', 'ReadTimeout'],
+  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],
   outputs: ['Result']
 } as const;
 
 /**
  * Default values for REST task
+ * All parameters are created upfront so they can be updated later
  */
-const DEFAULT_CONFIG = {
+const DEFAULT_CONFIG: Record<string, string> = {
   Url: 'https://api.example.com/endpoint',
   Method: 'GET',
   ContentType: 'application/json',
+  AcceptHeader: 'application/json',
   Content: '',
   ConnectTimeout: '30000',
-  ReadTimeout: '30000'
+  ReadTimeout: '30000',
+  ResultClass: ''
 };
 
 export default class RestTaskPaletteProvider {
@@ -275,20 +285,109 @@ export function getRestConfig(element: any): Record<string, string> | null {
 
 /**
  * Update a REST configuration parameter
+ * If the parameter doesn't exist, it will be created
  */
-export function updateRestParam(element: any, paramName: string, value: string, modeling: any): void {
+export function updateRestParam(element: any, paramName: string, value: string, modeling: any, bpmnFactory?: any): void {
   const bo = element.businessObject;
   const associations = bo.dataInputAssociations || [];
 
+  // First, try to find and update existing parameter
   for (const assoc of associations) {
     const targetRef = assoc.targetRef;
     if (targetRef?.name === paramName) {
       const assignment = assoc.assignment?.[0];
       if (assignment?.from) {
+        // Update the value
+        const oldValue = assignment.from.body;
         assignment.from.body = value;
-        modeling.updateProperties(element, {});
+
+        // Trigger change by updating a property (name to itself forces commandStack entry)
+        // This is necessary because direct modification of nested objects doesn't trigger change events
+        modeling.updateProperties(element, { name: bo.name || '' });
         return;
       }
     }
+  }
+
+  // Parameter not found - need to create it
+  if (!bpmnFactory) {
+    console.warn('Could not create new parameter - bpmnFactory not available');
+    return;
+  }
+
+  try {
+    const taskId = bo.id || 'Task';
+    const inputId = `${taskId}_${paramName}Input`;
+
+    // Create dataInput
+    const dataInput = bpmnFactory.create('bpmn:DataInput', {
+      id: inputId,
+      name: paramName
+    });
+    dataInput.set('drools:dtype', 'java.lang.String');
+
+    // Get ioSpecification
+    const ioSpec = bo.ioSpecification;
+    if (!ioSpec) {
+      console.warn('No ioSpecification found on task');
+      return;
+    }
+
+    // Directly modify the existing ioSpecification arrays (don't create new objects)
+    dataInput.$parent = ioSpec;
+    if (!ioSpec.dataInputs) {
+      ioSpec.dataInputs = [];
+    }
+    ioSpec.dataInputs.push(dataInput);
+
+    // Add to inputSet
+    const inputSet = ioSpec.inputSets?.[0];
+    if (inputSet) {
+      if (!inputSet.dataInputRefs) {
+        inputSet.dataInputRefs = [];
+      }
+      inputSet.dataInputRefs.push(dataInput);
+    }
+
+    // Create assignment with from/to expressions
+    const fromExpression = bpmnFactory.create('bpmn:FormalExpression', {
+      body: value
+    });
+    fromExpression.$parent = null; // Will be set below
+
+    const toExpression = bpmnFactory.create('bpmn:FormalExpression', {
+      body: inputId
+    });
+    toExpression.$parent = null;
+
+    const assignment = bpmnFactory.create('bpmn:Assignment', {
+      from: fromExpression,
+      to: toExpression
+    });
+    fromExpression.$parent = assignment;
+    toExpression.$parent = assignment;
+
+    // Create dataInputAssociation
+    const dataInputAssoc = bpmnFactory.create('bpmn:DataInputAssociation', {
+      targetRef: dataInput,
+      assignment: [assignment]
+    });
+    assignment.$parent = dataInputAssoc;
+    dataInputAssoc.$parent = bo;
+
+    // Add to businessObject's dataInputAssociations
+    if (!bo.dataInputAssociations) {
+      bo.dataInputAssociations = [];
+    }
+    bo.dataInputAssociations.push(dataInputAssoc);
+
+    // Trigger change by updating a property
+    // This forces bpmn-js to recognize changes and add to commandStack
+    modeling.updateProperties(element, { name: bo.name || '' });
+
+    console.log(`Created new REST parameter: ${paramName} = ${value}`);
+
+  } catch (error) {
+    console.error('Error creating REST parameter:', error);
   }
 }

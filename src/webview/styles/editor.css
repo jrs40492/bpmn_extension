@@ -816,6 +816,14 @@ html, body {
   color: #ff4d4f;
 }
 
+.rest-field .rest-hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground, #888);
+  font-style: italic;
+}
+
 /* ========================================
    Kafka Configuration Panel
    ======================================== */

@@ -121,7 +121,8 @@ async function init(): Promise<void> {
 
   // Initialize REST configuration panel
   const modeling = modeler.get('modeling');
-  initRestPanel(eventBus, modeling);
+  const bpmnFactory = modeler.get('bpmnFactory');
+  initRestPanel(eventBus, modeling, bpmnFactory);
 
   // Initialize Kafka configuration panel
   initKafkaPanel(eventBus, modeling);
