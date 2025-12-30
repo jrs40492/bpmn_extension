@@ -80,7 +80,7 @@
       </rule>
     </decisionTable>
   </decision>
-  <inputData id="InputData_13w9zpa" name="drugResposne">
+  <inputData id="InputData_13w9zpa" name="drugResponse">
     <variable id="InputData_13w9zpa_variable" name="InputData_13w9zpa" typeRef="Any" />
   </inputData>
   <dmndi:DMNDI>
