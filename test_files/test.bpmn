@@ -19,7 +19,7 @@
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true"/>
         <bamoe:variable name="drugResponse"/>
-        <bamoe:variable name="drugStatus"/>
+        <bamoe:variable name="drugStatus" type="number"/>
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid"/>
@@ -199,7 +199,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_0a64qfb">
         <bpmn:targetRef>Activity_1im8ao1_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression"/>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_1</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1im8ao1_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>

@@ -16,12 +16,12 @@
       </input>
       <input id="InputClause_0r4skj8">
         <inputExpression id="LiteralExpression_0plw1vo" typeRef="boolean">
-          <text>matches(drugStatus, "410")</text>
+          <text>drugStatus == 410</text>
         </inputExpression>
       </input>
       <input id="InputClause_0mv7q0v">
         <inputExpression id="LiteralExpression_1l1f5vw" typeRef="boolean">
-          <text>matches(drugStatus, "500")</text>
+          <text>drugStatus == 500</text>
         </inputExpression>
       </input>
       <output id="Output_1" name="decision" typeRef="string" />
@@ -87,7 +87,7 @@
     <variable id="InputData_0kn62gf_variable" name="drugResponse" typeRef="Any" />
   </inputData>
   <inputData id="InputData_0o7subf" name="drugStatus">
-    <variable id="InputData_0o7subf_variable" name="drugStatus" typeRef="string" />
+    <variable id="InputData_0o7subf_variable" name="drugStatus" typeRef="number" />
   </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
