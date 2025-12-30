@@ -26,10 +26,10 @@
           <text>true</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0knv9lc">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0jdi57b">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="OutputEntry_1">
           <text>"OK"</text>
@@ -43,7 +43,7 @@
           <text>true</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1ytxlnd">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_015699v">
           <text>"INACTIVE"</text>
@@ -65,13 +65,13 @@
       </rule>
       <rule id="DecisionRule_1oa49x7">
         <inputEntry id="UnaryTests_0rm7228">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0h7jin0">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0rm8ka5">
-          <text></text>
+          <text>-</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_08npv29">
           <text>"NOT_FOUND"</text>
@@ -79,7 +79,9 @@
       </rule>
     </decisionTable>
   </decision>
-  <inputData id="InputData_1v2gek9" name="drugResponse" />
+  <inputData id="InputData_1v2gek9" name="drugResponse">
+    <variable id="InputData_1v2gek9_variable" name="drugResponse" typeRef="Any" />
+  </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
       <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">

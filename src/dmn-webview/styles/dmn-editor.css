@@ -101,8 +101,15 @@ html, body {
 .dmn-canvas {
   flex: 1;
   position: relative;
-  overflow: visible;
+  overflow: hidden;
   background: var(--vscode-editor-background, #1e1e1e);
+}
+
+/* Ensure the dmn-js container doesn't overflow */
+.dmn-canvas .dmn-js-parent {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Properties Panel */
@@ -682,6 +689,14 @@ html, body {
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
+  z-index: 10;
+}
+
+/* Ensure the properties panel container can receive events */
+.dmn-properties-panel .bio-properties-panel-container {
+  pointer-events: auto !important;
+  height: 100%;
 }
 
 .dmn-properties-panel .bio-properties-panel {
@@ -754,11 +769,26 @@ html, body {
 .dmn-properties-panel .bio-properties-panel-arrow {
   cursor: pointer;
   fill: var(--vscode-editor-foreground, #cccccc);
+  pointer-events: auto !important;
+  z-index: 100;
+  position: relative;
 }
 
 .dmn-properties-panel .bio-properties-panel-arrow:hover {
   background: var(--vscode-list-hoverBackground, #2a2d2e);
   border-radius: 4px;
+}
+
+/* Ensure all buttons in properties panel are clickable */
+.dmn-properties-panel button,
+.dmn-properties-panel .bio-properties-panel-group-header-button {
+  pointer-events: auto !important;
+  cursor: pointer;
+}
+
+/* Ensure group header is clickable */
+.dmn-properties-panel .bio-properties-panel-group-header {
+  pointer-events: auto !important;
 }
 
 /* Group entries visibility */
@@ -769,6 +799,7 @@ html, body {
 .dmn-properties-panel .bio-properties-panel-group-entries.open {
   display: block;
 }
+
 
 /* Form labels and entries */
 .dmn-properties-panel .bio-properties-panel-label {

@@ -103,7 +103,7 @@ async function init(): Promise<void> {
     container,
     drd: {
       propertiesPanel: {
-        parent: propertiesContainer
+        parent: '#dmn-properties'
       },
       additionalModules: [
         DmnPropertiesPanelModule,
@@ -117,6 +117,17 @@ async function init(): Promise<void> {
       }
     }
   });
+
+  console.log('[DMN Editor] Properties panel container:', propertiesContainer);
+  console.log('[DMN Editor] DRD modules loaded:', DmnPropertiesPanelModule, DmnPropertiesProviderModule);
+
+  // Debug: Listen for clicks on the properties panel
+  if (propertiesContainer) {
+    propertiesContainer.addEventListener('click', (e) => {
+      console.log('[DMN Editor] Properties panel clicked:', e.target);
+      console.log('[DMN Editor] Target classes:', (e.target as HTMLElement).className);
+    }, true); // Use capture phase
+  }
 
   // Initialize FEEL support for expression validation and syntax highlighting
   let feelController: FeelSupportController | null = null;
