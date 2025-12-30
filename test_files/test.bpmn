@@ -1,14 +1,15 @@
-<?xml version="1.0" encoding="UTF-8"?><bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:itemDefinition id="_Activity_1qz1b6m_namespaceInputXItem" structureRef="java.lang.String"/>
-  <bpmn:itemDefinition id="_Activity_1qz1b6m_modelInputXItem" structureRef="java.lang.String"/>
-  <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionInputXItem" structureRef="java.lang.String"/>
-  <bpmn:itemDefinition id="_Activity_1sh2xqa_namespaceInputXItem" structureRef="java.lang.String"/>
-  <bpmn:itemDefinition id="_Activity_1sh2xqa_modelInputXItem" structureRef="java.lang.String"/>
-  <bpmn:itemDefinition id="_Activity_1sh2xqa_decisionInputXItem" structureRef="java.lang.String"/>
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_namespaceInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_modelInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1sh2xqa_namespaceInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1sh2xqa_modelInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1sh2xqa_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:process id="drugs" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
-        <bamoe:variable name="ddid" required="true"/>
+        <bamoe:variable name="ddid" required="true" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1" name="Start">
@@ -23,7 +24,7 @@
       <bpmn:script>kcontext.setVariable("count", 100);
 </bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_12vdxhy" sourceRef="StartEvent_1" targetRef="Activity_0as8h27"/>
+    <bpmn:sequenceFlow id="Flow_12vdxhy" sourceRef="StartEvent_1" targetRef="Activity_0as8h27" />
     <bpmn:exclusiveGateway id="Gateway_1dpe896" name="Step 4 Route" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_0tixfel</bpmn:incoming>
       <bpmn:outgoing>Flow_1du2ysb</bpmn:outgoing>
@@ -33,7 +34,7 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision == "OK"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:boundaryEvent id="Event_0pll7s0" attachedToRef="Activity_0as8h27">
-      <bpmn:compensateEventDefinition id="CompensateEventDefinition_0txa29h"/>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_0txa29h" />
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_191lbsq" sourceRef="Gateway_1dpe896" targetRef="Event_0n168m6">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision != "OK"</bpmn:conditionExpression>
@@ -42,26 +43,26 @@
       <bpmn:script>int current = (int) kcontext.getVariable("count");
 kcontext.setVariable("count", current - 1);</bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_01aysjx" sourceRef="Activity_0as8h27" targetRef="Activity_05jwo4m"/>
+    <bpmn:sequenceFlow id="Flow_01aysjx" sourceRef="Activity_0as8h27" targetRef="Activity_05jwo4m" />
     <bpmn:endEvent id="Event_0n168m6" name="Compensate">
       <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
-      <bpmn:compensateEventDefinition id="CompensateEventDefinition_0zjmykc" activityRef="Activity_0as8h27"/>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_0zjmykc" activityRef="Activity_0as8h27" />
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_0tixfel" sourceRef="Activity_1sh2xqa" targetRef="Gateway_1dpe896"/>
+    <bpmn:sequenceFlow id="Flow_0tixfel" sourceRef="Activity_1sh2xqa" targetRef="Gateway_1dpe896" />
     <bpmn:businessRuleTask id="Activity_1sh2xqa" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
-      <bpmn:extensionElements/>
+      <bpmn:extensionElements />
       <bpmn:incoming>Flow_0gamo9o</bpmn:incoming>
       <bpmn:outgoing>Flow_0tixfel</bpmn:outgoing>
       <bpmn:ioSpecification>
-        <bpmn:dataInput id="Activity_1sh2xqa_namespaceInputX" itemSubjectRef="_Activity_1sh2xqa_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_1sh2xqa_modelInputX" itemSubjectRef="_Activity_1sh2xqa_modelInputXItem" name="model" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_1sh2xqa_decisionInputX" itemSubjectRef="_Activity_1sh2xqa_decisionInputXItem" name="decision" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1sh2xqa_namespaceInputX" itemSubjectRef="_Activity_1sh2xqa_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1sh2xqa_modelInputX" itemSubjectRef="_Activity_1sh2xqa_modelInputXItem" name="model" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1sh2xqa_decisionInputX" itemSubjectRef="_Activity_1sh2xqa_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_1sh2xqa_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1sh2xqa_modelInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1sh2xqa_decisionInputX</bpmn:dataInputRefs>
         </bpmn:inputSet>
-        <bpmn:outputSet/>
+        <bpmn:outputSet />
       </bpmn:ioSpecification>
       <bpmn:dataInputAssociation id="DataInputAssociation_1xb5h9m">
         <bpmn:targetRef>Activity_1sh2xqa_namespaceInputX</bpmn:targetRef>
@@ -89,21 +90,23 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:incoming>Flow_01aysjx</bpmn:incoming>
       <bpmn:outgoing>Flow_0gamo9o</bpmn:outgoing>
       <bpmn:ioSpecification>
-        <bpmn:dataInput id="Activity_05jwo4m_UrlInput" name="Url" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_05jwo4m_MethodInput" name="Method" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_05jwo4m_ContentTypeInput" name="ContentType" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_05jwo4m_ContentInput" name="Content" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_05jwo4m_ConnectTimeoutInput" name="ConnectTimeout" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_05jwo4m_ReadTimeoutInput" name="ReadTimeout" drools:dtype="java.lang.String"/>
-        <bpmn:dataOutput id="Activity_05jwo4m_ResultOutput" name="Result" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_05jwo4m_ddidInput" name="ddid" drools:dtype="java.lang.String"/><bpmn:inputSet>
+        <bpmn:dataInput id="Activity_05jwo4m_UrlInput" name="Url" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05jwo4m_MethodInput" name="Method" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05jwo4m_ContentTypeInput" name="ContentType" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05jwo4m_ContentInput" name="Content" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05jwo4m_ConnectTimeoutInput" name="ConnectTimeout" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05jwo4m_ReadTimeoutInput" name="ReadTimeout" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05jwo4m_ddidInput" name="ddid" drools:dtype="java.lang.String" />
+        <bpmn:dataOutput id="Activity_05jwo4m_ResultOutput" name="Result" drools:dtype="java.lang.String" />
+        <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_05jwo4m_UrlInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_05jwo4m_MethodInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_05jwo4m_ContentTypeInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_05jwo4m_ContentInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_05jwo4m_ConnectTimeoutInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_05jwo4m_ReadTimeoutInput</bpmn:dataInputRefs>
-        <bpmn:dataInputRefs>Activity_05jwo4m_ddidInput</bpmn:dataInputRefs></bpmn:inputSet>
+          <bpmn:dataInputRefs>Activity_05jwo4m_ddidInput</bpmn:dataInputRefs>
+        </bpmn:inputSet>
         <bpmn:outputSet>
           <bpmn:dataOutputRefs>Activity_05jwo4m_ResultOutput</bpmn:dataOutputRefs>
         </bpmn:outputSet>
@@ -111,7 +114,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_0ja5kn7">
         <bpmn:targetRef>Activity_05jwo4m_UrlInput</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">https://master-api.testing.covermymeds.com/drugs/{ddid}?api_id=test&amp;v=1</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">https://master-api.testing.covermymeds.com/drugs/${ddid}?api_id=test&amp;v=1</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_05jwo4m_UrlInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -132,7 +135,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_07sau0d">
         <bpmn:targetRef>Activity_05jwo4m_ContentInput</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression"/>
+          <bpmn:from xsi:type="bpmn:tFormalExpression" />
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_05jwo4m_ContentInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -149,86 +152,96 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <bpmn:from xsi:type="bpmn:tFormalExpression">30000</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_05jwo4m_ReadTimeoutInput</bpmn:to>
         </bpmn:assignment>
-      </bpmn:dataInputAssociation><bpmn:dataInputAssociation><bpmn:sourceRef>ddid</bpmn:sourceRef><bpmn:targetRef>Activity_05jwo4m_ddidInput</bpmn:targetRef></bpmn:dataInputAssociation>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation>
+        <bpmn:targetRef>Activity_05jwo4m_ddidInput</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0rp8ghz">
         <bpmn:sourceRef>Activity_05jwo4m_ResultOutput</bpmn:sourceRef>
-        <bpmn:targetRef>undefined</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
-    <bpmn:sequenceFlow id="Flow_0gamo9o" sourceRef="Activity_05jwo4m" targetRef="Activity_1sh2xqa"/>
-    <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw"/>
+    <bpmn:sequenceFlow id="Flow_0gamo9o" sourceRef="Activity_05jwo4m" targetRef="Activity_1sh2xqa" />
+    <bpmn:sendTask name="Kafka Publish">
+      <bpmn:extensionElements>
+        <kafka:kafkaTaskConfig topic="my-topic" keyExpression="" messageExpression="${message}" headers="{}" />
+      </bpmn:extensionElements>
+    </bpmn:sendTask>
+    <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="drugs">
       <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
-        <dc:Bounds x="152" y="192" width="36" height="36"/>
+        <dc:Bounds x="152" y="192" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="158" y="233" width="24" height="14"/>
+          <dc:Bounds x="158" y="233" width="24" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1lf3s38_di" bpmnElement="Event_1lf3s38">
-        <dc:Bounds x="892" y="192" width="36" height="36"/>
+        <dc:Bounds x="892" y="192" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="900" y="235" width="20" height="14"/>
+          <dc:Bounds x="900" y="235" width="20" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1ix2kn3_di" bpmnElement="Activity_0as8h27">
-        <dc:Bounds x="260" y="170" width="100" height="80"/>
-        <bpmndi:BPMNLabel/>
+        <dc:Bounds x="260" y="170" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1dpe896_di" bpmnElement="Gateway_1dpe896" isMarkerVisible="true">
-        <dc:Bounds x="775" y="185" width="50" height="50"/>
+        <dc:Bounds x="775" y="185" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="768" y="155" width="65" height="14"/>
+          <dc:Bounds x="768" y="155" width="65" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1wkzhfc_di" bpmnElement="Activity_02jwcaw">
-        <dc:Bounds x="270" y="340" width="100" height="80"/>
-        <bpmndi:BPMNLabel/>
+        <dc:Bounds x="270" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0v3vnls_di" bpmnElement="Event_0n168m6">
-        <dc:Bounds x="782" y="322" width="36" height="36"/>
+        <dc:Bounds x="782" y="322" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="769" y="365" width="63" height="14"/>
+          <dc:Bounds x="769" y="365" width="63" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0ujhwbm_di" bpmnElement="Activity_1sh2xqa">
-        <dc:Bounds x="590" y="170" width="100" height="80"/>
-        <bpmndi:BPMNLabel/>
+        <dc:Bounds x="590" y="170" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_05jwo4m_di" bpmnElement="Activity_05jwo4m">
-        <dc:Bounds x="420" y="170" width="100" height="80"/>
+        <dc:Bounds x="420" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="undefined_di" bpmnElement="undefined">
+        <dc:Bounds x="420" y="380" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
-        <dc:Bounds x="302" y="232" width="36" height="36"/>
+        <dc:Bounds x="302" y="232" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_12vdxhy_di" bpmnElement="Flow_12vdxhy">
-        <di:waypoint x="188" y="210"/>
-        <di:waypoint x="260" y="210"/>
+        <di:waypoint x="188" y="210" />
+        <di:waypoint x="260" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1du2ysb_di" bpmnElement="Flow_1du2ysb">
-        <di:waypoint x="825" y="210"/>
-        <di:waypoint x="892" y="210"/>
+        <di:waypoint x="825" y="210" />
+        <di:waypoint x="892" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_191lbsq_di" bpmnElement="Flow_191lbsq">
-        <di:waypoint x="800" y="235"/>
-        <di:waypoint x="800" y="322"/>
+        <di:waypoint x="800" y="235" />
+        <di:waypoint x="800" y="322" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_01aysjx_di" bpmnElement="Flow_01aysjx">
-        <di:waypoint x="360" y="210"/>
-        <di:waypoint x="420" y="210"/>
+        <di:waypoint x="360" y="210" />
+        <di:waypoint x="420" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0tixfel_di" bpmnElement="Flow_0tixfel">
-        <di:waypoint x="690" y="210"/>
-        <di:waypoint x="775" y="210"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
-        <di:waypoint x="320" y="268"/>
-        <di:waypoint x="320" y="340"/>
+        <di:waypoint x="690" y="210" />
+        <di:waypoint x="775" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0gamo9o_di" bpmnElement="Flow_0gamo9o">
-        <di:waypoint x="520" y="210"/>
-        <di:waypoint x="590" y="210"/>
+        <di:waypoint x="520" y="210" />
+        <di:waypoint x="590" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
+        <di:waypoint x="320" y="268" />
+        <di:waypoint x="320" y="340" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
