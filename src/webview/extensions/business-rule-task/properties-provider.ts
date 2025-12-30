@@ -104,15 +104,20 @@ function ensureMetaData(element: any, bpmnFactory: any, commandStack: any): void
 
   // Check if metaData already exists
   const values = extensionElements.values || [];
-  const hasMetaData = values.some((v: any) => v.$type === 'drools:MetaData' && v.name === 'elementname');
+  const hasMetaData = values.some((v: any) => v.$type === 'drools:metaData' && v.name === 'elementname');
 
   if (!hasMetaData) {
-    // Create drools:metaData element
-    const metaData = bpmnFactory.create('drools:MetaData', {
-      name: 'elementname'
+    // Create drools:metaValue element with body property (this creates <drools:metaValue>text</drools:metaValue>)
+    const metaValue = bpmnFactory.create('drools:metaValue', {
+      body: bo.name || bo.id
     });
-    // Set the metaValue (element name)
-    metaData.metaValue = bo.name || bo.id;
+
+    // Create drools:metaData element (lowercase 'm' matches the descriptor)
+    const metaData = bpmnFactory.create('drools:metaData', {
+      name: 'elementname',
+      metaValue: metaValue
+    });
+    metaValue.$parent = metaData;
     metaData.$parent = extensionElements;
     values.push(metaData);
 
