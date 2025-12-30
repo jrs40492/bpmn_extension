@@ -7,16 +7,16 @@
   <bpmn:itemDefinition id="_Activity_1sh2xqa_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1sh2xqa_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_ddidItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_resultItem" structureRef="java.util.Map" />
+  <bpmn:itemDefinition id="_drugResponseItem" structureRef="java.util.Map" />
   <bpmn:process id="drugs" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true" />
-        <bamoe:variable name="result" />
+        <bamoe:variable name="drugResponse" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid" />
-    <bpmn:property id="result" itemSubjectRef="_resultItem" name="result" />
+    <bpmn:property id="drugResponse" itemSubjectRef="_drugResponseItem" name="drugResponse" />
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_12vdxhy</bpmn:outgoing>
     </bpmn:startEvent>
@@ -182,7 +182,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0uzv9ns">
         <bpmn:sourceRef>Activity_0nlku98_ResultOutput</bpmn:sourceRef>
-        <bpmn:targetRef>result</bpmn:targetRef>
+        <bpmn:targetRef>drugResponse</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_1sfhri7" sourceRef="Activity_0nlku98" targetRef="Activity_1sh2xqa" />

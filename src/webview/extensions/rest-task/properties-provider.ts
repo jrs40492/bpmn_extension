@@ -3,7 +3,15 @@
  * Uses STANDARD BPMN data input/output associations - no custom extensions
  */
 
-import { isRestTask, getRestConfig, updateRestParam, REST_PARAMS } from './palette-provider';
+import {
+  isRestTask,
+  getRestConfig,
+  updateRestParam,
+  REST_PARAMS,
+  getResultVariableName,
+  getAvailableProcessVariables,
+  updateResultVariable
+} from './palette-provider';
 
 // REST Properties Group
 function RestPropertiesGroup(element: any, injector: any) {
@@ -12,6 +20,7 @@ function RestPropertiesGroup(element: any, injector: any) {
   }
 
   const modeling = injector.get('modeling');
+  const bpmnFactory = injector.get('bpmnFactory');
   const config = getRestConfig(element);
 
   if (!config) return null;
@@ -61,6 +70,13 @@ function RestPropertiesGroup(element: any, injector: any) {
         element,
         label: 'Timeout (ms)',
         component: createTextInput('ReadTimeout', config, modeling, element)
+      },
+      {
+        id: 'rest-output-variable',
+        element,
+        label: 'Output Variable',
+        description: 'Process variable to store the REST response',
+        component: createOutputVariableSelect(element, modeling, bpmnFactory)
       }
     ]
   };
@@ -133,6 +149,63 @@ function createTextAreaInput(paramName: string, config: Record<string, string>, 
         rows="4"
         onInput=${onChange}
       >${value}</textarea>
+    `;
+  };
+}
+
+function createOutputVariableSelect(element: any, modeling: any, bpmnFactory: any) {
+  return function OutputVariableSelect(props: any) {
+    const html = (window as any).html;
+    if (!html) return null;
+
+    // Get current result variable
+    const currentVariable = getResultVariableName(element) || 'restResult';
+
+    // Get available process variables
+    const availableVariables = getAvailableProcessVariables(element);
+
+    // Build options list - include current value even if not in list
+    const options: Array<{ value: string; label: string }> = [];
+
+    // Add "Create new variable" option
+    options.push({ value: '__new__', label: '-- Create New Variable --' });
+
+    // Add existing variables
+    for (const v of availableVariables) {
+      options.push({ value: v.name, label: v.name });
+    }
+
+    // If current variable not in list, add it
+    if (currentVariable && !availableVariables.find(v => v.name === currentVariable)) {
+      options.push({ value: currentVariable, label: `${currentVariable} (current)` });
+    }
+
+    const onChange = (event: any) => {
+      const newValue = event.target.value;
+
+      if (newValue === '__new__') {
+        // Prompt for new variable name
+        const newVarName = prompt('Enter new variable name:', 'responseData');
+        if (newVarName && newVarName.trim()) {
+          updateResultVariable(element, newVarName.trim(), modeling, bpmnFactory);
+        }
+      } else if (newValue) {
+        updateResultVariable(element, newValue, modeling, bpmnFactory);
+      }
+    };
+
+    return html`
+      <select
+        class="bio-properties-panel-input"
+        value=${currentVariable}
+        onChange=${onChange}
+      >
+        ${options.map(opt => html`
+          <option value=${opt.value} selected=${opt.value === currentVariable}>
+            ${opt.label}
+          </option>
+        `)}
+      </select>
     `;
   };
 }

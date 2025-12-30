@@ -439,6 +439,169 @@ export function getResultVariableName(element: any): string | null {
 }
 
 /**
+ * Get all available process variables from the parent process
+ */
+export function getAvailableProcessVariables(element: any): Array<{ id: string; name: string }> {
+  const bo = element.businessObject;
+  const variables: Array<{ id: string; name: string }> = [];
+
+  // Navigate up to find the process
+  let process = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) return variables;
+
+  // Get variables from bpmn:property elements (standard BPMN)
+  const properties = process.properties || [];
+  for (const prop of properties) {
+    if (prop.id || prop.name) {
+      variables.push({
+        id: prop.id || prop.name,
+        name: prop.name || prop.id
+      });
+    }
+  }
+
+  // Also get from bamoe:ProcessVariables extension (if exists)
+  const extensionElements = process.extensionElements;
+  if (extensionElements?.values) {
+    const processVariables = extensionElements.values.find(
+      (ext: any) => ext.$type === 'bamoe:ProcessVariables'
+    );
+    if (processVariables?.variables) {
+      for (const v of processVariables.variables) {
+        // Avoid duplicates
+        if (v.name && !variables.find(existing => existing.name === v.name)) {
+          variables.push({ id: v.name, name: v.name });
+        }
+      }
+    }
+  }
+
+  return variables;
+}
+
+/**
+ * Update the REST task output association to target a different process variable
+ */
+export function updateResultVariable(element: any, variableName: string, modeling: any, bpmnFactory: any): void {
+  const bo = element.businessObject;
+  const outputAssocs = bo.dataOutputAssociations || [];
+
+  // Find the Result output association
+  for (const assoc of outputAssocs) {
+    const sourceRef = assoc.sourceRef?.[0];
+    if (sourceRef?.name === 'Result') {
+      // Update targetRef to the new variable name
+      assoc.targetRef = variableName;
+
+      // Trigger change
+      modeling.updateProperties(element, { name: bo.name || '' });
+
+      // Also ensure the process variable and itemDefinition exist
+      ensureProcessVariable(element, variableName, bpmnFactory, modeling);
+      return;
+    }
+  }
+}
+
+/**
+ * Ensure a process variable exists with the given name
+ */
+function ensureProcessVariable(element: any, variableName: string, bpmnFactory: any, modeling: any): void {
+  const bo = element.businessObject;
+
+  // Navigate up to find the process
+  let process = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) return;
+
+  // Navigate up to find definitions
+  const definitions = process.$parent;
+  if (!definitions || definitions.$type !== 'bpmn:Definitions') return;
+
+  const itemDefId = `_${variableName}Item`;
+
+  // Check if itemDefinition exists
+  let itemDef = null;
+  const rootElements = definitions.rootElements || [];
+  for (const elem of rootElements) {
+    if (elem.$type === 'bpmn:ItemDefinition' && elem.id === itemDefId) {
+      itemDef = elem;
+      break;
+    }
+  }
+
+  // Create itemDefinition if missing
+  if (!itemDef && bpmnFactory) {
+    itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemDefId,
+      structureRef: 'java.util.Map'
+    });
+    itemDef.$parent = definitions;
+    if (!definitions.rootElements) {
+      definitions.rootElements = [];
+    }
+    // Insert before first process
+    const processIndex = definitions.rootElements.findIndex((el: any) => el.$type === 'bpmn:Process');
+    if (processIndex >= 0) {
+      definitions.rootElements.splice(processIndex, 0, itemDef);
+    } else {
+      definitions.rootElements.push(itemDef);
+    }
+  }
+
+  // Check if property exists
+  let property = null;
+  const properties = process.properties || [];
+  for (const prop of properties) {
+    if (prop.id === variableName || prop.name === variableName) {
+      property = prop;
+      break;
+    }
+  }
+
+  // Create property if missing
+  if (!property && bpmnFactory) {
+    property = bpmnFactory.create('bpmn:Property', {
+      id: variableName,
+      name: variableName,
+      itemSubjectRef: itemDef
+    });
+    property.$parent = process;
+    if (!process.properties) {
+      process.properties = [];
+    }
+    process.properties.push(property);
+
+    // Also add to bamoe:ProcessVariables if extension exists
+    const extensionElements = process.extensionElements;
+    if (extensionElements?.values) {
+      const processVariables = extensionElements.values.find(
+        (ext: any) => ext.$type === 'bamoe:ProcessVariables'
+      );
+      if (processVariables) {
+        const existingVar = processVariables.variables?.find((v: any) => v.name === variableName);
+        if (!existingVar) {
+          const newVar = bpmnFactory.create('bamoe:Variable', {
+            name: variableName,
+            type: 'object'
+          });
+          newVar.$parent = processVariables;
+          if (!processVariables.variables) {
+            processVariables.variables = [];
+          }
+          processVariables.variables.push(newVar);
+        }
+      }
+    }
+  }
+}
+
+/**
  * Update or create the process variable that receives the REST result
  * This updates the itemDefinition structureRef to match ResultClass
  */

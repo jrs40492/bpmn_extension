@@ -3,7 +3,7 @@
  * Uses STANDARD BPMN data input/output associations - no custom extensions
  */
 
-import { isRestTask, getRestConfig, updateRestParam, updateResultOutputType, updateResultVariableType, REST_PARAMS } from './palette-provider';
+import { isRestTask, getRestConfig, updateRestParam, updateResultOutputType, updateResultVariableType, getResultVariableName, getAvailableProcessVariables, updateResultVariable, REST_PARAMS } from './palette-provider';
 
 interface Modeling {
   updateProperties: (element: any, props: Record<string, unknown>) => void;
@@ -83,6 +83,13 @@ function createRestPanelHTML(): HTMLDivElement {
         <label for="rest-timeout">Timeout (ms)</label>
         <input type="number" id="rest-timeout" placeholder="30000" />
       </div>
+      <div class="rest-field">
+        <label for="rest-output-variable">Output Variable</label>
+        <select id="rest-output-variable">
+          <option value="">-- Select Variable --</option>
+        </select>
+        <small class="rest-hint">Process variable to store the response</small>
+      </div>
     </div>
   `;
   return panel;
@@ -105,6 +112,7 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
   const contentInput = panel.querySelector('#rest-content') as HTMLTextAreaElement;
   const resultClassSelect = panel.querySelector('#rest-result-class') as HTMLSelectElement;
   const timeoutInput = panel.querySelector('#rest-timeout') as HTMLInputElement;
+  const outputVariableSelect = panel.querySelector('#rest-output-variable') as HTMLSelectElement;
   const closeButton = panel.querySelector('.rest-panel-close') as HTMLButtonElement;
 
   // Close button handler
@@ -164,6 +172,74 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
     }
   });
 
+  outputVariableSelect.addEventListener('change', () => {
+    if (!currentElement) return;
+    const selectedValue = outputVariableSelect.value;
+
+    if (selectedValue === '__new__') {
+      // Prompt for new variable name
+      const newVarName = prompt('Enter new variable name:', 'responseData');
+      if (newVarName && newVarName.trim()) {
+        updateResultVariable(currentElement, newVarName.trim(), modeling, bpmnFactory);
+        // Add the new option and select it
+        const newOption = document.createElement('option');
+        newOption.value = newVarName.trim();
+        newOption.textContent = newVarName.trim();
+        outputVariableSelect.insertBefore(newOption, outputVariableSelect.lastElementChild);
+        outputVariableSelect.value = newVarName.trim();
+      } else {
+        // Reset to current value if cancelled
+        outputVariableSelect.value = getResultVariableName(currentElement) || '';
+      }
+    } else if (selectedValue) {
+      updateResultVariable(currentElement, selectedValue, modeling, bpmnFactory);
+    }
+    eventBus.fire('commandStack.changed', {});
+  });
+
+  // Helper to populate output variable dropdown
+  const populateOutputVariableSelect = (element: any) => {
+    // Clear existing options
+    outputVariableSelect.innerHTML = '';
+
+    // Get current value
+    const currentVariable = getResultVariableName(element) || '';
+
+    // Get available variables
+    const availableVariables = getAvailableProcessVariables(element);
+
+    // Add placeholder option
+    const placeholderOption = document.createElement('option');
+    placeholderOption.value = '';
+    placeholderOption.textContent = '-- Select Variable --';
+    outputVariableSelect.appendChild(placeholderOption);
+
+    // Add existing variables
+    for (const v of availableVariables) {
+      const option = document.createElement('option');
+      option.value = v.name;
+      option.textContent = v.name;
+      outputVariableSelect.appendChild(option);
+    }
+
+    // If current variable is not in the list, add it
+    if (currentVariable && !availableVariables.find(v => v.name === currentVariable)) {
+      const currentOption = document.createElement('option');
+      currentOption.value = currentVariable;
+      currentOption.textContent = `${currentVariable} (current)`;
+      outputVariableSelect.appendChild(currentOption);
+    }
+
+    // Add "Create new" option
+    const newOption = document.createElement('option');
+    newOption.value = '__new__';
+    newOption.textContent = '+ Create New Variable...';
+    outputVariableSelect.appendChild(newOption);
+
+    // Set current value
+    outputVariableSelect.value = currentVariable;
+  };
+
   // Listen for selection changes
   eventBus.on('selection.changed', (event: unknown) => {
     const selectionEvent = event as { newSelection?: any[] };
@@ -185,6 +261,9 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
           contentInput.value = config['Content'] || '';
           resultClassSelect.value = config['ResultClass'] || '';
           timeoutInput.value = config['ReadTimeout'] || '30000';
+
+          // Populate output variable dropdown
+          populateOutputVariableSelect(element);
 
           // Show panel
           panel!.classList.add('visible');

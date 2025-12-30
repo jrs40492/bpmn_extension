@@ -91,11 +91,20 @@ function VariableName(props: { id: string; variable: any; element: any }) {
   const getValue = () => variable.name || '';
 
   const setValue = (value: string) => {
+    const oldName = variable.name;
+    const newName = value;
+
+    // Update the variable name
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: variable,
-      properties: { name: value }
+      properties: { name: newName }
     });
+
+    // Update all references if the name actually changed
+    if (oldName && oldName !== newName) {
+      updateVariableReferences(element, oldName, newName, commandStack);
+    }
   };
 
   return TextFieldEntry({
@@ -106,6 +115,143 @@ function VariableName(props: { id: string; variable: any; element: any }) {
     setValue,
     debounce
   });
+}
+
+/**
+ * Update all references to a variable when it's renamed
+ */
+function updateVariableReferences(element: any, oldName: string, newName: string, commandStack: any): void {
+  const bo = getBusinessObject(element);
+  if (!bo) return;
+
+  // Get definitions (root of document)
+  let definitions = bo.$parent;
+  while (definitions && definitions.$type !== 'bpmn:Definitions') {
+    definitions = definitions.$parent;
+  }
+  if (!definitions) return;
+
+  // 1. Update bpmn:Property element (id and name)
+  const properties = bo.properties || [];
+  for (const prop of properties) {
+    if (prop.id === oldName || prop.name === oldName) {
+      prop.id = newName;
+      prop.name = newName;
+
+      // Update itemSubjectRef if it references the old itemDefinition
+      if (prop.itemSubjectRef?.id === `_${oldName}Item`) {
+        // Find and update the itemDefinition
+        const rootElements = definitions.rootElements || [];
+        for (const elem of rootElements) {
+          if (elem.$type === 'bpmn:ItemDefinition' && elem.id === `_${oldName}Item`) {
+            elem.id = `_${newName}Item`;
+            prop.itemSubjectRef = elem;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // 2. Update bpmn:ItemDefinition at definitions level
+  const rootElements = definitions.rootElements || [];
+  for (const elem of rootElements) {
+    if (elem.$type === 'bpmn:ItemDefinition' && elem.id === `_${oldName}Item`) {
+      elem.id = `_${newName}Item`;
+    }
+  }
+
+  // 3. Update all flow elements in the process
+  const flowElements = bo.flowElements || [];
+  for (const flowElement of flowElements) {
+    updateFlowElementReferences(flowElement, oldName, newName);
+  }
+
+  // Force a change notification by updating process name
+  commandStack.execute('element.updateModdleProperties', {
+    element,
+    moddleElement: bo,
+    properties: { name: bo.name || '' }
+  });
+}
+
+/**
+ * Update references within a flow element (task, gateway, etc.)
+ */
+function updateFlowElementReferences(flowElement: any, oldName: string, newName: string): void {
+  // Update dataInputAssociations
+  const inputAssocs = flowElement.dataInputAssociations || [];
+  for (const assoc of inputAssocs) {
+    // Check sourceRef (array of references)
+    if (assoc.sourceRef) {
+      for (let i = 0; i < assoc.sourceRef.length; i++) {
+        const ref = assoc.sourceRef[i];
+        if (typeof ref === 'string' && ref === oldName) {
+          assoc.sourceRef[i] = newName;
+        } else if (ref?.id === oldName || ref?.name === oldName) {
+          // Reference to a property element - update the reference
+        }
+      }
+    }
+    // Check targetRef (single reference or string)
+    if (assoc.targetRef === oldName) {
+      assoc.targetRef = newName;
+    }
+  }
+
+  // Update dataOutputAssociations
+  const outputAssocs = flowElement.dataOutputAssociations || [];
+  for (const assoc of outputAssocs) {
+    // Check sourceRef
+    if (assoc.sourceRef) {
+      for (let i = 0; i < assoc.sourceRef.length; i++) {
+        const ref = assoc.sourceRef[i];
+        if (typeof ref === 'string' && ref === oldName) {
+          assoc.sourceRef[i] = newName;
+        }
+      }
+    }
+    // Check targetRef - this is where output goes to process variable
+    if (typeof assoc.targetRef === 'string' && assoc.targetRef === oldName) {
+      assoc.targetRef = newName;
+    } else if (assoc.targetRef?.id === oldName) {
+      // This is a reference to a property element - the property was already updated above
+    }
+  }
+
+  // Update conditionExpressions on sequence flows
+  if (flowElement.$type === 'bpmn:SequenceFlow' && flowElement.conditionExpression) {
+    const expr = flowElement.conditionExpression;
+    if (expr.body && typeof expr.body === 'string') {
+      // Replace variable references in expression
+      // Match whole word only to avoid partial replacements
+      const regex = new RegExp(`\\b${escapeRegExp(oldName)}\\b`, 'g');
+      expr.body = expr.body.replace(regex, newName);
+    }
+  }
+
+  // Update script content in script tasks
+  if (flowElement.$type === 'bpmn:ScriptTask' && flowElement.script) {
+    const regex = new RegExp(`\\b${escapeRegExp(oldName)}\\b`, 'g');
+    flowElement.script = flowElement.script.replace(regex, newName);
+  }
+
+  // Handle sequence flows in gateways
+  if (flowElement.outgoing) {
+    for (const outgoing of flowElement.outgoing) {
+      if (outgoing.conditionExpression?.body) {
+        const regex = new RegExp(`\\b${escapeRegExp(oldName)}\\b`, 'g');
+        outgoing.conditionExpression.body = outgoing.conditionExpression.body.replace(regex, newName);
+      }
+    }
+  }
+}
+
+/**
+ * Escape special regex characters
+ */
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 // Variable Type field
