@@ -137,7 +137,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_1g6mc0x">
         <bpmn:targetRef>Activity_03z6ekf_ContentInput</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression"></bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">{ ddid: {ddid} }</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_03z6ekf_ContentInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
