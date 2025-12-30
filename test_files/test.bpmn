@@ -5,12 +5,14 @@
   <bpmn:itemDefinition id="_Activity_1qz1b6m_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionOutputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_decisionResultItem" structureRef="java.lang.String" />
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
+    <bpmn:property id="decisionResult" itemSubjectRef="_decisionResultItem" name="decisionResult" />
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_12vdxhy</bpmn:outgoing>
     </bpmn:startEvent>
@@ -140,29 +142,30 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <bpmn:dataOutputRefs>Activity_1qz1b6m_decisionOutputX</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
-      <bpmn:dataInputAssociation id="Activity_1qz1b6m_namespaceAssociation">
+      <bpmn:dataInputAssociation>
         <bpmn:targetRef>Activity_1qz1b6m_namespaceInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">http://camunda.org/schema/1.0/dmn</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qz1b6m_namespaceInputX</bpmn:to>
+          <bpmn:from xsi:type="bpmn:tFormalExpression"><![CDATA[http://camunda.org/schema/1.0/dmn]]></bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression"><![CDATA[Activity_1qz1b6m_namespaceInputX]]></bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="Activity_1qz1b6m_modelAssociation">
+      <bpmn:dataInputAssociation>
         <bpmn:targetRef>Activity_1qz1b6m_modelInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">test.dmn</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qz1b6m_modelInputX</bpmn:to>
+          <bpmn:from xsi:type="bpmn:tFormalExpression"><![CDATA[test.dmn]]></bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression"><![CDATA[Activity_1qz1b6m_modelInputX]]></bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="Activity_1qz1b6m_decisionAssociation">
+      <bpmn:dataInputAssociation>
         <bpmn:targetRef>Activity_1qz1b6m_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_1</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qz1b6m_decisionInputX</bpmn:to>
+          <bpmn:from xsi:type="bpmn:tFormalExpression"><![CDATA[Decision_1]]></bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression"><![CDATA[Activity_1qz1b6m_decisionInputX]]></bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="Activity_1qz1b6m_decisionOutputAssociation">
+      <bpmn:dataOutputAssociation>
         <bpmn:sourceRef>Activity_1qz1b6m_decisionOutputX</bpmn:sourceRef>
+        <bpmn:targetRef>decisionResult</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
