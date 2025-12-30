@@ -19,11 +19,6 @@
     <bpmn:endEvent id="Event_1lf3s38" name="End">
       <bpmn:incoming>Flow_1du2ysb</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sendTask name="KafkaPublish">
-      <bpmn:extensionElements>
-        <kafka:kafkaTaskConfig topic="my-topic" keyExpression="" messageExpression="${message}" headers="{}" />
-      </bpmn:extensionElements>
-    </bpmn:sendTask>
     <bpmn:scriptTask id="Activity_0as8h27" name="Step 1 Init" scriptFormat="java">
       <bpmn:incoming>Flow_12vdxhy</bpmn:incoming>
       <bpmn:outgoing>Flow_0qb9lii</bpmn:outgoing>
