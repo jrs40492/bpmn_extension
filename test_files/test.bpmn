@@ -6,7 +6,7 @@
   <bpmn:itemDefinition id="_Activity_1sh2xqa_modelInputXItem" structureRef="java.lang.String"/>
   <bpmn:itemDefinition id="_Activity_1sh2xqa_decisionInputXItem" structureRef="java.lang.String"/>
   <bpmn:itemDefinition id="_ddidItem" structureRef="java.lang.String"/>
-  <bpmn:itemDefinition id="_resultItem" structureRef="java.lang.String"/>
+  <bpmn:itemDefinition id="_resultItem" structureRef="java.util.Map"/>
   <bpmn:process id="drugs" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -102,7 +102,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:dataInput id="Activity_0nlku98_ConnectTimeoutInput" name="ConnectTimeout" drools:dtype="java.lang.String"/>
         <bpmn:dataInput id="Activity_0nlku98_ReadTimeoutInput" name="ReadTimeout" drools:dtype="java.lang.String"/>
         <bpmn:dataInput id="Activity_0nlku98_ResultClassInput" name="ResultClass" drools:dtype="java.lang.String"/>
-        <bpmn:dataOutput id="Activity_0nlku98_ResultOutput" name="Result" drools:dtype="java.lang.String"/>
+        <bpmn:dataOutput id="Activity_0nlku98_ResultOutput" name="Result" drools:dtype="java.util.Map"/>
         <bpmn:dataInput id="Activity_0nlku98_ddidInput" name="ddid" drools:dtype="java.lang.String"/><bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_0nlku98_UrlInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_0nlku98_MethodInput</bpmn:dataInputRefs>
