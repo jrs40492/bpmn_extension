@@ -84,6 +84,14 @@ function createRestPanelHTML(): HTMLDivElement {
         <input type="number" id="rest-timeout" placeholder="30000" />
       </div>
       <div class="rest-field">
+        <label for="rest-handle-errors">Handle Response Errors</label>
+        <select id="rest-handle-errors">
+          <option value="false">False (return error in Result)</option>
+          <option value="true">True (throw exception on HTTP errors)</option>
+        </select>
+        <small class="rest-hint">Whether to throw an exception when HTTP status is an error (4xx/5xx)</small>
+      </div>
+      <div class="rest-field">
         <label for="rest-output-variable">Response Body Variable</label>
         <select id="rest-output-variable">
           <option value="">-- Select Variable --</option>
@@ -113,6 +121,7 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
   const resultClassSelect = panel.querySelector('#rest-result-class') as HTMLSelectElement;
   const timeoutInput = panel.querySelector('#rest-timeout') as HTMLInputElement;
   const outputVariableSelect = panel.querySelector('#rest-output-variable') as HTMLSelectElement;
+  const handleErrorsSelect = panel.querySelector('#rest-handle-errors') as HTMLSelectElement;
   const closeButton = panel.querySelector('.rest-panel-close') as HTMLButtonElement;
 
   // Close button handler
@@ -170,6 +179,10 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
       updateRestParam(currentElement, 'ConnectTimeout', timeout, modeling, bpmnFactory);
       eventBus.fire('commandStack.changed', {});
     }
+  });
+
+  handleErrorsSelect.addEventListener('change', () => {
+    updateAndNotify('HandleResponseErrors', handleErrorsSelect.value);
   });
 
   outputVariableSelect.addEventListener('change', () => {
@@ -261,6 +274,7 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling, bpmnFactor
           contentInput.value = config['Content'] || '';
           resultClassSelect.value = config['ResultClass'] || '';
           timeoutInput.value = config['ReadTimeout'] || '30000';
+          handleErrorsSelect.value = config['HandleResponseErrors'] || 'false';
 
           // Populate output variable dropdowns
           populateOutputVariableSelect(element);

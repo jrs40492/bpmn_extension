@@ -72,6 +72,16 @@ function RestPropertiesGroup(element: any, injector: any) {
         component: createTextInput('ReadTimeout', config, modeling, element)
       },
       {
+        id: 'rest-handle-errors',
+        element,
+        label: 'Handle Response Errors',
+        description: 'Throw exception on HTTP errors (4xx/5xx)',
+        component: createSelectInput('HandleResponseErrors', config, modeling, element, [
+          { value: 'false', label: 'False (return error in Result)' },
+          { value: 'true', label: 'True (throw exception)' }
+        ])
+      },
+      {
         id: 'rest-output-variable',
         element,
         label: 'Output Variable',
