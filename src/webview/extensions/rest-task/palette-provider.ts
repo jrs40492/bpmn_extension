@@ -108,12 +108,14 @@ export default class RestTaskPaletteProvider {
         const dataInputRefs: ModdleElement[] = [];
         const dataOutputRefs: ModdleElement[] = [];
 
-        // Create data inputs for each REST parameter
+        // Create data inputs for each REST parameter (no IDs for Kogito compatibility)
         for (const paramName of REST_PARAMS.inputs) {
           const dataInput = (bpmnFactory as any).create('bpmn:DataInput', {
             id: `${taskId}_${paramName}Input`,
             name: paramName
           });
+          // Set drools:dtype for Kogito compatibility
+          dataInput.set('drools:dtype', 'java.lang.String');
           dataInputs.set(paramName, dataInput);
           dataInputRefs.push(dataInput);
         }
@@ -124,24 +126,23 @@ export default class RestTaskPaletteProvider {
             id: `${taskId}_${paramName}Output`,
             name: paramName
           });
+          // Set drools:dtype for Kogito compatibility
+          dataOutput.set('drools:dtype', 'java.lang.String');
           dataOutputs.set(paramName, dataOutput);
           dataOutputRefs.push(dataOutput);
         }
 
-        // Create input/output sets
+        // Create input/output sets (no IDs for Kogito compatibility)
         const inputSet = (bpmnFactory as any).create('bpmn:InputSet', {
-          id: `${taskId}_InputSet`,
           dataInputRefs: dataInputRefs
         });
 
         const outputSet = (bpmnFactory as any).create('bpmn:OutputSet', {
-          id: `${taskId}_OutputSet`,
           dataOutputRefs: dataOutputRefs
         });
 
-        // Create ioSpecification
+        // Create ioSpecification (no ID for Kogito compatibility)
         const ioSpecification = (bpmnFactory as any).create('bpmn:InputOutputSpecification', {
-          id: `${taskId}_IoSpec`,
           dataInputs: Array.from(dataInputs.values()),
           dataOutputs: Array.from(dataOutputs.values()),
           inputSets: [inputSet],
@@ -154,7 +155,7 @@ export default class RestTaskPaletteProvider {
         inputSet.$parent = ioSpecification;
         outputSet.$parent = ioSpecification;
 
-        // Create data input associations with default values
+        // Create data input associations with default values (no IDs for Kogito compatibility)
         const dataInputAssociations: ModdleElement[] = [];
         for (const [paramName, dataInput] of dataInputs) {
           const value = DEFAULT_CONFIG[paramName as keyof typeof DEFAULT_CONFIG] || '';
@@ -169,19 +170,20 @@ export default class RestTaskPaletteProvider {
             from: fromExpression,
             to: toExpression
           });
+          // No ID on association for Kogito compatibility
           const association = (bpmnFactory as any).create('bpmn:DataInputAssociation', {
-            id: `${taskId}_${paramName}Association`,
             targetRef: dataInput,
             assignment: [assignment]
           });
           dataInputAssociations.push(association);
         }
 
-        // Create data output association
+        // Create data output association with targetRef (REQUIRED by Kogito)
+        // The targetRef points to a process variable name where the result will be stored
         const resultOutput = dataOutputs.get('Result')!;
         const dataOutputAssociation = (bpmnFactory as any).create('bpmn:DataOutputAssociation', {
-          id: `${taskId}_ResultAssociation`,
-          sourceRef: [resultOutput]
+          sourceRef: [resultOutput],
+          targetRef: 'restResult'  // Maps output to 'restResult' process variable
         });
 
         // Set all properties on business object

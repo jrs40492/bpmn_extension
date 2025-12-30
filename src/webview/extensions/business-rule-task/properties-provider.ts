@@ -131,6 +131,45 @@ function ensureMetaData(element: any, bpmnFactory: any, commandStack: any): void
   }
 }
 
+// Helper to get the definitions element (root of the BPMN document)
+function getDefinitions(element: any): any {
+  let current = element.businessObject;
+  while (current.$parent) {
+    current = current.$parent;
+  }
+  return current;
+}
+
+// Helper to ensure itemDefinition exists at definitions level
+function ensureItemDefinition(definitions: any, itemId: string, structureRef: string, bpmnFactory: any): any {
+  // Check if itemDefinition already exists
+  const rootElements = definitions.rootElements || [];
+  let itemDef = rootElements.find((el: any) => el.$type === 'bpmn:ItemDefinition' && el.id === itemId);
+
+  if (!itemDef) {
+    // Create new itemDefinition
+    itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemId,
+      structureRef: structureRef
+    });
+    itemDef.$parent = definitions;
+
+    // Add to rootElements (insert before process elements)
+    if (!definitions.rootElements) {
+      definitions.rootElements = [];
+    }
+    // Find insertion point - before first process
+    const processIndex = definitions.rootElements.findIndex((el: any) => el.$type === 'bpmn:Process');
+    if (processIndex >= 0) {
+      definitions.rootElements.splice(processIndex, 0, itemDef);
+    } else {
+      definitions.rootElements.push(itemDef);
+    }
+  }
+
+  return itemDef;
+}
+
 // Helper to ensure ioSpecification and data inputs exist (Kogito/BAMOE compatible format)
 function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any): any {
   const bo = element.businessObject;
@@ -151,15 +190,26 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
   // Ensure metaData extension element exists
   ensureMetaData(element, bpmnFactory, commandStack);
 
-  // Create data inputs with drools:dtype attribute (Kogito format uses InputX suffix)
+  // Get definitions to add itemDefinitions
+  const definitions = getDefinitions(element);
+
+  // Create data inputs with drools:dtype and itemSubjectRef attributes (Kogito format)
   const dataInputs: any[] = [];
   const dataInputRefs: any[] = [];
 
   // Order: namespace, model, decision (matching Kogito examples)
   for (const inputName of [DMN_DATA_INPUTS.NAMESPACE, DMN_DATA_INPUTS.MODEL, DMN_DATA_INPUTS.DECISION]) {
+    const inputId = `${taskId}_${inputName}InputX`;
+    const itemDefId = `_${inputId}Item`;
+
+    // Ensure itemDefinition exists at definitions level
+    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.String', bpmnFactory);
+
+    // Create dataInput with itemSubjectRef reference
     const dataInput = bpmnFactory.create('bpmn:DataInput', {
-      id: `${taskId}_${inputName}InputX`,
-      name: inputName
+      id: inputId,
+      name: inputName,
+      itemSubjectRef: itemDef
     });
     // Set drools:dtype attribute for Kogito compatibility
     dataInput.set('drools:dtype', 'java.lang.String');
@@ -167,42 +217,28 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     dataInputRefs.push(dataInput);
   }
 
-  // Create data output for decision result
-  const dataOutput = bpmnFactory.create('bpmn:DataOutput', {
-    id: `${taskId}_decisionOutputX`,
-    name: 'decision'
-  });
-  dataOutput.set('drools:dtype', 'java.lang.String');
-
-  // Create input set
+  // Create input set (no ID - Kogito format)
   const inputSet = bpmnFactory.create('bpmn:InputSet', {
-    id: `${taskId}_InputSet`,
     dataInputRefs: dataInputRefs
   });
 
-  // Create output set
-  const outputSet = bpmnFactory.create('bpmn:OutputSet', {
-    id: `${taskId}_OutputSet`,
-    dataOutputRefs: [dataOutput]
-  });
+  // Create empty output set (no ID, no dataOutputs - Kogito format for DMN tasks)
+  const outputSet = bpmnFactory.create('bpmn:OutputSet', {});
 
-  // Create ioSpecification
+  // Create ioSpecification (no ID - Kogito format)
   ioSpec = bpmnFactory.create('bpmn:InputOutputSpecification', {
-    id: `${taskId}_IoSpec`,
     dataInputs: dataInputs,
-    dataOutputs: [dataOutput],
     inputSets: [inputSet],
     outputSets: [outputSet]
   });
 
   // Set parent references
   dataInputs.forEach(di => { di.$parent = ioSpec; });
-  dataOutput.$parent = ioSpec;
   inputSet.$parent = ioSpec;
   outputSet.$parent = ioSpec;
   ioSpec.$parent = bo;
 
-  // Create data input associations with empty values
+  // Create data input associations (no ID - Kogito format)
   const dataInputAssociations: any[] = [];
   for (const dataInput of dataInputs) {
     const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: '' });
@@ -212,7 +248,6 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
       to: toExpression
     });
     const association = bpmnFactory.create('bpmn:DataInputAssociation', {
-      id: `${taskId}_${dataInput.name}Association`,
       targetRef: dataInput,
       assignment: [assignment]
     });
@@ -221,22 +256,14 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     dataInputAssociations.push(association);
   }
 
-  // Create data output association (maps result to 'decision' process variable)
-  const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
-    id: `${taskId}_decisionOutputAssociation`,
-    sourceRef: [dataOutput]
-  });
-  dataOutputAssociation.$parent = bo;
-
-  // Update element with new ioSpecification and associations
+  // Update element with new ioSpecification and associations (no dataOutputAssociations for DMN tasks)
   commandStack.execute('element.updateModdleProperties', {
     element,
     moddleElement: bo,
     properties: {
       implementation: DMN_IMPLEMENTATION_URI,
       ioSpecification: ioSpec,
-      dataInputAssociations: dataInputAssociations,
-      dataOutputAssociations: [dataOutputAssociation]
+      dataInputAssociations: dataInputAssociations
     }
   });
 
@@ -280,8 +307,8 @@ function setDataInputValue(element: any, inputName: string, value: string, bpmnF
         from: fromExpression,
         to: toExpression
       });
+      // No ID on association - Kogito format
       const association = bpmnFactory.create('bpmn:DataInputAssociation', {
-        id: `${bo.id}_${inputName}Association`,
         targetRef: dataInput,
         assignment: [assignment]
       });
