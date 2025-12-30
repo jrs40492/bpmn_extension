@@ -2,8 +2,8 @@
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
   <decision id="Decision_1" name="Decision">
     <variable id="Decision_1_variable" name="Decision" typeRef="string" />
-    <informationRequirement id="InformationRequirement_0d9ccj9">
-      <requiredInput href="#drugResponse" />
+    <informationRequirement id="InformationRequirement_1plso4s">
+      <requiredInput href="#InputData_0kn62gf" />
     </informationRequirement>
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
@@ -80,19 +80,19 @@
       </rule>
     </decisionTable>
   </decision>
-  <inputData id="drugResponse" name="drugResponse">
-    <variable id="InputData_13w9zpa_variable" name="InputData_13w9zpa" typeRef="Any" />
+  <inputData id="InputData_0kn62gf" name="drugResponse">
+    <variable id="InputData_0kn62gf_variable" name="drugResponse" typeRef="Any" />
   </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
       <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
         <dc:Bounds height="80" width="180" x="370" y="160" />
       </dmndi:DMNShape>
-      <dmndi:DMNShape id="DMNShape_1mx9knm" dmnElementRef="drugResponse">
-        <dc:Bounds height="45" width="125" x="138" y="178" />
+      <dmndi:DMNShape id="DMNShape_0bjbkuu" dmnElementRef="InputData_0kn62gf">
+        <dc:Bounds height="45" width="125" x="148" y="178" />
       </dmndi:DMNShape>
-      <dmndi:DMNEdge id="DMNEdge_1o0x7q8" dmnElementRef="InformationRequirement_0d9ccj9">
-        <di:waypoint x="263" y="201" />
+      <dmndi:DMNEdge id="DMNEdge_0see6y2" dmnElementRef="InformationRequirement_1plso4s">
+        <di:waypoint x="273" y="201" />
         <di:waypoint x="350" y="200" />
         <di:waypoint x="370" y="200" />
       </dmndi:DMNEdge>
