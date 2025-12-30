@@ -13,14 +13,14 @@
   <bpmn:itemDefinition id="_Activity_1im8ao1_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_drugResponseInputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_drugStatusItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_drugStatusItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_drugStatusInputXItem" structureRef="java.lang.Object" />
   <bpmn:process id="drugs" name="" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true" />
         <bamoe:variable name="drugResponse" />
-        <bamoe:variable name="drugStatus" type="number" />
+        <bamoe:variable name="drugStatus" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid" />
@@ -76,7 +76,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:dataInput id="Activity_0nlku98_ResultClassInput" name="ResultClass" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_0nlku98_ddidInput" name="ddid" drools:dtype="java.lang.String" />
         <bpmn:dataOutput id="Activity_0nlku98_ResultOutput" name="Result" drools:dtype="java.util.Map" />
-        <bpmn:dataOutput id="Activity_0nlku98_StatusCodeOutput" name="StatusCode" drools:dtype="java.lang.Integer" />
+        <bpmn:dataOutput id="Activity_0nlku98_StatusOutput" name="Status" drools:dtype="java.lang.String" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_0nlku98_UrlInput</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_0nlku98_MethodInput</bpmn:dataInputRefs>
@@ -90,7 +90,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         </bpmn:inputSet>
         <bpmn:outputSet>
           <bpmn:dataOutputRefs>Activity_0nlku98_ResultOutput</bpmn:dataOutputRefs>
-          <bpmn:dataOutputRefs>Activity_0nlku98_StatusCodeOutput</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_0nlku98_StatusOutput</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
       <bpmn:dataInputAssociation id="DataInputAssociation_0kgq6f4">
@@ -158,15 +158,15 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:targetRef>drugResponse</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_06kg84i">
-        <bpmn:sourceRef>Activity_0nlku98_StatusCodeOutput</bpmn:sourceRef>
+        <bpmn:sourceRef>Activity_0nlku98_StatusOutput</bpmn:sourceRef>
         <bpmn:targetRef>drugStatus</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
-    <bpmn:sequenceFlow id="Flow_1sfhri7" sourceRef="Activity_0nlku98" targetRef="Activity_0xnwbur" />
+    <bpmn:sequenceFlow id="Flow_1sfhri7" sourceRef="Activity_0nlku98" targetRef="Activity_1im8ao1" />
     <bpmn:sequenceFlow id="Flow_04zlnva" sourceRef="Activity_1im8ao1" targetRef="Gateway_1dpe896" />
     <bpmn:businessRuleTask id="Activity_1im8ao1" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
-      <bpmn:incoming>Flow_1vvqqxc</bpmn:incoming>
+      <bpmn:incoming>Flow_1sfhri7</bpmn:incoming>
       <bpmn:outgoing>Flow_04zlnva</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_1im8ao1_namespaceInputX" itemSubjectRef="_Activity_1im8ao1_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
@@ -213,13 +213,6 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:targetRef>Activity_1im8ao1_drugStatusInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:sequenceFlow id="Flow_1vvqqxc" sourceRef="Activity_0xnwbur" targetRef="Activity_1im8ao1" />
-    <bpmn:scriptTask id="Activity_0xnwbur" scriptFormat="java">
-      <bpmn:incoming>Flow_1sfhri7</bpmn:incoming>
-      <bpmn:outgoing>Flow_1vvqqxc</bpmn:outgoing>
-      <bpmn:script>System.out.println("drugStatus value: " + kcontext.getVariable("drugStatus"));
-  System.out.println("drugResponse value: " + kcontext.getVariable("drugResponse"));</bpmn:script>
-    </bpmn:scriptTask>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -247,32 +240,29 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
-        <dc:Bounds x="52" y="192" width="36" height="36" />
+        <dc:Bounds x="182" y="192" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="58" y="233" width="24" height="14" />
+          <dc:Bounds x="188" y="233" width="24" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1ix2kn3_di" bpmnElement="Activity_0as8h27">
-        <dc:Bounds x="160" y="170" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1wkzhfc_di" bpmnElement="Activity_02jwcaw">
-        <dc:Bounds x="170" y="340" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0nlku98_di" bpmnElement="Activity_0nlku98">
         <dc:Bounds x="290" y="170" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0wjiksd_di" bpmnElement="Activity_0xnwbur">
-        <dc:Bounds x="450" y="170" width="100" height="80" />
+      <bpmndi:BPMNShape id="Activity_1wkzhfc_di" bpmnElement="Activity_02jwcaw">
+        <dc:Bounds x="300" y="340" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0nlku98_di" bpmnElement="Activity_0nlku98">
+        <dc:Bounds x="420" y="170" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
-        <di:waypoint x="220" y="268" />
-        <di:waypoint x="220" y="340" />
+        <di:waypoint x="350" y="268" />
+        <di:waypoint x="350" y="340" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
-        <dc:Bounds x="202" y="232" width="36" height="36" />
+        <dc:Bounds x="332" y="232" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1du2ysb_di" bpmnElement="Flow_1du2ysb">
         <di:waypoint x="825" y="210" />
@@ -282,27 +272,21 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <di:waypoint x="800" y="235" />
         <di:waypoint x="800" y="322" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_01aysjx_di" bpmnElement="Flow_01aysjx">
-        <di:waypoint x="260" y="210" />
-        <di:waypoint x="290" y="210" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1sfhri7_di" bpmnElement="Flow_1sfhri7">
-        <di:waypoint x="390" y="180" />
-        <di:waypoint x="390" y="150" />
-        <di:waypoint x="450" y="150" />
-        <di:waypoint x="450" y="180" />
+        <di:waypoint x="520" y="210" />
+        <di:waypoint x="600" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_04zlnva_di" bpmnElement="Flow_04zlnva">
         <di:waypoint x="700" y="210" />
         <di:waypoint x="775" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1vvqqxc_di" bpmnElement="Flow_1vvqqxc">
-        <di:waypoint x="550" y="210" />
-        <di:waypoint x="600" y="210" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_12vdxhy_di" bpmnElement="Flow_12vdxhy">
-        <di:waypoint x="88" y="210" />
-        <di:waypoint x="160" y="210" />
+        <di:waypoint x="218" y="210" />
+        <di:waypoint x="290" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_01aysjx_di" bpmnElement="Flow_01aysjx">
+        <di:waypoint x="390" y="210" />
+        <di:waypoint x="420" y="210" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

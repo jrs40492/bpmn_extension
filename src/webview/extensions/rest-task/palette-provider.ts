@@ -55,7 +55,8 @@ interface ModdleElement {
  */
 export const REST_PARAMS = {
   inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],
-  outputs: ['Result', 'StatusCode', 'StatusMsg']
+  // Note: jBPM RESTWorkItemHandler uses 'Status' (not 'StatusCode') and it's a String type
+  outputs: ['Result', 'Status', 'StatusMsg']
 } as const;
 
 /**
@@ -137,10 +138,11 @@ export default class RestTaskPaletteProvider {
             name: paramName
           });
           // Set drools:dtype for Kogito compatibility
-          // StatusCode is an Integer, others are String
-          if (paramName === 'StatusCode') {
-            dataOutput.set('drools:dtype', 'java.lang.Integer');
+          // Result type depends on ResultClass, Status and StatusMsg are Strings
+          if (paramName === 'Result') {
+            dataOutput.set('drools:dtype', 'java.util.Map');
           } else {
+            // Status and StatusMsg are Strings in jBPM RESTWorkItemHandler
             dataOutput.set('drools:dtype', 'java.lang.String');
           }
           dataOutputs.set(paramName, dataOutput);
@@ -451,10 +453,11 @@ export function getResultVariableName(element: any): string | null {
 }
 
 /**
- * Get the target process variable name from the StatusCode output association
+ * Get the target process variable name from the Status output association
+ * Note: jBPM RESTWorkItemHandler uses 'Status' (not 'StatusCode')
  */
 export function getStatusCodeVariableName(element: any): string | null {
-  return getOutputVariableName(element, 'StatusCode');
+  return getOutputVariableName(element, 'Status');
 }
 
 /**
@@ -613,15 +616,16 @@ export function updateOutputVariable(element: any, outputName: string, variableN
     dataOutput = dataOutputs.find((d: any) => d.name === outputName);
   }
 
-  // If dataOutput doesn't exist, create it (for existing REST tasks without StatusCode/StatusMsg)
+  // If dataOutput doesn't exist, create it (for existing REST tasks without Status/StatusMsg)
   if (!dataOutput) {
     const taskId = bo.id || 'Task';
     const outputId = `${taskId}_${outputName}Output`;
 
     // Determine the data type based on output name
+    // Note: jBPM RESTWorkItemHandler returns Status as String, not Integer
     let dtype = 'java.lang.String';
-    if (outputName === 'StatusCode') {
-      dtype = 'java.lang.Integer';
+    if (outputName === 'Result') {
+      dtype = 'java.util.Map';
     }
 
     dataOutput = bpmnFactory.create('bpmn:DataOutput', {
@@ -697,10 +701,11 @@ export function updateResultVariable(element: any, variableName: string, modelin
 }
 
 /**
- * Update the StatusCode output association to target a different process variable
+ * Update the Status output association to target a different process variable
+ * Note: jBPM RESTWorkItemHandler uses 'Status' (not 'StatusCode') and it's a String
  */
 export function updateStatusCodeVariable(element: any, variableName: string, modeling: any, bpmnFactory: any): void {
-  updateOutputVariable(element, 'StatusCode', variableName, modeling, bpmnFactory, 'java.lang.Integer');
+  updateOutputVariable(element, 'Status', variableName, modeling, bpmnFactory, 'java.lang.String');
 }
 
 /**
