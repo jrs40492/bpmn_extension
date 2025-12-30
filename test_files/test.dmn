@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
   <decision id="Decision_1" name="Decision">
     <variable id="Decision_1_variable" name="Decision" typeRef="string" />
+    <informationRequirement id="InformationRequirement_0d9ccj9">
+      <requiredInput href="#InputData_13w9zpa" />
+    </informationRequirement>
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="boolean">
@@ -77,11 +80,22 @@
       </rule>
     </decisionTable>
   </decision>
+  <inputData id="InputData_13w9zpa" name="drugResposne">
+    <variable id="InputData_13w9zpa_variable" name="InputData_13w9zpa" typeRef="Any" />
+  </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
       <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
         <dc:Bounds height="80" width="180" x="370" y="160" />
       </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_1mx9knm" dmnElementRef="InputData_13w9zpa">
+        <dc:Bounds height="45" width="125" x="138" y="178" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1o0x7q8" dmnElementRef="InformationRequirement_0d9ccj9">
+        <di:waypoint x="263" y="201" />
+        <di:waypoint x="350" y="200" />
+        <di:waypoint x="370" y="200" />
+      </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
 </definitions>
