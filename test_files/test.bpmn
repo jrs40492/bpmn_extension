@@ -111,6 +111,11 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:targetRef>Activity_1im8ao1_drugResponseInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0xprid4">
+        <bpmn:sourceRef>Activity_1im8ao1_DecisionOutputX</bpmn:sourceRef>
+        <bpmn:targetRef>decision</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0lnv8ta">
+        <bpmn:sourceRef>Activity_1im8ao1_DecisionOutputX</bpmn:sourceRef>
         <bpmn:targetRef>decision</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>

@@ -853,10 +853,12 @@ function setDmnOutputMapping(element: BpmnElement, outputName: string, variableN
     });
   } else {
     // Create new association
+    // Note: sourceRef is an array in bpmn-js moddle, containing references to dataOutput elements
     const newAssoc = bpmnFactory.create('bpmn:DataOutputAssociation', {
-      sourceRef: dataOutput,
       targetRef: propertyElement
     }) as DataOutputAssociation;
+    // sourceRef must be set as an array containing the dataOutput reference
+    (newAssoc as any).sourceRef = [dataOutput];
     newAssoc.$parent = bo;
 
     // Add to associations list
