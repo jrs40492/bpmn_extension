@@ -5,23 +5,10 @@
     <informationRequirement id="InformationRequirement_1plso4s">
       <requiredInput href="#InputData_0kn62gf" />
     </informationRequirement>
-    <informationRequirement id="InformationRequirement_1wa85ob">
-      <requiredInput href="#InputData_0o7subf" />
-    </informationRequirement>
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="boolean">
-          <text>drugResponse.data != null</text>
-        </inputExpression>
-      </input>
-      <input id="InputClause_0r4skj8">
-        <inputExpression id="LiteralExpression_0plw1vo" typeRef="boolean">
-          <text>drugStatus = "410"</text>
-        </inputExpression>
-      </input>
-      <input id="InputClause_0mv7q0v">
-        <inputExpression id="LiteralExpression_1l1f5vw" typeRef="boolean">
-          <text>drugStatus = "500"</text>
+          <text>drugResponse != null and drugResponse.data != null</text>
         </inputExpression>
       </input>
       <output id="Output_1" name="decision" typeRef="string" />
@@ -29,53 +16,13 @@
         <inputEntry id="InputEntry_1">
           <text>true</text>
         </inputEntry>
-        <inputEntry id="UnaryTests_0knv9lc">
-          <text>-</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_0jdi57b">
-          <text>-</text>
-        </inputEntry>
         <outputEntry id="OutputEntry_1">
           <text>"OK"</text>
         </outputEntry>
       </rule>
-      <rule id="DecisionRule_16wiggf">
-        <inputEntry id="UnaryTests_10ry1xn">
-          <text>false</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_0gibcfs">
-          <text>true</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_1ytxlnd">
-          <text>-</text>
-        </inputEntry>
-        <outputEntry id="LiteralExpression_015699v">
-          <text>"INACTIVE"</text>
-        </outputEntry>
-      </rule>
-      <rule id="DecisionRule_0voovel">
-        <inputEntry id="UnaryTests_0ewps5n">
-          <text>false</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_1voobei">
-          <text>false</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_06lbkes">
-          <text>true</text>
-        </inputEntry>
-        <outputEntry id="LiteralExpression_0aqqc3w">
-          <text>"SERVER_ERROR"</text>
-        </outputEntry>
-      </rule>
       <rule id="DecisionRule_1oa49x7">
         <inputEntry id="UnaryTests_0rm7228">
-          <text>-</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_0h7jin0">
-          <text>-</text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_0rm8ka5">
-          <text>-</text>
+          <text>false</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_08npv29">
           <text>"NOT_FOUND"</text>
@@ -85,9 +32,6 @@
   </decision>
   <inputData id="InputData_0kn62gf" name="drugResponse">
     <variable id="InputData_0kn62gf_variable" name="drugResponse" typeRef="Any" />
-  </inputData>
-  <inputData id="InputData_0o7subf" name="drugStatus">
-    <variable id="InputData_0o7subf_variable" name="drugStatus" typeRef="string" />
   </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
@@ -101,14 +45,6 @@
         <di:waypoint x="273" y="201" />
         <di:waypoint x="350" y="200" />
         <di:waypoint x="370" y="200" />
-      </dmndi:DMNEdge>
-      <dmndi:DMNShape id="DMNShape_04t0ijy" dmnElementRef="InputData_0o7subf">
-        <dc:Bounds height="45" width="125" x="149" y="288" />
-      </dmndi:DMNShape>
-      <dmndi:DMNEdge id="DMNEdge_17u67sr" dmnElementRef="InformationRequirement_1wa85ob">
-        <di:waypoint x="212" y="288" />
-        <di:waypoint x="460" y="260" />
-        <di:waypoint x="460" y="240" />
       </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>

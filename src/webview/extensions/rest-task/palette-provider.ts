@@ -54,7 +54,7 @@ interface ModdleElement {
  * - Headers: Custom headers as JSON object
  */
 export const REST_PARAMS = {
-  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],
+  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass', 'HandleResponseErrors'],
   // Note: jBPM RESTWorkItemHandler uses 'Status' (not 'StatusCode') and it's a String type
   outputs: ['Result', 'Status', 'StatusMsg']
 } as const;
@@ -71,7 +71,8 @@ const DEFAULT_CONFIG: Record<string, string> = {
   Content: '',
   ConnectTimeout: '30000',
   ReadTimeout: '30000',
-  ResultClass: ''
+  ResultClass: '',
+  HandleResponseErrors: 'false'
 };
 
 export default class RestTaskPaletteProvider {
