@@ -116,7 +116,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_1o8dz1q">
         <bpmn:targetRef>Activity_18pfejd_UrlInput</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">https://master-api.testing.covermymeds.com/drugs/${ddid}?api_id=test&amp;v=1</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">https://master-api.testing.covermymeds.com/drugs/{ddid}?api_id=test&amp;v=1</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_18pfejd_UrlInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
