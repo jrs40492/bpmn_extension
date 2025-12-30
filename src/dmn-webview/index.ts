@@ -101,10 +101,8 @@ async function init(): Promise<void> {
   const sendChange = debounce(async () => {
     try {
       const { xml } = await dmnModeler.saveXML({ format: true });
-      if (xml !== lastKnownXml) {
-        lastKnownXml = xml;
-        postMessage({ type: 'change', xml });
-      }
+      // Always send changes - extension-side handles deduplication
+      postMessage({ type: 'change', xml });
     } catch (err) {
       console.error('Failed to export DMN:', err);
     }

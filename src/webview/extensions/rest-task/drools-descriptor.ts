@@ -27,6 +27,32 @@ export const droolsDescriptor = {
       ]
     },
     {
+      // Extends bpmn:DataInput to add drools:dtype attribute (required by Kogito/BAMOE)
+      name: 'DataInputExtension',
+      isAbstract: true,
+      extends: ['bpmn:DataInput'],
+      properties: [
+        {
+          name: 'dtype',
+          type: 'String',
+          isAttr: true
+        }
+      ]
+    },
+    {
+      // Extends bpmn:DataOutput to add drools:dtype attribute (required by Kogito/BAMOE)
+      name: 'DataOutputExtension',
+      isAbstract: true,
+      extends: ['bpmn:DataOutput'],
+      properties: [
+        {
+          name: 'dtype',
+          type: 'String',
+          isAttr: true
+        }
+      ]
+    },
+    {
       name: 'metaData',
       superClass: ['Element'],
       properties: [

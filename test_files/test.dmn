@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
   <decision id="Decision_1" name="Decision">
+    <informationRequirement id="InformationRequirement_1qthh2i">
+      <requiredInput href="#InputData_1v2gek9" />
+    </informationRequirement>
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="boolean">
@@ -17,7 +20,7 @@
           <text>matches(drugResponse.status, "500")</text>
         </inputExpression>
       </input>
-      <output id="Output_1" label="Output" typeRef="string" />
+      <output id="Output_1" name="decision" typeRef="string" />
       <rule id="Rule_1">
         <inputEntry id="InputEntry_1">
           <text>true</text>
@@ -37,7 +40,7 @@
           <text>false</text>
         </inputEntry>
         <inputEntry id="UnaryTests_0gibcfs">
-          <text></text>
+          <text>true</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1ytxlnd">
           <text></text>
@@ -51,10 +54,10 @@
           <text>false</text>
         </inputEntry>
         <inputEntry id="UnaryTests_1voobei">
-          <text></text>
+          <text>false</text>
         </inputEntry>
         <inputEntry id="UnaryTests_06lbkes">
-          <text></text>
+          <text>true</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_0aqqc3w">
           <text>"SERVER_ERROR"</text>
@@ -62,7 +65,7 @@
       </rule>
       <rule id="DecisionRule_1oa49x7">
         <inputEntry id="UnaryTests_0rm7228">
-          <text>false</text>
+          <text></text>
         </inputEntry>
         <inputEntry id="UnaryTests_0h7jin0">
           <text></text>
@@ -74,27 +77,22 @@
           <text>"NOT_FOUND"</text>
         </outputEntry>
       </rule>
-      <rule id="DecisionRule_1x74g7q">
-        <inputEntry id="UnaryTests_0kmvwmj">
-          <text></text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_17bnoxx">
-          <text></text>
-        </inputEntry>
-        <inputEntry id="UnaryTests_0o2y3sx">
-          <text></text>
-        </inputEntry>
-        <outputEntry id="LiteralExpression_1062la0">
-          <text></text>
-        </outputEntry>
-      </rule>
     </decisionTable>
   </decision>
+  <inputData id="InputData_1v2gek9" name="drugResponse" />
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
       <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
-        <dc:Bounds height="80" width="180" x="210" y="150" />
+        <dc:Bounds height="80" width="180" x="370" y="160" />
       </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_032bo0y" dmnElementRef="InputData_1v2gek9">
+        <dc:Bounds height="45" width="125" x="137" y="177" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_1h2at7k" dmnElementRef="InformationRequirement_1qthh2i">
+        <di:waypoint x="262" y="200" />
+        <di:waypoint x="350" y="200" />
+        <di:waypoint x="370" y="200" />
+      </dmndi:DMNEdge>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
 </definitions>

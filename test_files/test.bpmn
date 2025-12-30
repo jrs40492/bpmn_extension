@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:dmn="http://bamoe.io/schema/dmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -33,50 +33,47 @@
     <bpmn:sequenceFlow id="Flow_191lbsq" sourceRef="Gateway_1dpe896" targetRef="Event_0n168m6">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision != "OK"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:intermediateThrowEvent id="Event_0n168m6" name="Compensate">
-      <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
-      <bpmn:compensateEventDefinition id="CompensateEventDefinition_13gm7v2" activityRef="Activity_0as8h27" />
-    </bpmn:intermediateThrowEvent>
     <bpmn:businessRuleTask id="Activity_1cvnqsq" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
+      <bpmn:extensionElements />
       <bpmn:incoming>Flow_131mnuw</bpmn:incoming>
       <bpmn:outgoing>Flow_1vz8zap</bpmn:outgoing>
       <bpmn:ioSpecification id="Activity_1cvnqsq_IoSpec">
-        <bpmn:dataInput id="Activity_1cvnqsq_modelInput" name="model" />
-        <bpmn:dataInput id="Activity_1cvnqsq_namespaceInput" name="namespace" />
-        <bpmn:dataInput id="Activity_1cvnqsq_decisionInput" name="decision" />
-        <bpmn:dataOutput id="Activity_1cvnqsq_decisionOutput" name="decision" />
+        <bpmn:dataInput id="Activity_1cvnqsq_namespaceInputX" name="namespace" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1cvnqsq_modelInputX" name="model" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1cvnqsq_decisionInputX" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataOutput id="Activity_1cvnqsq_decisionOutputX" name="decision" drools:dtype="java.lang.String" />
         <bpmn:inputSet id="Activity_1cvnqsq_InputSet">
-          <bpmn:dataInputRefs>Activity_1cvnqsq_modelInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_1cvnqsq_namespaceInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_1cvnqsq_decisionInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1cvnqsq_namespaceInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1cvnqsq_modelInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1cvnqsq_decisionInputX</bpmn:dataInputRefs>
         </bpmn:inputSet>
         <bpmn:outputSet id="Activity_1cvnqsq_OutputSet">
-          <bpmn:dataOutputRefs>Activity_1cvnqsq_decisionOutput</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_1cvnqsq_decisionOutputX</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
-      <bpmn:dataInputAssociation id="Activity_1cvnqsq_modelAssociation">
-        <bpmn:targetRef>Activity_1cvnqsq_modelInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="Activity_1cvnqsq_namespaceAssociation">
+        <bpmn:targetRef>Activity_1cvnqsq_namespaceInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">test.dmn</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_modelInput</bpmn:to>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">http://camunda.org/schema/1.0/dmn</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_namespaceInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="Activity_1cvnqsq_namespaceAssociation">
-        <bpmn:targetRef>Activity_1cvnqsq_namespaceInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="Activity_1cvnqsq_modelAssociation">
+        <bpmn:targetRef>Activity_1cvnqsq_modelInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">https://kiegroup.org/dmn/_test</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_namespaceInput</bpmn:to>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">test.dmn</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_modelInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
       <bpmn:dataInputAssociation id="Activity_1cvnqsq_decisionAssociation">
-        <bpmn:targetRef>Activity_1cvnqsq_decisionInput</bpmn:targetRef>
+        <bpmn:targetRef>Activity_1cvnqsq_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_1</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_decisionInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="Activity_1cvnqsq_decisionOutputAssociation">
-        <bpmn:sourceRef>Activity_1cvnqsq_decisionOutput</bpmn:sourceRef>
+        <bpmn:sourceRef>Activity_1cvnqsq_decisionOutputX</bpmn:sourceRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
     <bpmn:sequenceFlow id="Flow_1vz8zap" sourceRef="Activity_1cvnqsq" targetRef="Gateway_1dpe896" />
@@ -155,6 +152,10 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_131mnuw" sourceRef="Activity_1nbpf3m" targetRef="Activity_1cvnqsq" />
+    <bpmn:endEvent id="Event_0n168m6" name="Compensate">
+      <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_0zjmykc" activityRef="Activity_0as8h27" />
+    </bpmn:endEvent>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -181,12 +182,6 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <dc:Bounds x="768" y="155" width="65" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0zzxz91_di" bpmnElement="Event_0n168m6">
-        <dc:Bounds x="782" y="322" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="769" y="365" width="63" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_00tgjnv_di" bpmnElement="Activity_1cvnqsq">
         <dc:Bounds x="600" y="170" width="100" height="80" />
         <bpmndi:BPMNLabel />
@@ -198,6 +193,12 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmndi:BPMNShape id="Activity_1nbpf3m_di" bpmnElement="Activity_1nbpf3m">
         <dc:Bounds x="420" y="170" width="100" height="80" />
         <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0v3vnls_di" bpmnElement="Event_0n168m6">
+        <dc:Bounds x="782" y="322" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="769" y="365" width="63" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
         <dc:Bounds x="302" y="232" width="36" height="36" />

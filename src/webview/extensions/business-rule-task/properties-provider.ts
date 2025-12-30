@@ -91,29 +91,83 @@ function getLegacyDecisionConfig(element: any): any {
   return values.find((ext: any) => ext.$type === 'dmn:DecisionTaskConfig');
 }
 
-// Helper to ensure ioSpecification and data inputs exist
+// Helper to ensure drools:metaData extension element exists
+function ensureMetaData(element: any, bpmnFactory: any, commandStack: any): void {
+  const bo = element.businessObject;
+
+  // Get or create extension elements
+  let extensionElements = bo.extensionElements;
+  if (!extensionElements) {
+    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+    extensionElements.$parent = bo;
+  }
+
+  // Check if metaData already exists
+  const values = extensionElements.values || [];
+  const hasMetaData = values.some((v: any) => v.$type === 'drools:MetaData' && v.name === 'elementname');
+
+  if (!hasMetaData) {
+    // Create drools:metaData element
+    const metaData = bpmnFactory.create('drools:MetaData', {
+      name: 'elementname'
+    });
+    // Set the metaValue (element name)
+    metaData.metaValue = bo.name || bo.id;
+    metaData.$parent = extensionElements;
+    values.push(metaData);
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: {
+        extensionElements
+      }
+    });
+  }
+}
+
+// Helper to ensure ioSpecification and data inputs exist (Kogito/BAMOE compatible format)
 function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any): any {
   const bo = element.businessObject;
   const taskId = bo.id;
 
-  // Check if ioSpecification already exists
+  // Check if ioSpecification already exists with the correct inputs
   let ioSpec = bo.ioSpecification;
   if (ioSpec) {
-    return ioSpec;
+    // Check if it has the required DMN inputs (namespace, model, decision)
+    const dataInputs = ioSpec.dataInputs || [];
+    const hasNamespace = dataInputs.some((di: any) => di.name === 'namespace');
+    const hasModel = dataInputs.some((di: any) => di.name === 'model');
+    if (hasNamespace && hasModel) {
+      return ioSpec;
+    }
   }
 
-  // Create data inputs
+  // Ensure metaData extension element exists
+  ensureMetaData(element, bpmnFactory, commandStack);
+
+  // Create data inputs with drools:dtype attribute (Kogito format uses InputX suffix)
   const dataInputs: any[] = [];
   const dataInputRefs: any[] = [];
 
-  for (const inputName of [DMN_DATA_INPUTS.MODEL, DMN_DATA_INPUTS.NAMESPACE, DMN_DATA_INPUTS.DECISION]) {
+  // Order: namespace, model, decision (matching Kogito examples)
+  for (const inputName of [DMN_DATA_INPUTS.NAMESPACE, DMN_DATA_INPUTS.MODEL, DMN_DATA_INPUTS.DECISION]) {
     const dataInput = bpmnFactory.create('bpmn:DataInput', {
-      id: `${taskId}_${inputName}Input`,
+      id: `${taskId}_${inputName}InputX`,
       name: inputName
     });
+    // Set drools:dtype attribute for Kogito compatibility
+    dataInput.set('drools:dtype', 'java.lang.String');
     dataInputs.push(dataInput);
     dataInputRefs.push(dataInput);
   }
+
+  // Create data output for decision result
+  const dataOutput = bpmnFactory.create('bpmn:DataOutput', {
+    id: `${taskId}_decisionOutputX`,
+    name: 'decision'
+  });
+  dataOutput.set('drools:dtype', 'java.lang.String');
 
   // Create input set
   const inputSet = bpmnFactory.create('bpmn:InputSet', {
@@ -121,23 +175,24 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     dataInputRefs: dataInputRefs
   });
 
-  // Create output set (empty for now)
+  // Create output set
   const outputSet = bpmnFactory.create('bpmn:OutputSet', {
     id: `${taskId}_OutputSet`,
-    dataOutputRefs: []
+    dataOutputRefs: [dataOutput]
   });
 
   // Create ioSpecification
   ioSpec = bpmnFactory.create('bpmn:InputOutputSpecification', {
     id: `${taskId}_IoSpec`,
     dataInputs: dataInputs,
-    dataOutputs: [],
+    dataOutputs: [dataOutput],
     inputSets: [inputSet],
     outputSets: [outputSet]
   });
 
   // Set parent references
   dataInputs.forEach(di => { di.$parent = ioSpec; });
+  dataOutput.$parent = ioSpec;
   inputSet.$parent = ioSpec;
   outputSet.$parent = ioSpec;
   ioSpec.$parent = bo;
@@ -161,6 +216,13 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     dataInputAssociations.push(association);
   }
 
+  // Create data output association (maps result to 'decision' process variable)
+  const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
+    id: `${taskId}_decisionOutputAssociation`,
+    sourceRef: [dataOutput]
+  });
+  dataOutputAssociation.$parent = bo;
+
   // Update element with new ioSpecification and associations
   commandStack.execute('element.updateModdleProperties', {
     element,
@@ -168,7 +230,8 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     properties: {
       implementation: DMN_IMPLEMENTATION_URI,
       ioSpecification: ioSpec,
-      dataInputAssociations: dataInputAssociations
+      dataInputAssociations: dataInputAssociations,
+      dataOutputAssociations: [dataOutputAssociation]
     }
   });
 
@@ -182,7 +245,7 @@ function setDataInputValue(element: any, inputName: string, value: string, bpmnF
   // Ensure ioSpecification exists
   ensureIoSpecification(element, bpmnFactory, commandStack);
 
-  // Find the association for this input
+  // Find the association for this input (handles both InputX and Input suffixes)
   const associations = bo.dataInputAssociations || [];
   for (const assoc of associations) {
     const targetRef = assoc.targetRef;
@@ -197,6 +260,35 @@ function setDataInputValue(element: any, inputName: string, value: string, bpmnF
         });
         return;
       }
+    }
+  }
+
+  // If not found, create a new association (for existing elements without the DMN inputs)
+  const ioSpec = bo.ioSpecification;
+  if (ioSpec) {
+    const dataInputs = ioSpec.dataInputs || [];
+    const dataInput = dataInputs.find((di: any) => di.name === inputName);
+    if (dataInput) {
+      const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: value });
+      const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });
+      const assignment = bpmnFactory.create('bpmn:Assignment', {
+        from: fromExpression,
+        to: toExpression
+      });
+      const association = bpmnFactory.create('bpmn:DataInputAssociation', {
+        id: `${bo.id}_${inputName}Association`,
+        targetRef: dataInput,
+        assignment: [assignment]
+      });
+      assignment.$parent = association;
+      association.$parent = bo;
+
+      const newAssociations = [...(bo.dataInputAssociations || []), association];
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: bo,
+        properties: { dataInputAssociations: newAssociations }
+      });
     }
   }
 }
