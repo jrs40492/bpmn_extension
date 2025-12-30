@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+  <!-- itemDefinitions for Business Rule Task DMN inputs/outputs -->
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_namespaceInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_modelInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionOutputXItem" structureRef="java.lang.String" />
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -113,19 +118,19 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0zjmykc" activityRef="Activity_0as8h27" />
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_0307s9q" sourceRef="Activity_1qz1b6m" targetRef="Gateway_1dpe896" />
-    <bpmn:businessRuleTask id="Activity_1qz1b6m" implementation="http://www.jboss.org/drools/dmn">
+    <bpmn:businessRuleTask id="Activity_1qz1b6m" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements>
         <drools:metaData name="elementname">
-          <drools:metaValue>Activity_1qz1b6m</drools:metaValue>
+          <drools:metaValue><![CDATA[Step 3 Decide]]></drools:metaValue>
         </drools:metaData>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_131mnuw</bpmn:incoming>
       <bpmn:outgoing>Flow_0307s9q</bpmn:outgoing>
       <bpmn:ioSpecification id="Activity_1qz1b6m_IoSpec">
-        <bpmn:dataInput id="Activity_1qz1b6m_namespaceInputX" name="namespace" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_1qz1b6m_modelInputX" name="model" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_1qz1b6m_decisionInputX" name="decision" drools:dtype="java.lang.String" />
-        <bpmn:dataOutput id="Activity_1qz1b6m_decisionOutputX" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1qz1b6m_namespaceInputX" name="namespace" drools:dtype="java.lang.String" itemSubjectRef="_Activity_1qz1b6m_namespaceInputXItem" />
+        <bpmn:dataInput id="Activity_1qz1b6m_modelInputX" name="model" drools:dtype="java.lang.String" itemSubjectRef="_Activity_1qz1b6m_modelInputXItem" />
+        <bpmn:dataInput id="Activity_1qz1b6m_decisionInputX" name="decision" drools:dtype="java.lang.String" itemSubjectRef="_Activity_1qz1b6m_decisionInputXItem" />
+        <bpmn:dataOutput id="Activity_1qz1b6m_decisionOutputX" name="decision" drools:dtype="java.lang.String" itemSubjectRef="_Activity_1qz1b6m_decisionOutputXItem" />
         <bpmn:inputSet id="Activity_1qz1b6m_InputSet">
           <bpmn:dataInputRefs>Activity_1qz1b6m_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1qz1b6m_modelInputX</bpmn:dataInputRefs>
