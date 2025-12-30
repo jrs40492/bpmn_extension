@@ -37,12 +37,47 @@
       <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_13gm7v2" activityRef="Activity_0as8h27" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:businessRuleTask id="Activity_1cvnqsq" name="Step 3 Decide">
-      <bpmn:extensionElements>
-        <dmn:decisionTaskConfig decisionRef="Decision_1" dmnFile="test.dmn" dmnFileName="test.dmn" resultVariable="decision" />
-      </bpmn:extensionElements>
+    <bpmn:businessRuleTask id="Activity_1cvnqsq" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:incoming>Flow_131mnuw</bpmn:incoming>
       <bpmn:outgoing>Flow_1vz8zap</bpmn:outgoing>
+      <bpmn:ioSpecification id="Activity_1cvnqsq_IoSpec">
+        <bpmn:dataInput id="Activity_1cvnqsq_modelInput" name="model" />
+        <bpmn:dataInput id="Activity_1cvnqsq_namespaceInput" name="namespace" />
+        <bpmn:dataInput id="Activity_1cvnqsq_decisionInput" name="decision" />
+        <bpmn:dataOutput id="Activity_1cvnqsq_decisionOutput" name="decision" />
+        <bpmn:inputSet id="Activity_1cvnqsq_InputSet">
+          <bpmn:dataInputRefs>Activity_1cvnqsq_modelInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1cvnqsq_namespaceInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1cvnqsq_decisionInput</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet id="Activity_1cvnqsq_OutputSet">
+          <bpmn:dataOutputRefs>Activity_1cvnqsq_decisionOutput</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="Activity_1cvnqsq_modelAssociation">
+        <bpmn:targetRef>Activity_1cvnqsq_modelInput</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">test.dmn</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_modelInput</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="Activity_1cvnqsq_namespaceAssociation">
+        <bpmn:targetRef>Activity_1cvnqsq_namespaceInput</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">https://kiegroup.org/dmn/_test</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_namespaceInput</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="Activity_1cvnqsq_decisionAssociation">
+        <bpmn:targetRef>Activity_1cvnqsq_decisionInput</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_1</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1cvnqsq_decisionInput</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="Activity_1cvnqsq_decisionOutputAssociation">
+        <bpmn:sourceRef>Activity_1cvnqsq_decisionOutput</bpmn:sourceRef>
+      </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
     <bpmn:sequenceFlow id="Flow_1vz8zap" sourceRef="Activity_1cvnqsq" targetRef="Gateway_1dpe896" />
     <bpmn:scriptTask id="Activity_02jwcaw" name="Step 5 compensate" isForCompensation="true" scriptFormat="java">

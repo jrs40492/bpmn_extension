@@ -1,9 +1,14 @@
 /**
  * Custom Renderer for Business Rule Task
  * Adds a visual indicator showing DMN decision linking
+ *
+ * Supports both:
+ * - New Kogito format: ioSpecification with dataInputAssociations
+ * - Legacy format: dmn:DecisionTaskConfig extension element
  */
 
 import BaseRenderer from 'diagram-js/lib/draw/BaseRenderer';
+import { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
 
 const HIGH_PRIORITY = 1500;
 
@@ -11,6 +16,11 @@ interface Element {
   businessObject: {
     $type: string;
     name?: string;
+    implementation?: string;
+    dataInputAssociations?: Array<{
+      targetRef?: { name?: string };
+      assignment?: Array<{ from?: { body?: string } }>;
+    }>;
     extensionElements?: {
       values?: Array<{
         $type: string;
@@ -28,9 +38,40 @@ function isBusinessRuleTask(element: Element): boolean {
   return element.businessObject?.$type === 'bpmn:BusinessRuleTask';
 }
 
-// Helper to get decision config
+// Helper to get data input value from ioSpecification (Kogito format)
+function getDataInputValue(element: Element, inputName: string): string {
+  const bo = element.businessObject;
+  if (!bo?.dataInputAssociations) return '';
+
+  for (const assoc of bo.dataInputAssociations) {
+    if (assoc.targetRef?.name === inputName) {
+      const assignment = assoc.assignment?.[0];
+      if (assignment?.from?.body !== undefined) {
+        return assignment.from.body;
+      }
+    }
+  }
+  return '';
+}
+
+// Helper to get decision config (supports both new and legacy formats)
 function getDecisionConfig(element: Element): { decisionRef?: string; dmnFileName?: string } | null {
-  const extensionElements = element.businessObject?.extensionElements;
+  const bo = element.businessObject;
+
+  // Check new Kogito format first
+  if (bo?.implementation === DMN_IMPLEMENTATION_URI || bo?.dataInputAssociations?.length) {
+    const model = getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
+    const decision = getDataInputValue(element, DMN_DATA_INPUTS.DECISION);
+    if (model || decision) {
+      return {
+        decisionRef: decision,
+        dmnFileName: model
+      };
+    }
+  }
+
+  // Fall back to legacy format
+  const extensionElements = bo?.extensionElements;
   if (!extensionElements?.values) return null;
 
   return extensionElements.values.find(

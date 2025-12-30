@@ -1,6 +1,11 @@
 /**
  * Business Rule Task Properties Provider
- * Adds DMN decision linking properties to the properties panel
+ * Uses Kogito/jBPM compatible BPMN format for DMN decision linking
+ *
+ * Format:
+ * - businessRuleTask with implementation="http://www.jboss.org/drools/dmn"
+ * - ioSpecification with dataInputs: model, namespace, decision
+ * - dataInputAssociation with assignments for values
  */
 
 // @ts-expect-error - no type definitions available
@@ -8,10 +13,13 @@ import { TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
 
+import { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
+
 // Interface for DMN file information
 export interface DmnFileInfo {
   path: string;
   name: string;
+  namespace?: string;
   decisions: Array<{
     id: string;
     name: string;
@@ -36,8 +44,43 @@ function isBusinessRuleTask(element: any): boolean {
   return element?.businessObject?.$type === 'bpmn:BusinessRuleTask';
 }
 
-// Helper to get decision config from element
-function getDecisionConfig(element: any): any {
+// Helper to check if business rule task has DMN implementation
+function hasDmnImplementation(element: any): boolean {
+  const bo = element?.businessObject;
+  return bo?.implementation === DMN_IMPLEMENTATION_URI;
+}
+
+// Helper to get data input value from ioSpecification
+function getDataInputValue(element: any, inputName: string): string {
+  const bo = element?.businessObject;
+  if (!bo) return '';
+
+  // First check for legacy dmn:DecisionTaskConfig format
+  const legacyConfig = getLegacyDecisionConfig(element);
+  if (legacyConfig) {
+    if (inputName === DMN_DATA_INPUTS.MODEL) return legacyConfig.dmnFileName || legacyConfig.dmnFile || '';
+    if (inputName === DMN_DATA_INPUTS.DECISION) return legacyConfig.decisionRef || '';
+    if (inputName === DMN_DATA_INPUTS.NAMESPACE) return '';
+  }
+
+  // Look in dataInputAssociations
+  const associations = bo.dataInputAssociations || [];
+  for (const assoc of associations) {
+    const targetRef = assoc.targetRef;
+    if (targetRef?.name === inputName) {
+      // Get value from assignment
+      const assignment = assoc.assignment?.[0];
+      if (assignment?.from?.body !== undefined) {
+        return assignment.from.body;
+      }
+    }
+  }
+
+  return '';
+}
+
+// Helper to get legacy DecisionTaskConfig (for backward compatibility)
+function getLegacyDecisionConfig(element: any): any {
   const bo = element?.businessObject;
   if (!bo) return null;
 
@@ -48,45 +91,144 @@ function getDecisionConfig(element: any): any {
   return values.find((ext: any) => ext.$type === 'dmn:DecisionTaskConfig');
 }
 
-// Helper to get or create decision config
-function getOrCreateDecisionConfig(element: any, bpmnFactory: any, commandStack: any): any {
-  let config = getDecisionConfig(element);
+// Helper to ensure ioSpecification and data inputs exist
+function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any): any {
+  const bo = element.businessObject;
+  const taskId = bo.id;
 
-  if (!config) {
-    const bo = element.businessObject;
+  // Check if ioSpecification already exists
+  let ioSpec = bo.ioSpecification;
+  if (ioSpec) {
+    return ioSpec;
+  }
 
-    // Create decision config
-    config = bpmnFactory.create('dmn:DecisionTaskConfig', {
-      decisionRef: '',
-      dmnFile: '',
-      dmnFileName: '',
-      resultVariable: 'decisionResult',
-      mapDecisionResult: 'singleResult',
-      decisionRefBinding: 'latest'
+  // Create data inputs
+  const dataInputs: any[] = [];
+  const dataInputRefs: any[] = [];
+
+  for (const inputName of [DMN_DATA_INPUTS.MODEL, DMN_DATA_INPUTS.NAMESPACE, DMN_DATA_INPUTS.DECISION]) {
+    const dataInput = bpmnFactory.create('bpmn:DataInput', {
+      id: `${taskId}_${inputName}Input`,
+      name: inputName
     });
+    dataInputs.push(dataInput);
+    dataInputRefs.push(dataInput);
+  }
 
-    // Get or create extension elements
-    let extensionElements = bo.extensionElements;
-    if (!extensionElements) {
-      extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+  // Create input set
+  const inputSet = bpmnFactory.create('bpmn:InputSet', {
+    id: `${taskId}_InputSet`,
+    dataInputRefs: dataInputRefs
+  });
+
+  // Create output set (empty for now)
+  const outputSet = bpmnFactory.create('bpmn:OutputSet', {
+    id: `${taskId}_OutputSet`,
+    dataOutputRefs: []
+  });
+
+  // Create ioSpecification
+  ioSpec = bpmnFactory.create('bpmn:InputOutputSpecification', {
+    id: `${taskId}_IoSpec`,
+    dataInputs: dataInputs,
+    dataOutputs: [],
+    inputSets: [inputSet],
+    outputSets: [outputSet]
+  });
+
+  // Set parent references
+  dataInputs.forEach(di => { di.$parent = ioSpec; });
+  inputSet.$parent = ioSpec;
+  outputSet.$parent = ioSpec;
+  ioSpec.$parent = bo;
+
+  // Create data input associations with empty values
+  const dataInputAssociations: any[] = [];
+  for (const dataInput of dataInputs) {
+    const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: '' });
+    const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });
+    const assignment = bpmnFactory.create('bpmn:Assignment', {
+      from: fromExpression,
+      to: toExpression
+    });
+    const association = bpmnFactory.create('bpmn:DataInputAssociation', {
+      id: `${taskId}_${dataInput.name}Association`,
+      targetRef: dataInput,
+      assignment: [assignment]
+    });
+    assignment.$parent = association;
+    association.$parent = bo;
+    dataInputAssociations.push(association);
+  }
+
+  // Update element with new ioSpecification and associations
+  commandStack.execute('element.updateModdleProperties', {
+    element,
+    moddleElement: bo,
+    properties: {
+      implementation: DMN_IMPLEMENTATION_URI,
+      ioSpecification: ioSpec,
+      dataInputAssociations: dataInputAssociations
     }
+  });
 
-    // Add config to extension elements
-    config.$parent = extensionElements;
-    const values = extensionElements.values || [];
-    values.push(config);
+  return ioSpec;
+}
 
-    // Update the element
+// Helper to update a data input value
+function setDataInputValue(element: any, inputName: string, value: string, bpmnFactory: any, commandStack: any): void {
+  const bo = element.businessObject;
+
+  // Ensure ioSpecification exists
+  ensureIoSpecification(element, bpmnFactory, commandStack);
+
+  // Find the association for this input
+  const associations = bo.dataInputAssociations || [];
+  for (const assoc of associations) {
+    const targetRef = assoc.targetRef;
+    if (targetRef?.name === inputName) {
+      const assignment = assoc.assignment?.[0];
+      if (assignment?.from) {
+        // Update the from expression
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: assignment.from,
+          properties: { body: value }
+        });
+        return;
+      }
+    }
+  }
+}
+
+// Remove legacy DecisionTaskConfig and migrate to new format
+function migrateLegacyConfig(element: any, bpmnFactory: any, commandStack: any): void {
+  const legacyConfig = getLegacyDecisionConfig(element);
+  if (!legacyConfig) return;
+
+  const bo = element.businessObject;
+
+  // Extract values from legacy config
+  const model = legacyConfig.dmnFileName || legacyConfig.dmnFile || '';
+  const decision = legacyConfig.decisionRef || '';
+
+  // Remove the legacy extension element
+  const extensionElements = bo.extensionElements;
+  if (extensionElements?.values) {
+    const newValues = extensionElements.values.filter((ext: any) => ext.$type !== 'dmn:DecisionTaskConfig');
     commandStack.execute('element.updateModdleProperties', {
       element,
-      moddleElement: bo,
-      properties: {
-        extensionElements
-      }
+      moddleElement: extensionElements,
+      properties: { values: newValues }
     });
   }
 
-  return config;
+  // Ensure new format is set up
+  ensureIoSpecification(element, bpmnFactory, commandStack);
+
+  // Set the migrated values
+  if (model) setDataInputValue(element, DMN_DATA_INPUTS.MODEL, model, bpmnFactory, commandStack);
+  if (decision) setDataInputValue(element, DMN_DATA_INPUTS.DECISION, decision, bpmnFactory, commandStack);
 }
 
 // DMN File Select component
@@ -98,44 +240,27 @@ function DmnFileSelect(props: { element: any; id: string }) {
   const debounce = useService('debounceInput');
 
   const getValue = () => {
-    const config = getDecisionConfig(element);
-    // Return the relative path (name) for display, matching against dmnFileName
-    const dmnFileName = config?.dmnFileName || '';
-    if (dmnFileName) {
-      // Find the file by name to get its path for the dropdown
-      const matchedFile = availableDmnFiles.find(f => f.name === dmnFileName);
-      if (matchedFile) {
-        return matchedFile.name;
-      }
-    }
-    // Fallback: check if dmnFile is already a relative path
-    return config?.dmnFile || '';
+    return getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
   };
 
   const setValue = (value: string) => {
-    const config = getOrCreateDecisionConfig(element, bpmnFactory, commandStack);
-    // Find the selected file - value is now the relative name
+    // Migrate legacy config if present
+    migrateLegacyConfig(element, bpmnFactory, commandStack);
+
+    // Ensure ioSpecification exists
+    ensureIoSpecification(element, bpmnFactory, commandStack);
+
+    // Set the model value
+    setDataInputValue(element, DMN_DATA_INPUTS.MODEL, value, bpmnFactory, commandStack);
+
+    // Find the selected file to get its namespace
     const selectedFile = availableDmnFiles.find(f => f.name === value);
+    if (selectedFile?.namespace) {
+      setDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE, selectedFile.namespace, bpmnFactory, commandStack);
+    }
 
-    // Store the relative path (name) in dmnFile, not the absolute path
-    const relativePath = selectedFile?.name || value || '';
-    const fileName = relativePath.split('/').pop() || relativePath;
-
-    // Update config properties with relative path
-    config.dmnFile = relativePath;
-    config.dmnFileName = relativePath;
     // Clear decision when file changes
-    config.decisionRef = '';
-
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: config,
-      properties: {
-        dmnFile: relativePath,
-        dmnFileName: relativePath,
-        decisionRef: ''
-      }
-    });
+    setDataInputValue(element, DMN_DATA_INPUTS.DECISION, '', bpmnFactory, commandStack);
   };
 
   const getOptions = () => {
@@ -144,7 +269,6 @@ function DmnFileSelect(props: { element: any; id: string }) {
     ];
 
     for (const file of availableDmnFiles) {
-      // Use relative name as both value and label
       options.push({
         value: file.name,
         label: file.name
@@ -175,32 +299,25 @@ function DecisionSelect(props: { element: any; id: string }) {
   const debounce = useService('debounceInput');
 
   const getValue = () => {
-    const config = getDecisionConfig(element);
-    return config?.decisionRef || '';
+    return getDataInputValue(element, DMN_DATA_INPUTS.DECISION);
   };
 
   const setValue = (value: string) => {
-    const config = getOrCreateDecisionConfig(element, bpmnFactory, commandStack);
+    // Migrate legacy config if present
+    migrateLegacyConfig(element, bpmnFactory, commandStack);
 
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: config,
-      properties: {
-        decisionRef: value || ''
-      }
-    });
+    setDataInputValue(element, DMN_DATA_INPUTS.DECISION, value, bpmnFactory, commandStack);
   };
 
   const getOptions = () => {
-    const config = getDecisionConfig(element);
-    const currentFile = config?.dmnFile || config?.dmnFileName || '';
+    const currentFile = getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
 
     const options = [
       { value: '', label: translate('-- Select Decision --') }
     ];
 
     if (currentFile) {
-      // Match by relative path (name) instead of absolute path
+      // Match by relative path (name)
       const selectedFile = availableDmnFiles.find(f =>
         f.name === currentFile ||
         f.path === currentFile ||
@@ -232,126 +349,29 @@ function DecisionSelect(props: { element: any; id: string }) {
   });
 }
 
-// Result Variable component
-function ResultVariable(props: { element: any; id: string }) {
+// DMN Namespace component (read-only, auto-populated)
+function DmnNamespace(props: { element: any; id: string }) {
   const { element, id } = props;
-  const commandStack = useService('commandStack');
-  const bpmnFactory = useService('bpmnFactory');
   const translate = useService('translate');
   const debounce = useService('debounceInput');
 
   const getValue = () => {
-    const config = getDecisionConfig(element);
-    return config?.resultVariable || 'decisionResult';
+    return getDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE);
   };
 
-  const setValue = (value: string) => {
-    const config = getOrCreateDecisionConfig(element, bpmnFactory, commandStack);
-
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: config,
-      properties: {
-        resultVariable: value || 'decisionResult'
-      }
-    });
+  const setValue = () => {
+    // Read-only - namespace is auto-populated when selecting DMN file
   };
 
   return TextFieldEntry({
     id,
     element,
-    label: translate('Result Variable'),
-    description: translate('Variable to store the decision result'),
+    label: translate('DMN Namespace'),
+    description: translate('Namespace of the DMN model (auto-populated)'),
     getValue,
     setValue,
-    debounce
-  });
-}
-
-// Map Decision Result component
-function MapDecisionResult(props: { element: any; id: string }) {
-  const { element, id } = props;
-  const commandStack = useService('commandStack');
-  const bpmnFactory = useService('bpmnFactory');
-  const translate = useService('translate');
-  const debounce = useService('debounceInput');
-
-  const getValue = () => {
-    const config = getDecisionConfig(element);
-    return config?.mapDecisionResult || 'singleResult';
-  };
-
-  const setValue = (value: string) => {
-    const config = getOrCreateDecisionConfig(element, bpmnFactory, commandStack);
-
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: config,
-      properties: {
-        mapDecisionResult: value || 'singleResult'
-      }
-    });
-  };
-
-  const getOptions = () => [
-    { value: 'singleEntry', label: translate('Single Entry (one value)') },
-    { value: 'singleResult', label: translate('Single Result (one row)') },
-    { value: 'collectEntries', label: translate('Collect Entries (list of values)') },
-    { value: 'resultList', label: translate('Result List (all rows)') }
-  ];
-
-  return SelectEntry({
-    id,
-    element,
-    label: translate('Map Decision Result'),
-    description: translate('How to map the decision output'),
-    getValue,
-    setValue,
-    getOptions,
-    debounce
-  });
-}
-
-// Decision Binding component
-function DecisionBinding(props: { element: any; id: string }) {
-  const { element, id } = props;
-  const commandStack = useService('commandStack');
-  const bpmnFactory = useService('bpmnFactory');
-  const translate = useService('translate');
-  const debounce = useService('debounceInput');
-
-  const getValue = () => {
-    const config = getDecisionConfig(element);
-    return config?.decisionRefBinding || 'latest';
-  };
-
-  const setValue = (value: string) => {
-    const config = getOrCreateDecisionConfig(element, bpmnFactory, commandStack);
-
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: config,
-      properties: {
-        decisionRefBinding: value || 'latest'
-      }
-    });
-  };
-
-  const getOptions = () => [
-    { value: 'latest', label: translate('Latest Version') },
-    { value: 'deployment', label: translate('Deployment') },
-    { value: 'version', label: translate('Specific Version') }
-  ];
-
-  return SelectEntry({
-    id,
-    element,
-    label: translate('Decision Binding'),
-    description: translate('How to resolve the decision reference'),
-    getValue,
-    setValue,
-    getOptions,
-    debounce
+    debounce,
+    disabled: true
   });
 }
 
@@ -367,36 +387,17 @@ function BusinessRuleTaskEntries(props: { element: any }): any[] {
     {
       id: 'dmnFile',
       component: DmnFileSelect,
-      isEdited: () => !!getDecisionConfig(element)?.dmnFile
+      isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.MODEL)
     },
     {
-      id: 'decisionRef',
+      id: 'dmnDecision',
       component: DecisionSelect,
-      isEdited: () => !!getDecisionConfig(element)?.decisionRef
+      isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.DECISION)
     },
     {
-      id: 'resultVariable',
-      component: ResultVariable,
-      isEdited: () => {
-        const config = getDecisionConfig(element);
-        return config?.resultVariable && config.resultVariable !== 'decisionResult';
-      }
-    },
-    {
-      id: 'mapDecisionResult',
-      component: MapDecisionResult,
-      isEdited: () => {
-        const config = getDecisionConfig(element);
-        return config?.mapDecisionResult && config.mapDecisionResult !== 'singleResult';
-      }
-    },
-    {
-      id: 'decisionRefBinding',
-      component: DecisionBinding,
-      isEdited: () => {
-        const config = getDecisionConfig(element);
-        return config?.decisionRefBinding && config.decisionRefBinding !== 'latest';
-      }
+      id: 'dmnNamespace',
+      component: DmnNamespace,
+      isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE)
     }
   ];
 }

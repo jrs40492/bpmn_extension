@@ -1,7 +1,29 @@
 /**
  * Moddle descriptor for Business Rule Task extension
- * Defines custom properties for DMN decision linking
+ *
+ * Uses Kogito/jBPM compatible format:
+ * - implementation="http://www.jboss.org/drools/dmn" attribute on businessRuleTask
+ * - Standard BPMN ioSpecification with dataInputs: model, namespace, decision
+ * - Standard dataInputAssociation with assignments for values
+ *
+ * This is compatible with Kogito, jBPM, Drools, and IBM BAMOE runtime.
  */
+
+// DMN implementation URI for Kogito/jBPM
+export const DMN_IMPLEMENTATION_URI = 'http://www.jboss.org/drools/dmn';
+
+// Data input names expected by Kogito DMN handler
+export const DMN_DATA_INPUTS = {
+  MODEL: 'model',      // Name of the DMN model (file name without extension)
+  NAMESPACE: 'namespace', // DMN namespace URI
+  DECISION: 'decision'    // Decision ID to invoke
+} as const;
+
+// Note: We don't need a custom moddle descriptor anymore since we're using
+// standard BPMN elements (ioSpecification, dataInputAssociation).
+// The 'implementation' attribute is already defined in the BPMN spec.
+// We keep this file for exports and backward compatibility.
+
 export const businessRuleTaskDescriptor = {
   name: 'BusinessRule',
   prefix: 'dmn',
@@ -10,6 +32,8 @@ export const businessRuleTaskDescriptor = {
     tagAlias: 'lowerCase'
   },
   types: [
+    // Keep DecisionTaskConfig for backward compatibility when reading old files
+    // New saves will use the Kogito-compatible format
     {
       name: 'DecisionTaskConfig',
       superClass: ['Element'],

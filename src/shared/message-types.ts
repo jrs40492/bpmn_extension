@@ -6,6 +6,7 @@
 export interface DmnFileInfo {
   path: string;
   name: string;
+  namespace?: string; // DMN model namespace (required for Kogito/jBPM)
   decisions: Array<{
     id: string;
     name: string;

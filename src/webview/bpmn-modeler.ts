@@ -186,6 +186,7 @@ function fixBpmnElementCasing(xml: string): string {
   // List of BPMN elements that need lowercase first letter
   const elementsToFix = [
     'Task',
+    'BusinessRuleTask',
     'DataInput',
     'DataOutput',
     'InputSet',

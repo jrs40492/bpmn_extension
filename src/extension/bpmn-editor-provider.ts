@@ -170,7 +170,7 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
-   * Find all DMN files in the workspace and extract their decisions
+   * Find all DMN files in the workspace and extract their decisions and namespace
    */
   private async findDmnFiles(): Promise<DmnFileInfo[]> {
     const dmnFiles: DmnFileInfo[] = [];
@@ -186,6 +186,9 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         // Parse decisions from the DMN XML
         const decisions = this.parseDecisionsFromDmn(content);
 
+        // Parse namespace from the DMN XML (required for Kogito/jBPM)
+        const namespace = this.parseNamespaceFromDmn(content);
+
         // Get relative path for display
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
         const relativePath = workspaceFolder
@@ -195,6 +198,7 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         dmnFiles.push({
           path: file.fsPath,
           name: relativePath,
+          namespace,
           decisions
         });
       } catch (error) {
@@ -203,6 +207,18 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     return dmnFiles;
+  }
+
+  /**
+   * Parse namespace from DMN XML content
+   * The namespace is in the definitions element's namespace attribute
+   */
+  private parseNamespaceFromDmn(xml: string): string | undefined {
+    // Try to find namespace attribute in definitions element
+    // Matches: <definitions namespace="..." or <dmn:definitions namespace="..."
+    const namespaceRegex = /<(?:dmn:)?definitions[^>]*\snamespace\s*=\s*["']([^"']+)["']/i;
+    const match = namespaceRegex.exec(xml);
+    return match?.[1];
   }
 
   /**
