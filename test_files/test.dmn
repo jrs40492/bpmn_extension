@@ -87,7 +87,7 @@
     <variable id="InputData_0kn62gf_variable" name="drugResponse" typeRef="Any" />
   </inputData>
   <inputData id="InputData_0o7subf" name="drugStatus">
-    <variable id="InputData_0o7subf_variable" name="drugStatus" />
+    <variable id="InputData_0o7subf_variable" name="drugStatus" typeRef="number" />
   </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">

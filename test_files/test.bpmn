@@ -13,6 +13,8 @@
   <bpmn:itemDefinition id="_Activity_1im8ao1_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1im8ao1_drugResponseInputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_drugStatusItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_1im8ao1_drugStatusInputXItem" structureRef="java.lang.Object" />
   <bpmn:process id="drugs" name="" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -23,6 +25,7 @@
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid" />
     <bpmn:property id="drugResponse" itemSubjectRef="_drugResponseItem" name="drugResponse" />
+    <bpmn:property id="drugStatus" itemSubjectRef="_drugStatusItem" name="drugStatus" />
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_12vdxhy</bpmn:outgoing>
     </bpmn:startEvent>
@@ -164,11 +167,13 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:dataInput id="Activity_1im8ao1_modelInputX" itemSubjectRef="_Activity_1im8ao1_modelInputXItem" name="model" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_1im8ao1_decisionInputX" itemSubjectRef="_Activity_1im8ao1_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_1im8ao1_drugResponseInputX" itemSubjectRef="_Activity_1im8ao1_drugResponseInputXItem" name="drugResponse" drools:dtype="java.lang.Object" />
+        <bpmn:dataInput id="Activity_1im8ao1_drugStatusInputX" itemSubjectRef="_Activity_1im8ao1_drugStatusInputXItem" name="drugStatus" drools:dtype="java.lang.Object" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_1im8ao1_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1im8ao1_modelInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1im8ao1_decisionInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1im8ao1_drugResponseInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1im8ao1_drugStatusInputX</bpmn:dataInputRefs>
         </bpmn:inputSet>
         <bpmn:outputSet />
       </bpmn:ioSpecification>
@@ -196,6 +201,10 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_140qbpo">
         <bpmn:sourceRef>drugResponse</bpmn:sourceRef>
         <bpmn:targetRef>Activity_1im8ao1_drugResponseInputX</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1x9y4ys">
+        <bpmn:sourceRef>drugStatus</bpmn:sourceRef>
+        <bpmn:targetRef>Activity_1im8ao1_drugStatusInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
     </bpmn:businessRuleTask>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />

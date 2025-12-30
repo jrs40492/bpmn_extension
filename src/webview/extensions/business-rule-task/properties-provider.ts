@@ -544,6 +544,66 @@ function findProcessProperty(element: BpmnElement, propertyName: string): Moddle
   );
 }
 
+// Helper to ensure a process property exists, creating it if necessary
+function ensureProcessProperty(element: BpmnElement, propertyName: string, bpmnFactory: BpmnFactory): ModdleElement | undefined {
+  // First try to find existing property
+  let property = findProcessProperty(element, propertyName);
+  if (property) return property;
+
+  const bo = element.businessObject;
+  if (!bo) return undefined;
+
+  // Navigate up to find the process
+  let process: ModdleElement | undefined = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) return undefined;
+
+  // Navigate up to find definitions
+  const definitions = process.$parent as Definitions;
+  if (!definitions || definitions.$type !== 'bpmn:Definitions') return undefined;
+
+  // Create itemDefinition for the variable
+  const itemDefId = `_${propertyName}Item`;
+  let itemDef = definitions.rootElements?.find(
+    (el: ModdleElement) => el.$type === 'bpmn:ItemDefinition' && el.id === itemDefId
+  );
+
+  if (!itemDef) {
+    itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemDefId,
+      structureRef: 'java.lang.Object'
+    });
+    itemDef.$parent = definitions;
+    if (!definitions.rootElements) {
+      definitions.rootElements = [];
+    }
+    // Insert before first process element
+    const processIndex = definitions.rootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+    if (processIndex >= 0) {
+      definitions.rootElements.splice(processIndex, 0, itemDef);
+    } else {
+      definitions.rootElements.push(itemDef);
+    }
+  }
+
+  // Create the property element
+  property = bpmnFactory.create('bpmn:Property', {
+    id: propertyName,
+    name: propertyName,
+    itemSubjectRef: itemDef
+  });
+  property.$parent = process;
+
+  if (!(process as any).properties) {
+    (process as any).properties = [];
+  }
+  (process as any).properties.push(property);
+
+  return property;
+}
+
 // Helper to set DMN input mapping (map process variable to DMN input)
 function setDmnInputMapping(element: BpmnElement, inputName: string, variableName: string, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
   // Strict validation to prevent writing "undefined" or invalid values
@@ -556,10 +616,10 @@ function setDmnInputMapping(element: BpmnElement, inputName: string, variableNam
   if (!bo) return;
   const taskId = bo.id;
 
-  // Find the actual Property element for this variable
-  const propertyElement = findProcessProperty(element, variableName);
+  // Find or create the Property element for this variable
+  const propertyElement = ensureProcessProperty(element, variableName, bpmnFactory);
   if (!propertyElement) {
-    console.warn('[DMN Input Mapping] Could not find property element for variable:', variableName);
+    console.warn('[DMN Input Mapping] Could not find or create property element for variable:', variableName);
     return;
   }
 
@@ -848,14 +908,19 @@ function DmnNamespace(props: { element: BpmnElement; id: string }) {
   });
 }
 
+// Modeling interface for triggering changes
+interface Modeling {
+  updateProperties: (element: BpmnElement, properties: Record<string, unknown>) => void;
+}
+
 // DMN Input Mapping component - maps a single DMN input to a process variable
 function createDmnInputMappingComponent(inputName: string) {
   return function DmnInputMapping(props: { element: BpmnElement; id: string }) {
     const { element, id } = props;
     const commandStack = useService('commandStack') as CommandStack;
     const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+    const modeling = useService('modeling') as Modeling;
     const translate = useService('translate') as (text: string) => string;
-    const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
     const getValue = () => {
       const value = getDmnInputMapping(element, inputName);
@@ -871,6 +936,13 @@ function createDmnInputMappingComponent(inputName: string) {
       // that is not the literal string "undefined"
       if (value && typeof value === 'string' && value !== 'undefined' && value !== 'null' && value.trim() !== '') {
         setDmnInputMapping(element, inputName, value, bpmnFactory, commandStack);
+
+        // Trigger a change notification by updating a property through modeling
+        // This ensures the commandStack.changed event fires properly
+        const bo = element.businessObject;
+        if (bo) {
+          modeling.updateProperties(element, { name: bo.name || bo.id });
+        }
       }
     };
 
@@ -899,8 +971,7 @@ function createDmnInputMappingComponent(inputName: string) {
       label: `${inputName}`,
       getValue,
       setValue,
-      getOptions,
-      debounce
+      getOptions
     });
   };
 }
