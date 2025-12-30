@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:rest="http://bamoe.io/schema/rest" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:dmn="http://bamoe.io/schema/dmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:rest="http://bamoe.io/schema/rest" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:dmn="http://bamoe.io/schema/dmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -9,8 +9,9 @@
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_12vdxhy</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="Activity_09bhh76" name="REST Call" implementation="##WebService">
+    <bpmn:serviceTask id="Activity_09bhh76" name="REST Call">
       <bpmn:extensionElements>
+        <drools:taskName>Rest</drools:taskName>
         <rest:restTaskConfig url="https://master-api.testing.covermymeds.com/drugs?api_id=test&#38;v=1" headers="{}" body="{ ddid: {ddid} }" responseVariable="drugResponse" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0qb9lii</bpmn:incoming>
