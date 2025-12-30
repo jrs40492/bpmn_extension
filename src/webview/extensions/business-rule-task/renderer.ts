@@ -205,51 +205,6 @@ export default class BusinessRuleTaskRenderer extends BaseRenderer {
       parentNode.appendChild(hintGroup);
     }
 
-    // Add decision table icon in top-left
-    const tableIcon = document.createElementNS(SVG_NS, 'g');
-    tableIcon.setAttribute('transform', 'translate(6, 4)');
-
-    // Table grid icon
-    const tableGrid = document.createElementNS(SVG_NS, 'g');
-    tableGrid.setAttribute('stroke', hasLinkedDecision ? '#1890ff' : '#6e6e6e');
-    tableGrid.setAttribute('stroke-width', '1.5');
-    tableGrid.setAttribute('fill', 'none');
-
-    // Outer rectangle
-    const outerRect = document.createElementNS(SVG_NS, 'rect');
-    outerRect.setAttribute('x', '0');
-    outerRect.setAttribute('y', '0');
-    outerRect.setAttribute('width', '14');
-    outerRect.setAttribute('height', '12');
-    outerRect.setAttribute('rx', '1');
-    tableGrid.appendChild(outerRect);
-
-    // Horizontal lines
-    const hLine1 = document.createElementNS(SVG_NS, 'line');
-    hLine1.setAttribute('x1', '0');
-    hLine1.setAttribute('y1', '4');
-    hLine1.setAttribute('x2', '14');
-    hLine1.setAttribute('y2', '4');
-    tableGrid.appendChild(hLine1);
-
-    const hLine2 = document.createElementNS(SVG_NS, 'line');
-    hLine2.setAttribute('x1', '0');
-    hLine2.setAttribute('y1', '8');
-    hLine2.setAttribute('x2', '14');
-    hLine2.setAttribute('y2', '8');
-    tableGrid.appendChild(hLine2);
-
-    // Vertical line
-    const vLine = document.createElementNS(SVG_NS, 'line');
-    vLine.setAttribute('x1', '7');
-    vLine.setAttribute('y1', '0');
-    vLine.setAttribute('x2', '7');
-    vLine.setAttribute('y2', '12');
-    tableGrid.appendChild(vLine);
-
-    tableIcon.appendChild(tableGrid);
-    parentNode.appendChild(tableIcon);
-
     return shape;
   }
 }
