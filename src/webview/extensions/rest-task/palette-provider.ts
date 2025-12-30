@@ -210,7 +210,7 @@ export default class RestTaskPaletteProvider {
     return {
       'create.rest-task': {
         group: 'activity',
-        className: 'bpmn-icon-task rest-task-icon',
+        className: 'bpmn-icon-service-task rest-task-icon',
         title: 'Create REST API Task',
         action: {
           dragstart: createRestTask,

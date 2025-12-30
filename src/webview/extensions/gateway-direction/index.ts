@@ -11,21 +11,66 @@ import { SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
 
+// ============================================================================
+// BPMN-JS Type Definitions (no official types available)
+// ============================================================================
+
+interface ModdleElement {
+  $type: string;
+  $parent?: ModdleElement;
+}
+
+interface GatewayBusinessObject extends ModdleElement {
+  gatewayDirection?: 'Unspecified' | 'Converging' | 'Diverging' | 'Mixed';
+}
+
+interface BpmnElement {
+  businessObject?: GatewayBusinessObject;
+}
+
+interface CommandStack {
+  execute(command: string, context: Record<string, unknown>): void;
+}
+
+interface PropertiesPanel {
+  registerProvider(priority: number, provider: unknown): void;
+}
+
+interface PropertyEntry {
+  id: string;
+  component: (props: { element: BpmnElement; id: string }) => unknown;
+  isEdited: (element: BpmnElement) => boolean;
+}
+
+interface PropertiesGroup {
+  id: string;
+  label?: string;
+  entries: PropertyEntry[];
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 // Check if element is a gateway
-function isGateway(element: any): boolean {
+function isGateway(element: BpmnElement): boolean {
   return is(element, 'bpmn:Gateway');
 }
 
+// ============================================================================
+// Property Panel Components
+// ============================================================================
+
 // Gateway Direction Select component
-function GatewayDirectionSelect(props: { element: any; id: string }) {
+function GatewayDirectionSelect(props: { element: BpmnElement; id: string }) {
   const { element, id } = props;
-  const commandStack = useService('commandStack');
-  const translate = useService('translate');
+  const commandStack = useService('commandStack') as CommandStack;
+  const translate = useService('translate') as (text: string) => string;
 
   const businessObject = element.businessObject || element;
 
   const getValue = () => {
-    return businessObject.gatewayDirection || 'Unspecified';
+    return (businessObject as GatewayBusinessObject).gatewayDirection || 'Unspecified';
   };
 
   const setValue = (value: string) => {
@@ -55,7 +100,7 @@ function GatewayDirectionSelect(props: { element: any; id: string }) {
 }
 
 // Create entries for gateway
-function GatewayEntries(props: { element: any }) {
+function GatewayEntries(props: { element: BpmnElement }): PropertyEntry[] {
   const { element } = props;
 
   if (!isGateway(element)) {
@@ -66,32 +111,33 @@ function GatewayEntries(props: { element: any }) {
     {
       id: 'gatewayDirection',
       component: GatewayDirectionSelect,
-      isEdited: (element: any) => {
-        const bo = element.businessObject || element;
-        return bo.gatewayDirection && bo.gatewayDirection !== 'Unspecified';
+      isEdited: (element: BpmnElement) => {
+        const bo = (element.businessObject || element) as GatewayBusinessObject;
+        return !!bo.gatewayDirection && bo.gatewayDirection !== 'Unspecified';
       }
     }
   ];
 }
 
-/**
- * Gateway Direction Properties Provider
- */
+// ============================================================================
+// Properties Provider Class
+// ============================================================================
+
 class GatewayDirectionPropertiesProvider {
   static $inject = ['propertiesPanel'];
 
-  constructor(propertiesPanel: any) {
+  constructor(propertiesPanel: PropertiesPanel) {
     propertiesPanel.registerProvider(500, this);
   }
 
-  getGroups(element: any) {
-    return (groups: any[]) => {
+  getGroups(element: BpmnElement) {
+    return (groups: PropertiesGroup[]) => {
       if (!isGateway(element)) {
         return groups;
       }
 
       // Find the general group and add gateway direction entry to it
-      const generalGroup = groups.find((g: any) => g.id === 'general');
+      const generalGroup = groups.find((g: PropertiesGroup) => g.id === 'general');
       if (generalGroup) {
         const entries = GatewayEntries({ element });
         generalGroup.entries = [...generalGroup.entries, ...entries];

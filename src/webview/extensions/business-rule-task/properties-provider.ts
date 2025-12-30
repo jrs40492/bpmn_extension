@@ -15,7 +15,114 @@ import { useService } from 'bpmn-js-properties-panel';
 
 import { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
 
-// Interface for DMN file information
+// ============================================================================
+// BPMN-JS Type Definitions (no official types available)
+// ============================================================================
+
+interface ModdleElement {
+  $type: string;
+  $parent?: ModdleElement;
+  id?: string;
+  name?: string;
+  get?: (key: string) => unknown;
+  set?: (key: string, value: unknown) => void;
+}
+
+interface FormalExpression extends ModdleElement {
+  body?: string;
+}
+
+interface Assignment extends ModdleElement {
+  from?: FormalExpression;
+  to?: FormalExpression;
+}
+
+interface DataInput extends ModdleElement {
+  itemSubjectRef?: ModdleElement;
+}
+
+interface DataInputAssociation extends ModdleElement {
+  targetRef?: DataInput;
+  assignment?: Assignment[];
+}
+
+interface IoSpecification extends ModdleElement {
+  dataInputs?: DataInput[];
+  inputSets?: ModdleElement[];
+  outputSets?: ModdleElement[];
+}
+
+interface ExtensionElements extends ModdleElement {
+  values?: ModdleElement[];
+}
+
+interface DecisionTaskConfig extends ModdleElement {
+  dmnFileName?: string;
+  dmnFile?: string;
+  decisionRef?: string;
+}
+
+interface BusinessObject extends ModdleElement {
+  implementation?: string;
+  extensionElements?: ExtensionElements;
+  ioSpecification?: IoSpecification;
+  dataInputAssociations?: DataInputAssociation[];
+}
+
+interface BpmnElement {
+  businessObject?: BusinessObject;
+}
+
+interface Definitions extends ModdleElement {
+  rootElements?: ModdleElement[];
+}
+
+interface BpmnFactory {
+  create(type: string, properties?: Record<string, unknown>): ModdleElement;
+}
+
+interface CommandStack {
+  execute(command: string, context: Record<string, unknown>): void;
+}
+
+interface EventBus {
+  on(event: string, callback: (event: SelectionChangedEvent) => void): void;
+}
+
+interface PropertiesPanel {
+  registerProvider(priority: number, provider: unknown): void;
+}
+
+interface SelectionChangedEvent {
+  newSelection?: BpmnElement[];
+}
+
+interface PropertyEntry {
+  id: string;
+  component: (props: { element: BpmnElement; id: string }) => unknown;
+  isEdited: () => boolean;
+}
+
+interface PropertiesGroup {
+  id: string;
+  label: string;
+  entries: PropertyEntry[];
+}
+
+interface VscodeApi {
+  postMessage(message: { type: string }): void;
+}
+
+declare global {
+  interface Window {
+    vscodeApi?: VscodeApi;
+  }
+}
+
+// ============================================================================
+// DMN File Types
+// ============================================================================
+
 export interface DmnFileInfo {
   path: string;
   name: string;
@@ -39,19 +146,17 @@ export function getAvailableDmnFiles(): DmnFileInfo[] {
   return availableDmnFiles;
 }
 
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
 // Helper to check if element is a Business Rule Task
-function isBusinessRuleTask(element: any): boolean {
+function isBusinessRuleTask(element: BpmnElement): boolean {
   return element?.businessObject?.$type === 'bpmn:BusinessRuleTask';
 }
 
-// Helper to check if business rule task has DMN implementation
-function hasDmnImplementation(element: any): boolean {
-  const bo = element?.businessObject;
-  return bo?.implementation === DMN_IMPLEMENTATION_URI;
-}
-
 // Helper to get data input value from ioSpecification
-function getDataInputValue(element: any, inputName: string): string {
+function getDataInputValue(element: BpmnElement, inputName: string): string {
   const bo = element?.businessObject;
   if (!bo) return '';
 
@@ -80,31 +185,32 @@ function getDataInputValue(element: any, inputName: string): string {
 }
 
 // Helper to get legacy DecisionTaskConfig (for backward compatibility)
-function getLegacyDecisionConfig(element: any): any {
+function getLegacyDecisionConfig(element: BpmnElement): DecisionTaskConfig | null {
   const bo = element?.businessObject;
   if (!bo) return null;
 
-  const extensionElements = bo.extensionElements || bo.get?.('extensionElements');
+  const extensionElements = bo.extensionElements || (bo.get?.('extensionElements') as ExtensionElements | undefined);
   if (!extensionElements) return null;
 
-  const values = extensionElements.values || extensionElements.get?.('values') || [];
-  return values.find((ext: any) => ext.$type === 'dmn:DecisionTaskConfig');
+  const values = extensionElements.values || (extensionElements.get?.('values') as ModdleElement[] | undefined) || [];
+  return (values.find((ext: ModdleElement) => ext.$type === 'dmn:DecisionTaskConfig') as DecisionTaskConfig) || null;
 }
 
 // Helper to ensure drools:metaData extension element exists
-function ensureMetaData(element: any, bpmnFactory: any, commandStack: any): void {
+function ensureMetaData(element: BpmnElement, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
   const bo = element.businessObject;
+  if (!bo) return;
 
   // Get or create extension elements
   let extensionElements = bo.extensionElements;
   if (!extensionElements) {
-    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] }) as ExtensionElements;
     extensionElements.$parent = bo;
   }
 
   // Check if metaData already exists
   const values = extensionElements.values || [];
-  const hasMetaData = values.some((v: any) => v.$type === 'drools:metaData' && v.name === 'elementname');
+  const hasMetaData = values.some((v: ModdleElement) => v.$type === 'drools:metaData' && v.name === 'elementname');
 
   if (!hasMetaData) {
     // Create drools:metaValue element with body property (this creates <drools:metaValue>text</drools:metaValue>)
@@ -132,19 +238,19 @@ function ensureMetaData(element: any, bpmnFactory: any, commandStack: any): void
 }
 
 // Helper to get the definitions element (root of the BPMN document)
-function getDefinitions(element: any): any {
-  let current = element.businessObject;
-  while (current.$parent) {
+function getDefinitions(element: BpmnElement): Definitions {
+  let current: ModdleElement | undefined = element.businessObject;
+  while (current?.$parent) {
     current = current.$parent;
   }
-  return current;
+  return current as Definitions;
 }
 
 // Helper to ensure itemDefinition exists at definitions level
-function ensureItemDefinition(definitions: any, itemId: string, structureRef: string, bpmnFactory: any): any {
+function ensureItemDefinition(definitions: Definitions, itemId: string, structureRef: string, bpmnFactory: BpmnFactory): ModdleElement {
   // Check if itemDefinition already exists
   const rootElements = definitions.rootElements || [];
-  let itemDef = rootElements.find((el: any) => el.$type === 'bpmn:ItemDefinition' && el.id === itemId);
+  let itemDef = rootElements.find((el: ModdleElement) => el.$type === 'bpmn:ItemDefinition' && el.id === itemId);
 
   if (!itemDef) {
     // Create new itemDefinition
@@ -159,7 +265,7 @@ function ensureItemDefinition(definitions: any, itemId: string, structureRef: st
       definitions.rootElements = [];
     }
     // Find insertion point - before first process
-    const processIndex = definitions.rootElements.findIndex((el: any) => el.$type === 'bpmn:Process');
+    const processIndex = definitions.rootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
     if (processIndex >= 0) {
       definitions.rootElements.splice(processIndex, 0, itemDef);
     } else {
@@ -171,8 +277,9 @@ function ensureItemDefinition(definitions: any, itemId: string, structureRef: st
 }
 
 // Helper to ensure ioSpecification and data inputs exist (Kogito/BAMOE compatible format)
-function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any): any {
+function ensureIoSpecification(element: BpmnElement, bpmnFactory: BpmnFactory, commandStack: CommandStack): IoSpecification | undefined {
   const bo = element.businessObject;
+  if (!bo) return undefined;
   const taskId = bo.id;
 
   // Check if ioSpecification already exists with the correct inputs
@@ -180,8 +287,8 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
   if (ioSpec) {
     // Check if it has the required DMN inputs (namespace, model, decision)
     const dataInputs = ioSpec.dataInputs || [];
-    const hasNamespace = dataInputs.some((di: any) => di.name === 'namespace');
-    const hasModel = dataInputs.some((di: any) => di.name === 'model');
+    const hasNamespace = dataInputs.some((di: DataInput) => di.name === 'namespace');
+    const hasModel = dataInputs.some((di: DataInput) => di.name === 'model');
     if (hasNamespace && hasModel) {
       return ioSpec;
     }
@@ -194,8 +301,8 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
   const definitions = getDefinitions(element);
 
   // Create data inputs with drools:dtype and itemSubjectRef attributes (Kogito format)
-  const dataInputs: any[] = [];
-  const dataInputRefs: any[] = [];
+  const dataInputs: DataInput[] = [];
+  const dataInputRefs: DataInput[] = [];
 
   // Order: namespace, model, decision (matching Kogito examples)
   for (const inputName of [DMN_DATA_INPUTS.NAMESPACE, DMN_DATA_INPUTS.MODEL, DMN_DATA_INPUTS.DECISION]) {
@@ -210,9 +317,9 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
       id: inputId,
       name: inputName,
       itemSubjectRef: itemDef
-    });
+    }) as DataInput;
     // Set drools:dtype attribute for Kogito compatibility
-    dataInput.set('drools:dtype', 'java.lang.String');
+    dataInput.set?.('drools:dtype', 'java.lang.String');
     dataInputs.push(dataInput);
     dataInputRefs.push(dataInput);
   }
@@ -230,7 +337,7 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     dataInputs: dataInputs,
     inputSets: [inputSet],
     outputSets: [outputSet]
-  });
+  }) as IoSpecification;
 
   // Set parent references
   dataInputs.forEach(di => { di.$parent = ioSpec; });
@@ -239,7 +346,7 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
   ioSpec.$parent = bo;
 
   // Create data input associations (no ID - Kogito format)
-  const dataInputAssociations: any[] = [];
+  const dataInputAssociations: DataInputAssociation[] = [];
   for (const dataInput of dataInputs) {
     const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: '' });
     const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });
@@ -250,7 +357,7 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
     const association = bpmnFactory.create('bpmn:DataInputAssociation', {
       targetRef: dataInput,
       assignment: [assignment]
-    });
+    }) as DataInputAssociation;
     assignment.$parent = association;
     association.$parent = bo;
     dataInputAssociations.push(association);
@@ -271,8 +378,9 @@ function ensureIoSpecification(element: any, bpmnFactory: any, commandStack: any
 }
 
 // Helper to update a data input value
-function setDataInputValue(element: any, inputName: string, value: string, bpmnFactory: any, commandStack: any): void {
+function setDataInputValue(element: BpmnElement, inputName: string, value: string, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
   const bo = element.businessObject;
+  if (!bo) return;
 
   // Ensure ioSpecification exists
   ensureIoSpecification(element, bpmnFactory, commandStack);
@@ -299,7 +407,7 @@ function setDataInputValue(element: any, inputName: string, value: string, bpmnF
   const ioSpec = bo.ioSpecification;
   if (ioSpec) {
     const dataInputs = ioSpec.dataInputs || [];
-    const dataInput = dataInputs.find((di: any) => di.name === inputName);
+    const dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
     if (dataInput) {
       const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: value });
       const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });
@@ -311,7 +419,7 @@ function setDataInputValue(element: any, inputName: string, value: string, bpmnF
       const association = bpmnFactory.create('bpmn:DataInputAssociation', {
         targetRef: dataInput,
         assignment: [assignment]
-      });
+      }) as DataInputAssociation;
       assignment.$parent = association;
       association.$parent = bo;
 
@@ -326,11 +434,12 @@ function setDataInputValue(element: any, inputName: string, value: string, bpmnF
 }
 
 // Remove legacy DecisionTaskConfig and migrate to new format
-function migrateLegacyConfig(element: any, bpmnFactory: any, commandStack: any): void {
+function migrateLegacyConfig(element: BpmnElement, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
   const legacyConfig = getLegacyDecisionConfig(element);
   if (!legacyConfig) return;
 
   const bo = element.businessObject;
+  if (!bo) return;
 
   // Extract values from legacy config
   const model = legacyConfig.dmnFileName || legacyConfig.dmnFile || '';
@@ -339,7 +448,7 @@ function migrateLegacyConfig(element: any, bpmnFactory: any, commandStack: any):
   // Remove the legacy extension element
   const extensionElements = bo.extensionElements;
   if (extensionElements?.values) {
-    const newValues = extensionElements.values.filter((ext: any) => ext.$type !== 'dmn:DecisionTaskConfig');
+    const newValues = extensionElements.values.filter((ext: ModdleElement) => ext.$type !== 'dmn:DecisionTaskConfig');
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: extensionElements,
@@ -355,13 +464,17 @@ function migrateLegacyConfig(element: any, bpmnFactory: any, commandStack: any):
   if (decision) setDataInputValue(element, DMN_DATA_INPUTS.DECISION, decision, bpmnFactory, commandStack);
 }
 
+// ============================================================================
+// Property Panel Components
+// ============================================================================
+
 // DMN File Select component
-function DmnFileSelect(props: { element: any; id: string }) {
+function DmnFileSelect(props: { element: BpmnElement; id: string }) {
   const { element, id } = props;
-  const commandStack = useService('commandStack');
-  const bpmnFactory = useService('bpmnFactory');
-  const translate = useService('translate');
-  const debounce = useService('debounceInput');
+  const commandStack = useService('commandStack') as CommandStack;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
   const getValue = () => {
     return getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
@@ -415,12 +528,12 @@ function DmnFileSelect(props: { element: any; id: string }) {
 }
 
 // Decision Select component
-function DecisionSelect(props: { element: any; id: string }) {
+function DecisionSelect(props: { element: BpmnElement; id: string }) {
   const { element, id } = props;
-  const commandStack = useService('commandStack');
-  const bpmnFactory = useService('bpmnFactory');
-  const translate = useService('translate');
-  const debounce = useService('debounceInput');
+  const commandStack = useService('commandStack') as CommandStack;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
   const getValue = () => {
     return getDataInputValue(element, DMN_DATA_INPUTS.DECISION);
@@ -474,10 +587,10 @@ function DecisionSelect(props: { element: any; id: string }) {
 }
 
 // DMN Namespace component (read-only, auto-populated)
-function DmnNamespace(props: { element: any; id: string }) {
+function DmnNamespace(props: { element: BpmnElement; id: string }) {
   const { element, id } = props;
-  const translate = useService('translate');
-  const debounce = useService('debounceInput');
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
   const getValue = () => {
     return getDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE);
@@ -500,7 +613,7 @@ function DmnNamespace(props: { element: any; id: string }) {
 }
 
 // Create entries for Business Rule Task
-function BusinessRuleTaskEntries(props: { element: any }): any[] {
+function BusinessRuleTaskEntries(props: { element: BpmnElement }): PropertyEntry[] {
   const { element } = props;
 
   if (!isBusinessRuleTask(element)) {
@@ -528,25 +641,25 @@ function BusinessRuleTaskEntries(props: { element: any }): any[] {
 
 // Request DMN files from extension
 function requestDmnFiles(): void {
-  const vscode = (window as any).vscodeApi;
+  const vscode = window.vscodeApi;
   if (vscode) {
-    console.log('[BAMOE Webview] Requesting DMN files...');
     vscode.postMessage({ type: 'requestDmnFiles' });
-  } else {
-    console.warn('[BAMOE Webview] vscodeApi not available');
   }
 }
 
-// Provider class
+// ============================================================================
+// Properties Provider Class
+// ============================================================================
+
 export default class BusinessRuleTaskPropertiesProvider {
   static $inject = ['propertiesPanel', 'eventBus'];
 
-  constructor(propertiesPanel: any, eventBus: any) {
+  constructor(propertiesPanel: PropertiesPanel, eventBus: EventBus) {
     // Request DMN files on initialization
     requestDmnFiles();
 
     // Re-request when selection changes to a business rule task
-    eventBus.on('selection.changed', (event: any) => {
+    eventBus.on('selection.changed', (event: SelectionChangedEvent) => {
       const selected = event.newSelection?.[0];
       if (selected && isBusinessRuleTask(selected)) {
         requestDmnFiles();
@@ -556,8 +669,8 @@ export default class BusinessRuleTaskPropertiesProvider {
     propertiesPanel.registerProvider(500, this);
   }
 
-  getGroups(element: any) {
-    return (groups: any[]) => {
+  getGroups(element: BpmnElement) {
+    return (groups: PropertiesGroup[]) => {
       if (!isBusinessRuleTask(element)) {
         return groups;
       }
