@@ -427,17 +427,28 @@ function addRestTaskVariableMappings(xml: string): string {
         ioSpec.appendChild(dataInput);
       }
 
-      // Create dataInputAssociation with sourceRef
+      // Create dataInputAssociation with assignment format (required for jBPM/Kogito)
+      // The assignment format maps the process variable to the task input parameter
       const dataInputAssoc = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:dataInputAssociation');
-
-      const sourceRef = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sourceRef');
-      sourceRef.textContent = varName;
 
       const targetRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:targetRef');
       targetRefElem.textContent = inputId;
-
-      dataInputAssoc.appendChild(sourceRef);
       dataInputAssoc.appendChild(targetRefElem);
+
+      // Create assignment element with from/to expressions
+      const assignment = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
+
+      const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
+      fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
+      fromExpr.textContent = varName;
+
+      const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
+      toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
+      toExpr.textContent = inputId;
+
+      assignment.appendChild(fromExpr);
+      assignment.appendChild(toExpr);
+      dataInputAssoc.appendChild(assignment);
 
       // Find the last dataInputAssociation to insert after
       const existingAssocs = task.querySelectorAll('dataInputAssociation, DataInputAssociation');
