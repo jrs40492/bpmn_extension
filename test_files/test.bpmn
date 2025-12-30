@@ -39,7 +39,7 @@
     </bpmn:intermediateThrowEvent>
     <bpmn:businessRuleTask id="Activity_1cvnqsq" name="Step 3 Decide">
       <bpmn:extensionElements>
-        <dmn:decisionTaskConfig decisionRef="Decision_1" dmnFile="/Users/jacobswanson/Desktop/projects/bamoe/test_files/test.dmn" dmnFileName="test.dmn" resultVariable="decision" />
+        <dmn:decisionTaskConfig decisionRef="Decision_1" dmnFile="test.dmn" dmnFileName="test.dmn" resultVariable="decision" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_131mnuw</bpmn:incoming>
       <bpmn:outgoing>Flow_1vz8zap</bpmn:outgoing>
@@ -50,7 +50,7 @@
 kcontext.setVariable("count", current - 1);</bpmn:script>
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_01aysjx" sourceRef="Activity_0as8h27" targetRef="Activity_1nbpf3m" />
-    <bpmn:task id="Activity_1nbpf3m" name="test abc" drools:taskName="Rest">
+    <bpmn:task id="Activity_1nbpf3m" name="Step 2 Find Drug" drools:taskName="Rest">
       <bpmn:incoming>Flow_01aysjx</bpmn:incoming>
       <bpmn:outgoing>Flow_131mnuw</bpmn:outgoing>
       <bpmn:ioSpecification id="Activity_1nbpf3m_IoSpec">
@@ -97,7 +97,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:dataInputAssociation id="Activity_1nbpf3m_ContentAssociation">
         <bpmn:targetRef>Activity_1nbpf3m_ContentInput</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression"></bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression" />
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1nbpf3m_ContentInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -187,13 +187,13 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <di:waypoint x="360" y="210" />
         <di:waypoint x="420" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
-        <di:waypoint x="320" y="268" />
-        <di:waypoint x="320" y="340" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_131mnuw_di" bpmnElement="Flow_131mnuw">
         <di:waypoint x="520" y="210" />
         <di:waypoint x="600" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
+        <di:waypoint x="320" y="268" />
+        <di:waypoint x="320" y="340" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

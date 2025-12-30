@@ -99,16 +99,31 @@ function DmnFileSelect(props: { element: any; id: string }) {
 
   const getValue = () => {
     const config = getDecisionConfig(element);
+    // Return the relative path (name) for display, matching against dmnFileName
+    const dmnFileName = config?.dmnFileName || '';
+    if (dmnFileName) {
+      // Find the file by name to get its path for the dropdown
+      const matchedFile = availableDmnFiles.find(f => f.name === dmnFileName);
+      if (matchedFile) {
+        return matchedFile.name;
+      }
+    }
+    // Fallback: check if dmnFile is already a relative path
     return config?.dmnFile || '';
   };
 
   const setValue = (value: string) => {
     const config = getOrCreateDecisionConfig(element, bpmnFactory, commandStack);
-    const selectedFile = availableDmnFiles.find(f => f.path === value);
+    // Find the selected file - value is now the relative name
+    const selectedFile = availableDmnFiles.find(f => f.name === value);
 
-    // Update config properties
-    config.dmnFile = value || '';
-    config.dmnFileName = selectedFile?.name || '';
+    // Store the relative path (name) in dmnFile, not the absolute path
+    const relativePath = selectedFile?.name || value || '';
+    const fileName = relativePath.split('/').pop() || relativePath;
+
+    // Update config properties with relative path
+    config.dmnFile = relativePath;
+    config.dmnFileName = relativePath;
     // Clear decision when file changes
     config.decisionRef = '';
 
@@ -116,8 +131,8 @@ function DmnFileSelect(props: { element: any; id: string }) {
       element,
       moddleElement: config,
       properties: {
-        dmnFile: value || '',
-        dmnFileName: selectedFile?.name || '',
+        dmnFile: relativePath,
+        dmnFileName: relativePath,
         decisionRef: ''
       }
     });
@@ -129,8 +144,9 @@ function DmnFileSelect(props: { element: any; id: string }) {
     ];
 
     for (const file of availableDmnFiles) {
+      // Use relative name as both value and label
       options.push({
-        value: file.path,
+        value: file.name,
         label: file.name
       });
     }
@@ -177,14 +193,20 @@ function DecisionSelect(props: { element: any; id: string }) {
 
   const getOptions = () => {
     const config = getDecisionConfig(element);
-    const currentFile = config?.dmnFile || '';
+    const currentFile = config?.dmnFile || config?.dmnFileName || '';
 
     const options = [
       { value: '', label: translate('-- Select Decision --') }
     ];
 
     if (currentFile) {
-      const selectedFile = availableDmnFiles.find(f => f.path === currentFile);
+      // Match by relative path (name) instead of absolute path
+      const selectedFile = availableDmnFiles.find(f =>
+        f.name === currentFile ||
+        f.path === currentFile ||
+        f.name.endsWith(currentFile) ||
+        currentFile.endsWith(f.name)
+      );
       if (selectedFile?.decisions) {
         for (const decision of selectedFile.decisions) {
           options.push({
