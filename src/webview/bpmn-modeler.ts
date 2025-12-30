@@ -18,11 +18,17 @@ import kafkaTaskModule, { kafkaTaskDescriptor } from './extensions/kafka-task';
 // Custom Script task extension
 import scriptTaskModule from './extensions/script-task';
 
+// Custom Business Rule Task extension (DMN linking)
+import businessRuleTaskModule, { businessRuleTaskDescriptor } from './extensions/business-rule-task';
+
 // Custom Process Variables extension
 import processVariablesModule, { processVariablesDescriptor } from './extensions/process-variables';
 
 // Custom event colors extension
 import eventColorsModule from './extensions/event-colors';
+
+// Custom compensation task context pad extension
+import compensationTaskModule from './extensions/compensation-task';
 
 // Type definitions for bpmn-js
 interface BpmnModelerInstance {
@@ -94,8 +100,10 @@ export function createModeler(
     restTaskModule,
     kafkaTaskModule,
     scriptTaskModule,
+    businessRuleTaskModule,
     processVariablesModule,
     eventColorsModule,
+    compensationTaskModule,
     tokenSimulationModule
   ];
 
@@ -116,13 +124,14 @@ export function createModeler(
     moddleExtensions: {
       rest: restTaskDescriptor,
       kafka: kafkaTaskDescriptor,
+      dmn: businessRuleTaskDescriptor,
       bamoe: processVariablesDescriptor
     },
     propertiesPanel: propertiesContainer ? {
       parent: propertiesContainer
     } : undefined,
     minimap: {
-      open: true
+      open: false
     }
   }) as unknown as Modeler;
 

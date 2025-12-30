@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:rest="http://bamoe.io/schema/rest" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:bamoe="http://bamoe.io/schema/process" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:rest="http://bamoe.io/schema/rest" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:dmn="http://bamoe.io/schema/dmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:process id="Process_1" isExecutable="false">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -11,7 +11,7 @@
     </bpmn:startEvent>
     <bpmn:serviceTask id="Activity_09bhh76" name="REST Call">
       <bpmn:extensionElements>
-        <rest:restTaskConfig url="https://master-api.testing.covermymeds.com/drugs?api_id=test&#38;v=1" headers="{}" body="{ ddid: {ddid} }" responseVariable="response" />
+        <rest:restTaskConfig url="https://master-api.testing.covermymeds.com/drugs?api_id=test&#38;v=1" headers="{}" body="{ ddid: {ddid} }" responseVariable="drugResponse" />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0qb9lii</bpmn:incoming>
       <bpmn:outgoing>Flow_1lah3qi</bpmn:outgoing>
@@ -41,18 +41,24 @@
     <bpmn:boundaryEvent id="Event_0pll7s0" attachedToRef="Activity_0as8h27">
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0txa29h" />
     </bpmn:boundaryEvent>
-    <bpmn:task id="Activity_02jwcaw" isForCompensation="true" />
     <bpmn:sequenceFlow id="Flow_191lbsq" sourceRef="Gateway_1dpe896" targetRef="Event_0n168m6" />
     <bpmn:intermediateThrowEvent id="Event_0n168m6">
       <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
-      <bpmn:compensateEventDefinition id="CompensateEventDefinition_13gm7v2" />
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_13gm7v2" activityRef="Activity_0as8h27" />
     </bpmn:intermediateThrowEvent>
     <bpmn:sequenceFlow id="Flow_1lah3qi" sourceRef="Activity_09bhh76" targetRef="Activity_1cvnqsq" />
     <bpmn:businessRuleTask id="Activity_1cvnqsq">
+      <bpmn:extensionElements>
+        <dmn:decisionTaskConfig decisionRef="" dmnFile="/Users/jacobswanson/Desktop/projects/bamoe/test_files/test-decision.dmn" dmnFileName="test-decision.dmn" />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_1lah3qi</bpmn:incoming>
       <bpmn:outgoing>Flow_1vz8zap</bpmn:outgoing>
     </bpmn:businessRuleTask>
     <bpmn:sequenceFlow id="Flow_1vz8zap" sourceRef="Activity_1cvnqsq" targetRef="Gateway_1dpe896" />
+    <bpmn:scriptTask id="Activity_02jwcaw" isForCompensation="true" scriptFormat="java">
+      <bpmn:script>(int) current = kcontext.getVariable("count");
+kcontext.setVariable("count", current - 1);</bpmn:script>
+    </bpmn:scriptTask>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -76,14 +82,14 @@
       <bpmndi:BPMNShape id="Gateway_1dpe896_di" bpmnElement="Gateway_1dpe896" isMarkerVisible="true">
         <dc:Bounds x="775" y="185" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_02jwcaw_di" bpmnElement="Activity_02jwcaw">
-        <dc:Bounds x="270" y="340" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0zzxz91_di" bpmnElement="Event_0n168m6">
         <dc:Bounds x="782" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_00tgjnv_di" bpmnElement="Activity_1cvnqsq">
         <dc:Bounds x="600" y="170" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wkzhfc_di" bpmnElement="Activity_02jwcaw">
+        <dc:Bounds x="270" y="340" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
         <dc:Bounds x="302" y="232" width="36" height="36" />

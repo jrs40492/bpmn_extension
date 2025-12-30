@@ -134,8 +134,28 @@ html, body {
 }
 
 /* Label styling for dark themes */
+/* External labels (on canvas, sequence flows) - light color for dark background */
 .djs-label {
   fill: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+/* Internal labels (inside tasks, events with light backgrounds) - dark color */
+/* Tasks have white/light fill, so text needs to be dark */
+.djs-element .djs-label,
+.djs-visual + .djs-label,
+.djs-group .djs-label {
+  fill: #1e1e1e !important;
+}
+
+/* Labels for sequence flows and associations stay light (they're on dark canvas) */
+.djs-connection .djs-label {
+  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
+}
+
+/* Participant/Lane labels (inside pools) - dark text */
+.djs-element[data-element-id*="Participant"] .djs-label,
+.djs-element[data-element-id*="Lane"] .djs-label {
+  fill: #1e1e1e !important;
 }
 
 /* Error/warning overlays */
@@ -2531,4 +2551,62 @@ html, body {
 
 .project-help p {
   margin: 4px 0;
+}
+
+/* ========================================
+   Business Rule Task / DMN Styling
+   ======================================== */
+
+/* DMN Task badge on canvas */
+.dmn-task-badge rect {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+/* DMN linked indicator styling */
+.dmn-linked-indicator rect {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* DMN configure hint styling */
+.dmn-configure-hint rect {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+/* DMN file selector in properties panel */
+.dmn-file-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.dmn-file-selector select {
+  flex: 1;
+  min-width: 0;
+}
+
+.dmn-refresh-btn {
+  padding: 4px 8px;
+  background: var(--vscode-button-secondaryBackground, #3a3d41);
+  color: var(--vscode-button-secondaryForeground, #cccccc);
+  border: 1px solid var(--vscode-button-border, transparent);
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.dmn-refresh-btn:hover {
+  background: var(--vscode-button-secondaryHoverBackground, #45494e);
+}
+
+.dmn-hint {
+  padding: 8px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+  font-style: italic;
+}
+
+/* Business Rule Task border - blue to indicate decision/rule */
+.bpmn-icon-business-rule::before {
+  color: #1890ff !important;
 }

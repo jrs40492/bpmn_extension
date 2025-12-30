@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getNonce } from './util/nonce';
 import { Disposable, disposeAll } from './util/dispose';
-import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue } from '../shared/message-types';
+import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo } from '../shared/message-types';
 
 /**
  * Provider for BPMN custom editors.
@@ -96,6 +96,17 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
             // Update diagnostics
             this.updateDiagnostics(document.uri, message.issues);
             break;
+
+          case 'requestDmnFiles':
+            // Find and return available DMN files
+            console.log('[BAMOE] Received requestDmnFiles message');
+            const dmnFiles = await this.findDmnFiles();
+            console.log('[BAMOE] Found DMN files:', dmnFiles);
+            this.postMessage(webviewPanel.webview, {
+              type: 'dmnFiles',
+              files: dmnFiles
+            });
+            break;
         }
       }
     );
@@ -156,6 +167,82 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     );
 
     await vscode.workspace.applyEdit(edit);
+  }
+
+  /**
+   * Find all DMN files in the workspace and extract their decisions
+   */
+  private async findDmnFiles(): Promise<DmnFileInfo[]> {
+    const dmnFiles: DmnFileInfo[] = [];
+
+    // Find all .dmn files in the workspace
+    const files = await vscode.workspace.findFiles('**/*.dmn', '**/node_modules/**');
+
+    for (const file of files) {
+      try {
+        const document = await vscode.workspace.openTextDocument(file);
+        const content = document.getText();
+
+        // Parse decisions from the DMN XML
+        const decisions = this.parseDecisionsFromDmn(content);
+
+        // Get relative path for display
+        const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
+        const relativePath = workspaceFolder
+          ? vscode.workspace.asRelativePath(file, false)
+          : file.fsPath;
+
+        dmnFiles.push({
+          path: file.fsPath,
+          name: relativePath,
+          decisions
+        });
+      } catch (error) {
+        console.error(`Error reading DMN file ${file.fsPath}:`, error);
+      }
+    }
+
+    return dmnFiles;
+  }
+
+  /**
+   * Parse decision IDs and names from DMN XML content
+   */
+  private parseDecisionsFromDmn(xml: string): Array<{ id: string; name: string }> {
+    const decisions: Array<{ id: string; name: string }> = [];
+
+    // Simple regex-based parsing for decision elements
+    // Matches: <decision id="..." name="..."> or <dmn:decision id="..." name="...">
+    const decisionRegex = /<(?:dmn:)?decision[^>]*\sid\s*=\s*["']([^"']+)["'][^>]*(?:\sname\s*=\s*["']([^"']+)["'])?[^>]*>/gi;
+
+    // Also try the reverse order (name before id)
+    const decisionRegexAlt = /<(?:dmn:)?decision[^>]*\sname\s*=\s*["']([^"']+)["'][^>]*\sid\s*=\s*["']([^"']+)["'][^>]*>/gi;
+
+    let match;
+
+    // First pass: id before name
+    while ((match = decisionRegex.exec(xml)) !== null) {
+      const id = match[1];
+      const name = match[2] || id; // Use ID as name if no name attribute
+      decisions.push({ id, name });
+    }
+
+    // Second pass: name before id (if we didn't find any)
+    if (decisions.length === 0) {
+      while ((match = decisionRegexAlt.exec(xml)) !== null) {
+        const name = match[1];
+        const id = match[2];
+        decisions.push({ id, name });
+      }
+    }
+
+    // Deduplicate by ID
+    const seen = new Set<string>();
+    return decisions.filter(d => {
+      if (seen.has(d.id)) return false;
+      seen.add(d.id);
+      return true;
+    });
   }
 
   /**

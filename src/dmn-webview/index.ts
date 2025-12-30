@@ -11,6 +11,9 @@ import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 // Import editor styles
 import './styles/dmn-editor.css';
 
+// Import FEEL support extension
+import { initFeelSupport, type FeelSupportController } from './extensions/feel-support';
+
 // Types
 interface DmnView {
   id: string;
@@ -77,6 +80,15 @@ async function init(): Promise<void> {
     }
   });
 
+  // Initialize FEEL support for expression validation and syntax highlighting
+  let feelController: FeelSupportController | null = null;
+  try {
+    feelController = initFeelSupport(dmnModeler);
+    console.log('[DMN Editor] FEEL support initialized');
+  } catch (err) {
+    console.warn('[DMN Editor] Failed to initialize FEEL support:', err);
+  }
+
   // Track views for tab navigation
   let currentViews: DmnView[] = [];
   let activeView: DmnView | null = null;
@@ -98,14 +110,75 @@ async function init(): Promise<void> {
     }
   }, 300);
 
-  // Listen for changes in the modeler
-  dmnModeler.on('commandStack.changed', () => {
+  // Handler for command stack changes
+  const handleCommandStackChanged = () => {
     if (skipNextChange) {
       skipNextChange = false;
       return;
     }
     sendChange();
+  };
+
+  // Listen for changes on the main modeler (for DRD changes)
+  dmnModeler.on('commandStack.changed', handleCommandStackChanged);
+
+  // Track the current active viewer to manage event listeners
+  let currentActiveViewer: any = null;
+
+  // Function to attach change listener to a viewer
+  const attachViewerChangeListener = (viewer: any) => {
+    if (!viewer) return;
+
+    try {
+      const eventBus = viewer.get('eventBus');
+      if (eventBus) {
+        eventBus.on('commandStack.changed', handleCommandStackChanged);
+      }
+    } catch (err) {
+      // Viewer might not have eventBus (e.g., during initialization)
+    }
+  };
+
+  // Function to detach change listener from a viewer
+  const detachViewerChangeListener = (viewer: any) => {
+    if (!viewer) return;
+
+    try {
+      const eventBus = viewer.get('eventBus');
+      if (eventBus) {
+        eventBus.off('commandStack.changed', handleCommandStackChanged);
+      }
+    } catch (err) {
+      // Ignore errors during cleanup
+    }
+  };
+
+  // Listen for view switches to attach/detach listeners
+  dmnModeler.on('views.changed', (event: any) => {
+    // Detach from previous viewer
+    if (currentActiveViewer) {
+      detachViewerChangeListener(currentActiveViewer);
+    }
+
+    // Get the new active viewer and attach listener
+    const newActiveViewer = dmnModeler.getActiveViewer();
+    if (newActiveViewer && newActiveViewer !== currentActiveViewer) {
+      attachViewerChangeListener(newActiveViewer);
+      currentActiveViewer = newActiveViewer;
+    }
   });
+
+  // Also attach to initial active viewer after import
+  const attachToCurrentViewer = () => {
+    const viewer = dmnModeler.getActiveViewer();
+    if (viewer && viewer !== currentActiveViewer) {
+      if (currentActiveViewer) {
+        detachViewerChangeListener(currentActiveViewer);
+      }
+      attachViewerChangeListener(viewer);
+      currentActiveViewer = viewer;
+    }
+  };
 
   // Listen for views changes (when switching between DRD, Decision Table, etc.)
   dmnModeler.on('views.changed', ((event: { views: DmnView[]; activeView: DmnView }) => {
@@ -157,6 +230,14 @@ async function init(): Promise<void> {
   // Set up zoom controls
   setupZoomControls(dmnModeler);
 
+  // Set up FEEL reference button
+  const feelRefBtn = document.getElementById('btn-feel-ref');
+  if (feelRefBtn && feelController) {
+    feelRefBtn.addEventListener('click', () => {
+      feelController?.showQuickReference();
+    });
+  }
+
   // Handle messages from the extension
   window.addEventListener('message', async (event) => {
     const message = event.data as ExtensionToWebviewMessage;
@@ -167,6 +248,9 @@ async function init(): Promise<void> {
           skipNextChange = true;
           lastKnownXml = message.xml;
           await dmnModeler.importXML(message.xml);
+
+          // Attach change listener to the active viewer (decision table, etc.)
+          attachToCurrentViewer();
 
           // Fit to viewport on initial load
           const activeViewer = dmnModeler.getActiveViewer();
@@ -194,6 +278,9 @@ async function init(): Promise<void> {
           skipNextChange = true;
           lastKnownXml = message.xml;
           await dmnModeler.importXML(message.xml);
+
+          // Attach change listener to the active viewer
+          attachToCurrentViewer();
 
           // Try to restore the view
           if (currentActiveView) {

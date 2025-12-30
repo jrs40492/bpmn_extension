@@ -2,6 +2,7 @@ import { createModeler, importDiagram, exportDiagram } from './bpmn-modeler';
 import { setupMessageHandler, postMessage } from './message-handler';
 import { initRestPanel } from './extensions/rest-task/rest-panel';
 import { initKafkaPanel } from './extensions/kafka-task/kafka-panel';
+import { setAvailableDmnFiles } from './extensions/business-rule-task';
 import { initTemplatesPanel } from './features/templates';
 import { initSearchPanel } from './features/search';
 import { initCommentsPanel } from './features/comments';
@@ -10,7 +11,7 @@ import { initDeployPanel } from './features/deploy';
 import { initCompliancePanel } from './features/compliance';
 import { initExtensionsPanel } from './features/extensions';
 import { initProjectsPanel, analyzeBpmnFile } from './features/projects';
-import type { ExtensionToWebviewMessage, ValidationIssue } from '../shared/message-types';
+import type { ExtensionToWebviewMessage, ValidationIssue, DmnFileInfo } from '../shared/message-types';
 
 // Import bpmn-js styles
 import 'bpmn-js/dist/assets/diagram-js.css';
@@ -38,6 +39,9 @@ declare function acquireVsCodeApi(): {
 
 // Initialize VS Code API
 const vscode = acquireVsCodeApi();
+
+// Expose vscode API globally for properties providers
+(window as any).vscodeApi = vscode;
 
 // Debounce utility
 function debounce<T extends (...args: unknown[]) => void>(
@@ -261,6 +265,12 @@ async function init(): Promise<void> {
           console.error('Failed to import diagram:', err);
           skipNextChange = false;
         }
+        break;
+
+      case 'dmnFiles':
+        // Update available DMN files for Business Rule Task properties
+        console.log('[BAMOE Webview] Received dmnFiles:', message.files);
+        setAvailableDmnFiles(message.files);
         break;
     }
   });

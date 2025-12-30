@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" id="Definitions_1" name="Decision" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="Decision_1" name="Decision">
+    <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
+      <input id="Input_1">
+        <inputExpression id="InputExpression_1" typeRef="boolean">
+          <text>drugResponse.data != null</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_0r4skj8">
+        <inputExpression id="LiteralExpression_0plw1vo" typeRef="boolean">
+          <text>matches(drugResponse.status, "410")</text>
+        </inputExpression>
+      </input>
+      <input id="InputClause_0mv7q0v">
+        <inputExpression id="LiteralExpression_1l1f5vw" typeRef="boolean">
+          <text>matches(drugResponse.status, "500")</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Output" typeRef="string" />
+      <rule id="Rule_1">
+        <inputEntry id="InputEntry_1">
+          <text>true</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0knv9lc">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0jdi57b">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_1">
+          <text>"OK"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_16wiggf">
+        <inputEntry id="UnaryTests_10ry1xn">
+          <text>false</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0gibcfs">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1ytxlnd">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_015699v">
+          <text>"INACTIVE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0voovel">
+        <inputEntry id="UnaryTests_0ewps5n">
+          <text>false</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1voobei">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_06lbkes">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0aqqc3w">
+          <text>"SERVER_ERROR"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1oa49x7">
+        <inputEntry id="UnaryTests_0rm7228">
+          <text>false</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0h7jin0">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0rm8ka5">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_08npv29">
+          <text>"NOT_FOUND"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1x74g7q">
+        <inputEntry id="UnaryTests_0kmvwmj">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_17bnoxx">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0o2y3sx">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1062la0">
+          <text></text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
+        <dc:Bounds height="80" width="180" x="210" y="150" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

@@ -1,0 +1,355 @@
+/**
+ * FEEL Syntax Highlighting Styles
+ * Provides syntax highlighting for FEEL expressions in DMN decision tables
+ */
+
+/* Base cell styles for FEEL expressions */
+.dmn-decision-table .feel-cell {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 12px;
+}
+
+/* Valid expression indicator */
+.dmn-decision-table .feel-valid {
+  border-left: 3px solid var(--feel-valid-color, #4caf50);
+}
+
+/* Invalid expression indicator */
+.dmn-decision-table .feel-invalid {
+  border-left: 3px solid var(--feel-error-color, #f44336);
+  background-color: var(--feel-error-bg, rgba(244, 67, 54, 0.1));
+}
+
+/* Warning indicator */
+.dmn-decision-table .feel-warning {
+  border-left: 3px solid var(--feel-warning-color, #ff9800);
+  background-color: var(--feel-warning-bg, rgba(255, 152, 0, 0.1));
+}
+
+/* Error tooltip */
+.feel-error-tooltip {
+  position: absolute;
+  background: var(--feel-tooltip-bg, #333);
+  color: var(--feel-tooltip-color, #fff);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  max-width: 300px;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
+.feel-error-tooltip::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  left: 20px;
+  border-width: 0 6px 6px 6px;
+  border-style: solid;
+  border-color: transparent transparent var(--feel-tooltip-bg, #333) transparent;
+}
+
+/* Syntax highlighting colors */
+.feel-keyword {
+  color: var(--feel-keyword-color, #c678dd);
+  font-weight: 500;
+}
+
+.feel-operator {
+  color: var(--feel-operator-color, #56b6c2);
+}
+
+.feel-number {
+  color: var(--feel-number-color, #d19a66);
+}
+
+.feel-string {
+  color: var(--feel-string-color, #98c379);
+}
+
+.feel-boolean {
+  color: var(--feel-boolean-color, #56b6c2);
+  font-weight: 500;
+}
+
+.feel-null {
+  color: var(--feel-null-color, #e06c75);
+  font-style: italic;
+}
+
+.feel-function {
+  color: var(--feel-function-color, #61afef);
+}
+
+.feel-variable {
+  color: var(--feel-variable-color, #e5c07b);
+}
+
+.feel-comment {
+  color: var(--feel-comment-color, #5c6370);
+  font-style: italic;
+}
+
+.feel-range {
+  color: var(--feel-range-color, #c678dd);
+}
+
+.feel-date {
+  color: var(--feel-date-color, #e5c07b);
+}
+
+.feel-time {
+  color: var(--feel-time-color, #e5c07b);
+}
+
+.feel-duration {
+  color: var(--feel-duration-color, #98c379);
+}
+
+/* Autocomplete styles */
+.feel-autocomplete {
+  position: absolute;
+  background: var(--feel-autocomplete-bg, #1e1e1e);
+  border: 1px solid var(--feel-autocomplete-border, #3c3c3c);
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1001;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  min-width: 250px;
+}
+
+.feel-autocomplete-item {
+  padding: 6px 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.feel-autocomplete-item:hover,
+.feel-autocomplete-item.selected {
+  background: var(--feel-autocomplete-hover, #094771);
+}
+
+.feel-autocomplete-item .icon {
+  width: 16px;
+  text-align: center;
+  color: var(--feel-autocomplete-icon, #888);
+}
+
+.feel-autocomplete-item .label {
+  flex: 1;
+}
+
+.feel-autocomplete-item .type {
+  font-size: 11px;
+  color: var(--feel-autocomplete-type, #888);
+}
+
+/* Function signature tooltip */
+.feel-signature-tooltip {
+  position: absolute;
+  background: var(--feel-signature-bg, #252526);
+  color: var(--feel-signature-color, #cccccc);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  max-width: 400px;
+  z-index: 1002;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--feel-signature-border, #3c3c3c);
+}
+
+.feel-signature-tooltip .signature {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  color: var(--feel-function-color, #61afef);
+  margin-bottom: 6px;
+}
+
+.feel-signature-tooltip .description {
+  color: var(--feel-signature-desc, #9cdcfe);
+  margin-bottom: 4px;
+}
+
+.feel-signature-tooltip .example {
+  color: var(--feel-signature-example, #6a9955);
+  font-style: italic;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 11px;
+}
+
+/* Expression type badges */
+.feel-expression-type {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  margin-left: 6px;
+}
+
+.feel-expression-type.range {
+  background: var(--feel-badge-range-bg, rgba(198, 120, 221, 0.2));
+  color: var(--feel-badge-range-color, #c678dd);
+}
+
+.feel-expression-type.comparison {
+  background: var(--feel-badge-comparison-bg, rgba(86, 182, 194, 0.2));
+  color: var(--feel-badge-comparison-color, #56b6c2);
+}
+
+.feel-expression-type.function {
+  background: var(--feel-badge-function-bg, rgba(97, 175, 239, 0.2));
+  color: var(--feel-badge-function-color, #61afef);
+}
+
+.feel-expression-type.list {
+  background: var(--feel-badge-list-bg, rgba(152, 195, 121, 0.2));
+  color: var(--feel-badge-list-color, #98c379);
+}
+
+.feel-expression-type.literal {
+  background: var(--feel-badge-literal-bg, rgba(209, 154, 102, 0.2));
+  color: var(--feel-badge-literal-color, #d19a66);
+}
+
+/* Validation panel */
+.feel-validation-panel {
+  background: var(--feel-validation-bg, #1e1e1e);
+  border-top: 1px solid var(--feel-validation-border, #3c3c3c);
+  padding: 10px;
+  font-size: 12px;
+}
+
+.feel-validation-panel .title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.feel-validation-panel .error-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.feel-validation-panel .error-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.feel-validation-panel .error-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.feel-validation-panel .error-icon {
+  color: var(--feel-error-color, #f44336);
+}
+
+.feel-validation-panel .warning-icon {
+  color: var(--feel-warning-color, #ff9800);
+}
+
+.feel-validation-panel .error-message {
+  flex: 1;
+}
+
+.feel-validation-panel .error-location {
+  color: var(--feel-validation-location, #888);
+  font-size: 11px;
+}
+
+/* Quick reference panel */
+.feel-quick-reference {
+  background: var(--feel-reference-bg, #252526);
+  border: 1px solid var(--feel-reference-border, #3c3c3c);
+  border-radius: 4px;
+  padding: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000 !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+
+.feel-quick-reference h4 {
+  margin: 0 0 10px 0;
+  font-size: 13px;
+  color: var(--feel-reference-title, #ffffff);
+}
+
+.feel-quick-reference table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.feel-quick-reference th,
+.feel-quick-reference td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--feel-reference-border, #3c3c3c);
+}
+
+.feel-quick-reference th {
+  color: var(--feel-reference-header, #888);
+  font-weight: 500;
+}
+
+.feel-quick-reference code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+}
+
+/* Dark theme support (default) */
+:root {
+  --feel-valid-color: #4caf50;
+  --feel-error-color: #f44336;
+  --feel-warning-color: #ff9800;
+  --feel-error-bg: rgba(244, 67, 54, 0.1);
+  --feel-warning-bg: rgba(255, 152, 0, 0.1);
+  --feel-tooltip-bg: #333;
+  --feel-tooltip-color: #fff;
+  --feel-keyword-color: #c678dd;
+  --feel-operator-color: #56b6c2;
+  --feel-number-color: #d19a66;
+  --feel-string-color: #98c379;
+  --feel-boolean-color: #56b6c2;
+  --feel-null-color: #e06c75;
+  --feel-function-color: #61afef;
+  --feel-variable-color: #e5c07b;
+  --feel-comment-color: #5c6370;
+  --feel-range-color: #c678dd;
+  --feel-date-color: #e5c07b;
+  --feel-time-color: #e5c07b;
+  --feel-duration-color: #98c379;
+}
+
+/* Light theme support */
+.vscode-light {
+  --feel-valid-color: #388e3c;
+  --feel-error-color: #d32f2f;
+  --feel-warning-color: #f57c00;
+  --feel-error-bg: rgba(211, 47, 47, 0.1);
+  --feel-warning-bg: rgba(245, 124, 0, 0.1);
+  --feel-tooltip-bg: #f5f5f5;
+  --feel-tooltip-color: #333;
+  --feel-keyword-color: #7c3aed;
+  --feel-operator-color: #0891b2;
+  --feel-number-color: #b45309;
+  --feel-string-color: #059669;
+  --feel-boolean-color: #0891b2;
+  --feel-null-color: #dc2626;
+  --feel-function-color: #2563eb;
+  --feel-variable-color: #ca8a04;
+  --feel-comment-color: #6b7280;
+}

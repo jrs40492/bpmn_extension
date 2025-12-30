@@ -2,6 +2,16 @@
  * Message protocol definitions for extension <-> webview communication
  */
 
+// DMN file information for Business Rule Task linking
+export interface DmnFileInfo {
+  path: string;
+  name: string;
+  decisions: Array<{
+    id: string;
+    name: string;
+  }>;
+}
+
 // Extension -> Webview messages
 export interface InitMessage {
   type: 'init';
@@ -14,7 +24,12 @@ export interface UpdateMessage {
   xml: string;
 }
 
-export type ExtensionToWebviewMessage = InitMessage | UpdateMessage;
+export interface DmnFilesMessage {
+  type: 'dmnFiles';
+  files: DmnFileInfo[];
+}
+
+export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage;
 
 // Webview -> Extension messages
 export interface ReadyMessage {
@@ -31,7 +46,11 @@ export interface ValidationMessage {
   issues: ValidationIssue[];
 }
 
-export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage;
+export interface RequestDmnFilesMessage {
+  type: 'requestDmnFiles';
+}
+
+export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage;
 
 // Validation types
 export interface ValidationIssue {

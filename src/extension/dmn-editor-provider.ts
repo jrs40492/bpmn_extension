@@ -213,6 +213,9 @@ export class DmnEditorProvider implements vscode.CustomTextEditorProvider {
         <!-- Tabs will be dynamically created -->
       </div>
       <div class="toolbar-group">
+        <button id="btn-feel-ref" class="toolbar-btn" title="FEEL Quick Reference">FEEL</button>
+      </div>
+      <div class="toolbar-group">
         <button id="btn-zoom-in" class="toolbar-btn" title="Zoom In">+</button>
         <button id="btn-zoom-out" class="toolbar-btn" title="Zoom Out">−</button>
         <button id="btn-zoom-fit" class="toolbar-btn" title="Fit to Viewport">Fit</button>
