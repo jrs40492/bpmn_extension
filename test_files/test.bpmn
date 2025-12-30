@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:drools="http://www.jboss.org/drools" xmlns:rest="http://bamoe.io/schema/rest" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:itemDefinition id="_Activity_1qz1b6m_namespaceInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1qz1b6m_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_1qz1b6m_decisionInputXItem" structureRef="java.lang.String" />
@@ -161,11 +161,6 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_0gamo9o" sourceRef="Activity_05jwo4m" targetRef="Activity_1sh2xqa" />
-    <bpmn:sendTask name="Kafka Publish">
-      <bpmn:extensionElements>
-        <kafka:kafkaTaskConfig topic="my-topic" keyExpression="" messageExpression="${message}" headers="{}" />
-      </bpmn:extensionElements>
-    </bpmn:sendTask>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -208,9 +203,6 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_05jwo4m_di" bpmnElement="Activity_05jwo4m">
         <dc:Bounds x="420" y="170" width="100" height="80" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="undefined_di" bpmnElement="undefined">
-        <dc:Bounds x="420" y="380" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
         <dc:Bounds x="302" y="232" width="36" height="36" />
