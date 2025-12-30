@@ -254,38 +254,13 @@ function fixIncompleteDataAssociations(xml: string): string {
     const targetRef = assoc.querySelector('targetRef');
     const assignment = assoc.querySelector('assignment, Assignment');
 
-    // Case 1: Has sourceRef/targetRef but no assignment - convert to assignment format
+    // Case 1: Has sourceRef/targetRef but no assignment - this is the correct format, leave it alone
+    // The sourceRef should point to a process-level property element
     if (sourceRef && targetRef && !assignment) {
-      const varName = sourceRef.textContent || '';
-      const targetId = targetRef.textContent || '';
-
-      // Only convert if sourceRef looks like a variable name (not a dataOutput reference)
-      // Variable names don't contain underscores typically used in IDs
-      if (varName && !varName.includes('_') && targetId) {
-        // Create assignment-based mapping
-        // Use #{varName} expression syntax so jBPM/Kogito evaluates it as a process variable reference
-        const assignmentElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
-
-        const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
-        fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-        fromExpr.textContent = `#{${varName}}`;
-
-        const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
-        toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-        toExpr.textContent = targetId;
-
-        assignmentElem.appendChild(fromExpr);
-        assignmentElem.appendChild(toExpr);
-
-        // Remove sourceRef (keep targetRef for BPMN compliance)
-        assoc.removeChild(sourceRef);
-        assoc.appendChild(assignmentElem);
-
-        modified = true;
-        console.log(`Converted DataInputAssociation to assignment format: "${varName}" -> "${targetId}"`);
-      }
+      // This format is correct for jBPM/Kogito - no changes needed
+      // Just ensure it stays as sourceRef/targetRef pattern
     }
-    // Case 2: Has targetRef but no sourceRef and no assignment - add assignment
+    // Case 2: Has targetRef but no sourceRef and no assignment - add sourceRef
     else if (targetRef && !sourceRef && !assignment) {
       const targetId = targetRef.textContent || '';
       // Extract variable name from targetId (e.g., "Activity_05jwo4m_ddidInput" -> "ddid")
@@ -296,24 +271,13 @@ function fixIncompleteDataAssociations(xml: string): string {
         varName = inputName.toLowerCase() || 'input';
       }
 
-      // Use assignment-based format for better jBPM compatibility
-      // Use #{varName} expression syntax so jBPM/Kogito evaluates it as a process variable reference
-      const assignmentElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
-
-      const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
-      fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-      fromExpr.textContent = `#{${varName}}`;
-
-      const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
-      toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-      toExpr.textContent = targetId;
-
-      assignmentElem.appendChild(fromExpr);
-      assignmentElem.appendChild(toExpr);
-      assoc.appendChild(assignmentElem);
+      // Add sourceRef pointing to the process-level property
+      const sourceRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sourceRef');
+      sourceRefElem.textContent = varName;
+      assoc.insertBefore(sourceRefElem, targetRef);
 
       modified = true;
-      console.log(`Fixed DataInputAssociation: added assignment for "${varName}" -> "${targetId}"`);
+      console.log(`Fixed DataInputAssociation: added sourceRef="${varName}" -> "${targetId}"`);
     }
   }
 
@@ -330,8 +294,10 @@ function fixIncompleteDataAssociations(xml: string): string {
  *
  * jBPM/Kogito RESTWorkItemHandler expects variables to be passed as input parameters.
  * When a URL or Content contains {variableName}, we need to:
- * 1. Add a dataInput for that variable
- * 2. Add a dataInputAssociation with sourceRef pointing to the process variable
+ * 1. Add an itemDefinition at definitions level
+ * 2. Add a property element at process level
+ * 3. Add a dataInput for that variable in the task
+ * 4. Add a dataInputAssociation with sourceRef pointing to the process property
  *
  * This allows the runtime to substitute {variableName} with the actual process variable value.
  */
@@ -347,9 +313,31 @@ function addRestTaskVariableMappings(xml: string): string {
     return xml;
   }
 
+  // Get the definitions element and process element
+  const definitions = doc.querySelector('definitions');
+  const process = doc.querySelector('process');
+  if (!definitions || !process) return xml;
+
+  // Track existing itemDefinitions and properties
+  const existingItemDefs = new Set<string>();
+  const existingProperties = new Set<string>();
+
+  doc.querySelectorAll('itemDefinition').forEach(item => {
+    const id = item.getAttribute('id');
+    if (id) existingItemDefs.add(id);
+  });
+
+  process.querySelectorAll(':scope > property').forEach(prop => {
+    const id = prop.getAttribute('id');
+    if (id) existingProperties.add(id);
+  });
+
   // Find all tasks with drools:taskName="Rest"
   const tasks = doc.querySelectorAll('task, Task');
   let modified = false;
+
+  // Collect all variables needed across all REST tasks
+  const allVariablesNeeded = new Set<string>();
 
   for (const task of tasks) {
     const taskName = task.getAttribute('drools:taskName');
@@ -399,6 +387,7 @@ function addRestTaskVariableMappings(xml: string): string {
         // Skip standard REST params
         if (!['Url', 'Method', 'ContentType', 'Content', 'ConnectTimeout', 'ReadTimeout', 'Result'].includes(varName)) {
           variablesNeeded.add(varName);
+          allVariablesNeeded.add(varName);
         }
       }
     }
@@ -429,29 +418,17 @@ function addRestTaskVariableMappings(xml: string): string {
         ioSpec.appendChild(dataInput);
       }
 
-      // Create dataInputAssociation with assignment format (required for jBPM/Kogito)
-      // The assignment format maps the process variable to the task input parameter
+      // Create dataInputAssociation with sourceRef/targetRef pattern
+      // This references the process-level property element
       const dataInputAssoc = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:dataInputAssociation');
+
+      const sourceRef = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sourceRef');
+      sourceRef.textContent = varName;
+      dataInputAssoc.appendChild(sourceRef);
 
       const targetRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:targetRef');
       targetRefElem.textContent = inputId;
       dataInputAssoc.appendChild(targetRefElem);
-
-      // Create assignment element with from/to expressions
-      // Use #{varName} expression syntax so jBPM/Kogito evaluates it as a process variable reference
-      const assignment = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
-
-      const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
-      fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-      fromExpr.textContent = `#{${varName}}`;
-
-      const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
-      toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-      toExpr.textContent = inputId;
-
-      assignment.appendChild(fromExpr);
-      assignment.appendChild(toExpr);
-      dataInputAssoc.appendChild(assignment);
 
       // Find the last dataInputAssociation to insert after
       const existingAssocs = task.querySelectorAll('dataInputAssociation, DataInputAssociation');
@@ -464,6 +441,41 @@ function addRestTaskVariableMappings(xml: string): string {
       }
 
       existingInputs.add(varName);
+    }
+  }
+
+  // Add itemDefinitions and properties for all variables needed
+  for (const varName of allVariablesNeeded) {
+    const itemDefId = `_${varName}Item`;
+
+    // Add itemDefinition at definitions level if not exists
+    if (!existingItemDefs.has(itemDefId)) {
+      const itemDef = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:itemDefinition');
+      itemDef.setAttribute('id', itemDefId);
+      itemDef.setAttribute('structureRef', 'java.lang.String');
+
+      // Insert before the first process element
+      definitions.insertBefore(itemDef, process);
+      existingItemDefs.add(itemDefId);
+      modified = true;
+    }
+
+    // Add property at process level if not exists
+    if (!existingProperties.has(varName)) {
+      const property = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:property');
+      property.setAttribute('id', varName);
+      property.setAttribute('name', varName);
+      property.setAttribute('itemSubjectRef', itemDefId);
+
+      // Insert after extensionElements or as first child of process
+      const extElements = process.querySelector('extensionElements');
+      if (extElements) {
+        extElements.parentNode?.insertBefore(property, extElements.nextSibling);
+      } else {
+        process.insertBefore(property, process.firstChild);
+      }
+      existingProperties.add(varName);
+      modified = true;
     }
   }
 
