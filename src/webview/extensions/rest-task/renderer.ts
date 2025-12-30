@@ -1,6 +1,6 @@
 /**
  * Custom Renderer for REST Task
- * Adds a distinct visual style to REST tasks
+ * Detects REST tasks via drools:taskName="Rest" attribute (no custom extensions)
  */
 
 import BaseRenderer from 'diagram-js/lib/draw/BaseRenderer';
@@ -10,36 +10,22 @@ const HIGH_PRIORITY = 1500;
 interface Element {
   businessObject: {
     $type: string;
-    extensionElements?: {
-      values?: Array<{
-        $type: string;
-      }>;
-    };
+    get?: (name: string) => unknown;
+    [key: string]: unknown;
   };
   width: number;
   height: number;
 }
 
-interface Shape {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 // Helper to check if element is a REST task
-// Kogito uses bpmn:Task (not bpmn:ServiceTask) for work item handlers
+// Uses drools:taskName attribute - no custom extensions
 function isRestTask(element: Element): boolean {
   const bo = element.businessObject;
-  // Support both bpmn:Task (Kogito-compatible) and bpmn:ServiceTask (legacy)
-  if (bo.$type !== 'bpmn:Task' && bo.$type !== 'bpmn:ServiceTask') return false;
+  if (bo.$type !== 'bpmn:Task') return false;
 
-  const extensionElements = bo.extensionElements;
-  if (!extensionElements?.values) return false;
-
-  return extensionElements.values.some(
-    (ext) => ext.$type === 'rest:RestTaskConfig'
-  );
+  // Check for drools:taskName="Rest"
+  const taskName = bo.get?.('drools:taskName') || bo['drools:taskName'];
+  return taskName === 'Rest';
 }
 
 // SVG namespace

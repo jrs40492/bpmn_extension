@@ -1,20 +1,22 @@
 /**
  * REST Task Extension Module
- * Combines all REST task components into a single module
- * Includes Kogito-compatible data mappings
+ * Uses STANDARD BPMN elements only - no custom extensions
+ *
+ * Creates Kogito-compatible REST work items using:
+ * - bpmn:task with drools:taskName="Rest"
+ * - Standard bpmn:ioSpecification
+ * - Standard bpmn:dataInputAssociation / dataOutputAssociation
  */
 
 import RestTaskPaletteProvider from './palette-provider';
 import RestTaskPropertiesProvider from './properties-provider';
 import RestTaskRenderer from './renderer';
-import restTaskDescriptor from './moddle-descriptor';
-import droolsDescriptor from './drools-descriptor';
 
-// Export the moddle descriptors separately (needed for modeler config)
-export { restTaskDescriptor, droolsDescriptor };
+// Re-export the drools descriptor (still needed for drools:taskName attribute)
+export { droolsDescriptor } from './drools-descriptor';
 
-// Export Kogito mapping utilities
-export { createKogitoDataMappings, KOGITO_REST_PARAMS } from './palette-provider';
+// Export helper functions
+export { isRestTask, getRestConfig, updateRestParam, REST_PARAMS } from './palette-provider';
 
 // Export the module for bpmn-js additionalModules
 export default {

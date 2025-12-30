@@ -9,8 +9,8 @@ import gridModule from 'diagram-js-grid';
 // @ts-expect-error - no type definitions available
 import tokenSimulationModule from 'bpmn-js-token-simulation';
 
-// Custom REST task extension (includes Kogito-compatible data mappings)
-import restTaskModule, { restTaskDescriptor, droolsDescriptor } from './extensions/rest-task';
+// Custom REST task extension (uses standard BPMN, only drools descriptor needed)
+import restTaskModule, { droolsDescriptor } from './extensions/rest-task';
 
 // Custom Kafka task extension
 import kafkaTaskModule, { kafkaTaskDescriptor } from './extensions/kafka-task';
@@ -130,7 +130,7 @@ export function createModeler(
     },
     additionalModules,
     moddleExtensions: {
-      rest: restTaskDescriptor,
+      // Note: REST tasks now use standard BPMN elements, no custom extension needed
       kafka: kafkaTaskDescriptor,
       dmn: businessRuleTaskDescriptor,
       bamoe: processVariablesDescriptor,
@@ -181,7 +181,6 @@ function getEmptyDiagram(): string {
                   xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
                   xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
                   xmlns:drools="http://www.jboss.org/drools"
-                  xmlns:rest="http://bamoe.io/schema/rest"
                   xmlns:bamoe="http://bamoe.io/schema/process"
                   id="Definitions_empty"
                   targetNamespace="http://bpmn.io/schema/bpmn">

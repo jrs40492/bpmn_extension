@@ -1,7 +1,17 @@
 /**
  * Custom Palette Provider for REST Task
- * Adds a REST API task entry to the modeler palette
- * Generates Kogito-compatible BPMN data mappings
+ * Creates a Kogito-compatible REST work item using STANDARD BPMN elements only.
+ *
+ * NO CUSTOM EXTENSIONS - uses only:
+ * - bpmn:task with drools:taskName="Rest" attribute
+ * - bpmn:ioSpecification with dataInput/dataOutput
+ * - bpmn:dataInputAssociation with assignments
+ * - bpmn:dataOutputAssociation for result mapping
+ *
+ * This is compatible with:
+ * - Kogito/Drools runtime (uses built-in RESTWorkItemHandler)
+ * - Any standard BPMN editor
+ * - IBM BAMOE editor
  */
 
 interface PaletteEntry {
@@ -30,8 +40,7 @@ interface ModdleElement {
   $parent?: ModdleElement;
   $type?: string;
   id?: string;
-  values?: ModdleElement[];
-  get?: (name: string) => unknown;
+  [key: string]: unknown;
 }
 
 interface Moddle {
@@ -39,164 +48,149 @@ interface Moddle {
 }
 
 /**
- * Kogito REST WorkItemHandler parameter mapping
- * Maps our friendly property names to Kogito's expected parameter names
+ * Kogito REST WorkItemHandler expected parameters
  */
-export const KOGITO_REST_PARAMS = {
-  // Input parameters (what we send to the REST handler)
-  inputs: {
-    url: 'Url',
-    method: 'Method',
-    headers: 'Headers',
-    body: 'Content',
-    timeout: 'ReadTimeout',
-    connectTimeout: 'ConnectTimeout',
-    contentType: 'ContentType',
-    acceptHeader: 'AcceptHeader',
-    username: 'Username',
-    password: 'Password'
-  },
-  // Output parameters (what we get back)
-  outputs: {
-    result: 'Result',
-    status: 'Status',
-    statusMsg: 'StatusMsg'
-  }
+export const REST_PARAMS = {
+  inputs: ['Url', 'Method', 'ContentType', 'Content', 'ConnectTimeout', 'ReadTimeout'],
+  outputs: ['Result']
 } as const;
 
 /**
- * Creates Kogito-compatible ioSpecification with data inputs/outputs
+ * Default values for REST task
  */
-export function createKogitoDataMappings(
-  moddle: Moddle,
-  config: {
-    url: string;
-    method: string;
-    headers: string;
-    body: string;
-    responseVariable: string;
-    timeout: number;
-  },
-  taskId: string
-): {
+const DEFAULT_CONFIG = {
+  Url: 'https://api.example.com/endpoint',
+  Method: 'GET',
+  ContentType: 'application/json',
+  Content: '',
+  ConnectTimeout: '30000',
+  ReadTimeout: '30000'
+};
+
+/**
+ * Creates a standard BPMN ioSpecification for REST task
+ */
+function createRestIoSpecification(moddle: Moddle, taskId: string): {
   ioSpecification: ModdleElement;
-  dataInputAssociations: ModdleElement[];
-  dataOutputAssociations: ModdleElement[];
+  dataInputs: Map<string, ModdleElement>;
+  dataOutputs: Map<string, ModdleElement>;
 } {
-  const dataInputs: ModdleElement[] = [];
-  const dataOutputs: ModdleElement[] = [];
-  const dataInputAssociations: ModdleElement[] = [];
-  const dataOutputAssociations: ModdleElement[] = [];
-  const inputSet = moddle.create('bpmn:InputSet', { dataInputRefs: [] });
-  const outputSet = moddle.create('bpmn:OutputSet', { dataOutputRefs: [] });
+  const dataInputs = new Map<string, ModdleElement>();
+  const dataOutputs = new Map<string, ModdleElement>();
+  const dataInputRefs: ModdleElement[] = [];
+  const dataOutputRefs: ModdleElement[] = [];
 
   // Create data inputs for each REST parameter
-  const inputMappings = [
-    { id: 'Url', value: config.url },
-    { id: 'Method', value: config.method },
-    { id: 'Content', value: config.body },
-    { id: 'ContentType', value: 'application/json' },
-    { id: 'ReadTimeout', value: String(config.timeout) },
-  ];
-
-  // Add Headers if not empty
-  if (config.headers && config.headers !== '{}') {
-    // Convert JSON headers to Kogito format: "header1=val1;header2=val2"
-    try {
-      const headersObj = JSON.parse(config.headers);
-      const headersStr = Object.entries(headersObj)
-        .map(([k, v]) => `${k}=${v}`)
-        .join(';');
-      if (headersStr) {
-        inputMappings.push({ id: 'Headers', value: headersStr });
-      }
-    } catch {
-      // If not valid JSON, use as-is
-      inputMappings.push({ id: 'Headers', value: config.headers });
-    }
-  }
-
-  // Create DataInput elements
-  inputMappings.forEach(({ id, value }) => {
-    const dataInputId = `${taskId}_${id}Input`;
+  for (const paramName of REST_PARAMS.inputs) {
     const dataInput = moddle.create('bpmn:DataInput', {
-      id: dataInputId,
-      name: id,
-      itemSubjectRef: `${id}Item`
+      id: `${taskId}_${paramName}Input`,
+      name: paramName
     });
-    dataInputs.push(dataInput);
-    (inputSet as any).dataInputRefs.push(dataInput);
-
-    // Create DataInputAssociation with assignment
-    const assignment = moddle.create('bpmn:Assignment', {});
-    const from = moddle.create('bpmn:FormalExpression', { body: value });
-    const to = moddle.create('bpmn:FormalExpression', { body: dataInputId });
-    (assignment as any).from = from;
-    (assignment as any).to = to;
-
-    const dataInputAssociation = moddle.create('bpmn:DataInputAssociation', {
-      id: `${taskId}_${id}InputAssociation`,
-      targetRef: dataInput,
-      assignment: [assignment]
-    });
-    dataInputAssociations.push(dataInputAssociation);
-  });
-
-  // Create TaskName input (required by Kogito to identify the handler)
-  const taskNameInputId = `${taskId}_TaskNameInput`;
-  const taskNameInput = moddle.create('bpmn:DataInput', {
-    id: taskNameInputId,
-    name: 'TaskName'
-  });
-  dataInputs.push(taskNameInput);
-  (inputSet as any).dataInputRefs.push(taskNameInput);
-
-  const taskNameAssignment = moddle.create('bpmn:Assignment', {});
-  const taskNameFrom = moddle.create('bpmn:FormalExpression', { body: 'Rest' });
-  const taskNameTo = moddle.create('bpmn:FormalExpression', { body: taskNameInputId });
-  (taskNameAssignment as any).from = taskNameFrom;
-  (taskNameAssignment as any).to = taskNameTo;
-
-  const taskNameAssociation = moddle.create('bpmn:DataInputAssociation', {
-    id: `${taskId}_TaskNameInputAssociation`,
-    targetRef: taskNameInput,
-    assignment: [taskNameAssignment]
-  });
-  dataInputAssociations.push(taskNameAssociation);
-
-  // Create DataOutput for Result
-  const resultOutputId = `${taskId}_ResultOutput`;
-  const resultOutput = moddle.create('bpmn:DataOutput', {
-    id: resultOutputId,
-    name: 'Result'
-  });
-  dataOutputs.push(resultOutput);
-  (outputSet as any).dataOutputRefs = [resultOutput];
-
-  // Create DataOutputAssociation to map result to process variable
-  if (config.responseVariable) {
-    const dataOutputAssociation = moddle.create('bpmn:DataOutputAssociation', {
-      id: `${taskId}_ResultOutputAssociation`,
-      sourceRef: [resultOutput]
-    });
-    // The targetRef would be the process variable - we'll set this as an attribute
-    (dataOutputAssociation as any).targetRef = config.responseVariable;
-    dataOutputAssociations.push(dataOutputAssociation);
+    dataInputs.set(paramName, dataInput);
+    dataInputRefs.push(dataInput);
   }
+
+  // Create data outputs
+  for (const paramName of REST_PARAMS.outputs) {
+    const dataOutput = moddle.create('bpmn:DataOutput', {
+      id: `${taskId}_${paramName}Output`,
+      name: paramName
+    });
+    dataOutputs.set(paramName, dataOutput);
+    dataOutputRefs.push(dataOutput);
+  }
+
+  // Create input/output sets
+  const inputSet = moddle.create('bpmn:InputSet', {
+    id: `${taskId}_InputSet`,
+    dataInputRefs: dataInputRefs
+  });
+
+  const outputSet = moddle.create('bpmn:OutputSet', {
+    id: `${taskId}_OutputSet`,
+    dataOutputRefs: dataOutputRefs
+  });
 
   // Create ioSpecification
-  const ioSpecification = moddle.create('bpmn:IoSpecification', {
-    dataInputs,
-    dataOutputs,
+  const ioSpecification = moddle.create('bpmn:InputOutputSpecification', {
+    id: `${taskId}_IoSpec`,
+    dataInputs: Array.from(dataInputs.values()),
+    dataOutputs: Array.from(dataOutputs.values()),
     inputSets: [inputSet],
     outputSets: [outputSet]
   });
 
-  return {
-    ioSpecification,
-    dataInputAssociations,
-    dataOutputAssociations
-  };
+  // Set parent references
+  dataInputs.forEach(di => { di.$parent = ioSpecification; });
+  dataOutputs.forEach(dout => { dout.$parent = ioSpecification; });
+  inputSet.$parent = ioSpecification;
+  outputSet.$parent = ioSpecification;
+
+  return { ioSpecification, dataInputs, dataOutputs };
+}
+
+/**
+ * Creates data input associations with default values
+ */
+function createDataInputAssociations(
+  moddle: Moddle,
+  taskId: string,
+  dataInputs: Map<string, ModdleElement>,
+  config: Record<string, string>
+): ModdleElement[] {
+  const associations: ModdleElement[] = [];
+
+  for (const [paramName, dataInput] of dataInputs) {
+    const value = config[paramName] || '';
+
+    // Create FormalExpression for the value
+    const fromExpression = moddle.create('bpmn:FormalExpression', {
+      body: value
+    });
+
+    // Create assignment
+    const assignment = moddle.create('bpmn:Assignment', {
+      from: fromExpression,
+      to: moddle.create('bpmn:FormalExpression', {
+        body: dataInput.id
+      })
+    });
+
+    // Create data input association
+    const association = moddle.create('bpmn:DataInputAssociation', {
+      id: `${taskId}_${paramName}Association`,
+      targetRef: dataInput,
+      assignment: [assignment]
+    });
+
+    associations.push(association);
+  }
+
+  return associations;
+}
+
+/**
+ * Creates data output association for Result
+ */
+function createDataOutputAssociation(
+  moddle: Moddle,
+  taskId: string,
+  resultOutput: ModdleElement,
+  targetVariable: string
+): ModdleElement {
+  // For output, we map the Result to a process variable
+  // The targetRef should be a reference to a process variable (ItemAwareElement)
+  const association = moddle.create('bpmn:DataOutputAssociation', {
+    id: `${taskId}_ResultAssociation`,
+    sourceRef: [resultOutput]
+  });
+
+  // Store target variable name for later use
+  // In BPMN, this would typically reference a DataObject or Property
+  // For Kogito, we'll use a simple approach
+  (association as any).targetVariable = targetVariable;
+
+  return association;
 }
 
 export default class RestTaskPaletteProvider {
@@ -231,81 +225,36 @@ export default class RestTaskPaletteProvider {
       try {
         const taskId = `Activity_${Math.random().toString(36).substr(2, 9)}`;
 
-        // Default configuration
-        const config = {
-          url: 'https://api.example.com/endpoint',
-          method: 'GET',
-          headers: '{"Content-Type": "application/json"}',
-          body: '',
-          responseVariable: 'response',
-          timeout: 30000,
-          retryCount: 0
-        };
+        // Create ioSpecification with data inputs/outputs
+        const { ioSpecification, dataInputs, dataOutputs } =
+          createRestIoSpecification(moddle, taskId);
 
-        // Create the REST task configuration using moddle (for UI state)
-        const restConfig = moddle.create('rest:RestTaskConfig', config);
+        // Create data input associations with default values
+        const dataInputAssociations = createDataInputAssociations(
+          moddle, taskId, dataInputs, DEFAULT_CONFIG
+        );
 
-        // Build extension elements with REST config
-        const extensionValues: ModdleElement[] = [restConfig];
+        // Create data output association
+        const resultOutput = dataOutputs.get('Result')!;
+        const dataOutputAssociations = [
+          createDataOutputAssociation(moddle, taskId, resultOutput, 'restResult')
+        ];
 
-        // Create extension elements container
-        const extensionElements = moddle.create('bpmn:ExtensionElements', {
-          values: extensionValues
-        });
-
-        // Set parent references for extension elements
-        extensionElements.$parent = undefined; // Will be set after businessObject creation
-        extensionValues.forEach(val => {
-          val.$parent = extensionElements;
-        });
-
-        // Try to create Kogito-compatible data mappings
-        let ioSpecification: ModdleElement | undefined;
-        let dataInputAssociations: ModdleElement[] = [];
-        let dataOutputAssociations: ModdleElement[] = [];
-
-        try {
-          const mappings = createKogitoDataMappings(moddle, config, taskId);
-          ioSpecification = mappings.ioSpecification;
-          dataInputAssociations = mappings.dataInputAssociations;
-          dataOutputAssociations = mappings.dataOutputAssociations;
-        } catch (e) {
-          console.warn('Could not create Kogito data mappings:', e);
-        }
-
-        // Create the task business object (bpmn:Task, NOT bpmn:ServiceTask)
-        // Kogito uses bpmn:Task with drools:taskName attribute for work item handlers
-        // bpmn:ServiceTask expects WSDL interface/operation definitions
-        const businessObjectAttrs: Record<string, unknown> = {
+        // Create the task business object
+        // Using bpmn:task with drools:taskName="Rest" for Kogito compatibility
+        const businessObject = moddle.create('bpmn:Task', {
           id: taskId,
           name: 'REST API Call',
-          extensionElements,
-          // Set drools:taskName as an attribute on the task element
-          // This is required by Kogito to identify the work item handler
-          'drools:taskName': 'Rest'
-        };
-
-        // Only add ioSpecification if it was created successfully
-        if (ioSpecification) {
-          businessObjectAttrs.ioSpecification = ioSpecification;
-          businessObjectAttrs.dataInputAssociations = dataInputAssociations;
-          businessObjectAttrs.dataOutputAssociations = dataOutputAssociations;
-        }
-
-        const businessObject = moddle.create('bpmn:Task', businessObjectAttrs);
+          'drools:taskName': 'Rest',
+          ioSpecification,
+          dataInputAssociations,
+          dataOutputAssociations
+        });
 
         // Set parent references
-        extensionElements.$parent = businessObject;
-
-        if (ioSpecification) {
-          ioSpecification.$parent = businessObject;
-          dataInputAssociations.forEach(assoc => {
-            assoc.$parent = businessObject;
-          });
-          dataOutputAssociations.forEach(assoc => {
-            assoc.$parent = businessObject;
-          });
-        }
+        ioSpecification.$parent = businessObject;
+        dataInputAssociations.forEach(assoc => { assoc.$parent = businessObject; });
+        dataOutputAssociations.forEach(assoc => { assoc.$parent = businessObject; });
 
         const shape = elementFactory.createShape({
           type: 'bpmn:Task',
@@ -315,7 +264,7 @@ export default class RestTaskPaletteProvider {
         create.start(event, shape);
       } catch (error) {
         console.error('Error creating REST task:', error);
-        // Fallback to simple task creation
+        // Fallback to simple task
         const simpleShape = elementFactory.createShape({
           type: 'bpmn:Task'
         });
@@ -334,5 +283,77 @@ export default class RestTaskPaletteProvider {
         }
       }
     };
+  }
+}
+
+/**
+ * Helper functions for reading/writing REST task configuration
+ * Used by properties panel and rest-panel
+ */
+
+/**
+ * Check if an element is a REST task
+ */
+export function isRestTask(element: any): boolean {
+  if (!element?.businessObject) return false;
+  const bo = element.businessObject;
+  if (bo.$type !== 'bpmn:Task') return false;
+
+  // Check for drools:taskName="Rest"
+  const taskName = bo.get?.('drools:taskName') || bo['drools:taskName'];
+  return taskName === 'Rest';
+}
+
+/**
+ * Get REST configuration from standard BPMN data input associations
+ */
+export function getRestConfig(element: any): Record<string, string> | null {
+  if (!isRestTask(element)) return null;
+
+  const bo = element.businessObject;
+  const config: Record<string, string> = {};
+
+  // Read from dataInputAssociations
+  const associations = bo.dataInputAssociations || [];
+  for (const assoc of associations) {
+    const targetRef = assoc.targetRef;
+    if (!targetRef) continue;
+
+    const paramName = targetRef.name;
+    if (!paramName) continue;
+
+    // Get value from assignment
+    const assignment = assoc.assignment?.[0];
+    if (assignment?.from?.body !== undefined) {
+      config[paramName] = assignment.from.body;
+    }
+  }
+
+  // Read result variable from output association
+  const outputAssoc = bo.dataOutputAssociations?.[0];
+  if (outputAssoc) {
+    config['ResultVariable'] = (outputAssoc as any).targetVariable || 'restResult';
+  }
+
+  return config;
+}
+
+/**
+ * Update a REST configuration parameter
+ */
+export function updateRestParam(element: any, paramName: string, value: string, modeling: any): void {
+  const bo = element.businessObject;
+  const associations = bo.dataInputAssociations || [];
+
+  for (const assoc of associations) {
+    const targetRef = assoc.targetRef;
+    if (targetRef?.name === paramName) {
+      const assignment = assoc.assignment?.[0];
+      if (assignment?.from) {
+        assignment.from.body = value;
+        modeling.updateProperties(element, {});
+        return;
+      }
+    }
   }
 }

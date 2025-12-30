@@ -1,89 +1,16 @@
 /**
  * REST Task Configuration Panel
- * A simple custom panel for editing REST task properties
+ * Uses STANDARD BPMN data input/output associations - no custom extensions
  */
 
-interface RestConfig {
-  url: string;
-  method: string;
-  headers: string;
-  body: string;
-  responseVariable: string;
-  timeout: number;
-}
-
-interface BusinessObject {
-  $type: string;
-  extensionElements?: {
-    values?: Array<{
-      $type: string;
-      url?: string;
-      method?: string;
-      headers?: string;
-      body?: string;
-      responseVariable?: string;
-      timeout?: number;
-      $parent?: unknown;
-    }>;
-    $parent?: unknown;
-  };
-}
-
-interface Element {
-  businessObject: BusinessObject;
-}
+import { isRestTask, getRestConfig, updateRestParam, REST_PARAMS } from './palette-provider';
 
 interface Modeling {
-  updateProperties: (element: Element, props: Record<string, unknown>) => void;
+  updateProperties: (element: any, props: Record<string, unknown>) => void;
 }
 
 interface EventBus {
   on: (event: string, callback: (event: unknown) => void) => void;
-}
-
-// Get REST config from element
-// Kogito uses bpmn:Task (not bpmn:ServiceTask) for work item handlers
-function getRestConfig(element: Element | null): RestConfig | null {
-  if (!element?.businessObject) return null;
-
-  const bo = element.businessObject;
-  // Support both bpmn:Task (Kogito-compatible) and bpmn:ServiceTask (legacy)
-  if (bo.$type !== 'bpmn:Task' && bo.$type !== 'bpmn:ServiceTask') return null;
-
-  const extensionElements = bo.extensionElements;
-  if (!extensionElements?.values) return null;
-
-  const restConfig = extensionElements.values.find(
-    (ext) => ext.$type === 'rest:RestTaskConfig'
-  );
-
-  if (!restConfig) return null;
-
-  return {
-    url: restConfig.url || '',
-    method: restConfig.method || 'GET',
-    headers: restConfig.headers || '{}',
-    body: restConfig.body || '',
-    responseVariable: restConfig.responseVariable || 'response',
-    timeout: restConfig.timeout || 30000
-  };
-}
-
-// Update REST config on element
-function updateRestConfig(element: Element, property: string, value: string | number, modeling: Modeling): void {
-  const bo = element.businessObject;
-  const extensionElements = bo.extensionElements;
-  if (!extensionElements?.values) return;
-
-  const restConfig = extensionElements.values.find(
-    (ext) => ext.$type === 'rest:RestTaskConfig'
-  );
-
-  if (restConfig) {
-    (restConfig as Record<string, unknown>)[property] = value;
-    // Trigger update
-    modeling.updateProperties(element, {});
-  }
 }
 
 // Create the REST panel HTML
@@ -115,16 +42,17 @@ function createRestPanelHTML(): HTMLDivElement {
         </select>
       </div>
       <div class="rest-field">
-        <label for="rest-headers">Headers (JSON)</label>
-        <textarea id="rest-headers" rows="3" placeholder='{"Content-Type": "application/json"}'></textarea>
+        <label for="rest-content-type">Content-Type</label>
+        <select id="rest-content-type">
+          <option value="application/json">application/json</option>
+          <option value="application/xml">application/xml</option>
+          <option value="application/x-www-form-urlencoded">application/x-www-form-urlencoded</option>
+          <option value="text/plain">text/plain</option>
+        </select>
       </div>
       <div class="rest-field">
-        <label for="rest-body">Request Body</label>
-        <textarea id="rest-body" rows="4" placeholder="Request body (for POST, PUT, PATCH)"></textarea>
-      </div>
-      <div class="rest-field">
-        <label for="rest-response-var">Response Variable</label>
-        <input type="text" id="rest-response-var" placeholder="response" />
+        <label for="rest-content">Request Body</label>
+        <textarea id="rest-content" rows="4" placeholder="Request body (for POST, PUT, PATCH)"></textarea>
       </div>
       <div class="rest-field">
         <label for="rest-timeout">Timeout (ms)</label>
@@ -137,7 +65,7 @@ function createRestPanelHTML(): HTMLDivElement {
 
 // Initialize REST panel
 export function initRestPanel(eventBus: EventBus, modeling: Modeling): void {
-  let currentElement: Element | null = null;
+  let currentElement: any = null;
   let panel: HTMLDivElement | null = null;
 
   // Create panel
@@ -147,9 +75,8 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling): void {
   // Get input elements
   const urlInput = panel.querySelector('#rest-url') as HTMLInputElement;
   const methodSelect = panel.querySelector('#rest-method') as HTMLSelectElement;
-  const headersInput = panel.querySelector('#rest-headers') as HTMLTextAreaElement;
-  const bodyInput = panel.querySelector('#rest-body') as HTMLTextAreaElement;
-  const responseVarInput = panel.querySelector('#rest-response-var') as HTMLInputElement;
+  const contentTypeSelect = panel.querySelector('#rest-content-type') as HTMLSelectElement;
+  const contentInput = panel.querySelector('#rest-content') as HTMLTextAreaElement;
   const timeoutInput = panel.querySelector('#rest-timeout') as HTMLInputElement;
   const closeButton = panel.querySelector('.rest-panel-close') as HTMLButtonElement;
 
@@ -159,53 +86,54 @@ export function initRestPanel(eventBus: EventBus, modeling: Modeling): void {
     currentElement = null;
   });
 
-  // Input handlers
+  // Input handlers - update standard BPMN data input associations
   urlInput.addEventListener('input', () => {
-    if (currentElement) updateRestConfig(currentElement, 'url', urlInput.value, modeling);
+    if (currentElement) updateRestParam(currentElement, 'Url', urlInput.value, modeling);
   });
 
   methodSelect.addEventListener('change', () => {
-    if (currentElement) updateRestConfig(currentElement, 'method', methodSelect.value, modeling);
+    if (currentElement) updateRestParam(currentElement, 'Method', methodSelect.value, modeling);
   });
 
-  headersInput.addEventListener('input', () => {
-    if (currentElement) updateRestConfig(currentElement, 'headers', headersInput.value, modeling);
+  contentTypeSelect.addEventListener('change', () => {
+    if (currentElement) updateRestParam(currentElement, 'ContentType', contentTypeSelect.value, modeling);
   });
 
-  bodyInput.addEventListener('input', () => {
-    if (currentElement) updateRestConfig(currentElement, 'body', bodyInput.value, modeling);
-  });
-
-  responseVarInput.addEventListener('input', () => {
-    if (currentElement) updateRestConfig(currentElement, 'responseVariable', responseVarInput.value, modeling);
+  contentInput.addEventListener('input', () => {
+    if (currentElement) updateRestParam(currentElement, 'Content', contentInput.value, modeling);
   });
 
   timeoutInput.addEventListener('input', () => {
-    if (currentElement) updateRestConfig(currentElement, 'timeout', parseInt(timeoutInput.value, 10) || 30000, modeling);
+    if (currentElement) {
+      const timeout = timeoutInput.value || '30000';
+      updateRestParam(currentElement, 'ReadTimeout', timeout, modeling);
+      updateRestParam(currentElement, 'ConnectTimeout', timeout, modeling);
+    }
   });
 
   // Listen for selection changes
   eventBus.on('selection.changed', (event: unknown) => {
-    const selectionEvent = event as { newSelection?: Element[] };
+    const selectionEvent = event as { newSelection?: any[] };
     const selection = selectionEvent.newSelection;
 
     if (selection && selection.length === 1) {
       const element = selection[0];
-      const config = getRestConfig(element);
 
-      if (config) {
+      if (isRestTask(element)) {
         currentElement = element;
+        const config = getRestConfig(element);
 
-        // Populate fields
-        urlInput.value = config.url;
-        methodSelect.value = config.method;
-        headersInput.value = config.headers;
-        bodyInput.value = config.body;
-        responseVarInput.value = config.responseVariable;
-        timeoutInput.value = String(config.timeout);
+        if (config) {
+          // Populate fields from standard BPMN data associations
+          urlInput.value = config['Url'] || '';
+          methodSelect.value = config['Method'] || 'GET';
+          contentTypeSelect.value = config['ContentType'] || 'application/json';
+          contentInput.value = config['Content'] || '';
+          timeoutInput.value = config['ReadTimeout'] || '30000';
 
-        // Show panel
-        panel!.classList.add('visible');
+          // Show panel
+          panel!.classList.add('visible');
+        }
       } else {
         panel!.classList.remove('visible');
         currentElement = null;
