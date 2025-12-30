@@ -5,6 +5,7 @@ declare module 'dmn-js/lib/Modeler' {
       propertiesPanel?: {
         parent: HTMLElement | string | null;
       };
+      additionalModules?: unknown[];
     };
     common?: {
       keyboard?: {
@@ -45,4 +46,34 @@ declare module 'dmn-js/lib/Modeler' {
   }
 
   export default DmnJS;
+}
+
+declare module 'dmn-js-properties-panel' {
+  export const DmnPropertiesPanelModule: unknown;
+  export const DmnPropertiesProviderModule: unknown;
+  export const CamundaPropertiesProviderModule: unknown;
+  export const ZeebePropertiesProviderModule: unknown;
+  export function useService(name: string): any;
+}
+
+declare module '@bpmn-io/properties-panel' {
+  export function SelectEntry(props: {
+    id: string;
+    element: any;
+    label: string;
+    getValue: () => string;
+    setValue: (value: string) => void;
+    getOptions: () => Array<{ value: string; label: string }>;
+  }): any;
+
+  export function TextFieldEntry(props: {
+    id: string;
+    element: any;
+    label: string;
+    getValue: () => string;
+    setValue: (value: string) => void;
+    debounce?: any;
+  }): any;
+
+  export function Group(props: any): any;
 }

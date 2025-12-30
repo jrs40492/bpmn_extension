@@ -678,9 +678,44 @@ html, body {
 }
 
 /* Properties panel styling */
+.dmn-properties-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .dmn-properties-panel .bio-properties-panel {
   background: var(--vscode-sideBar-background, #252526);
   color: var(--vscode-editor-foreground, #cccccc);
+  height: 100%;
+
+  /* Override default light theme colors */
+  --text-base-color: var(--vscode-editor-foreground, #cccccc);
+  --description-color: var(--vscode-descriptionForeground, #8c8c8c);
+  --placeholder-color: var(--vscode-descriptionForeground, #8c8c8c);
+  --placeholder-background-color: var(--vscode-sideBar-background, #252526);
+  --header-background-color: var(--vscode-sideBar-background, #252526);
+  --header-icon-fill-color: var(--vscode-editor-foreground, #cccccc);
+  --header-bottom-border-color: var(--vscode-panel-border, #454545);
+  --group-background-color: var(--vscode-editor-background, #1e1e1e);
+  --group-bottom-border-color: var(--vscode-panel-border, #454545);
+  --sticky-group-background-color: var(--vscode-sideBar-background, #252526);
+  --sticky-group-bottom-border-color: var(--vscode-panel-border, #454545);
+  --arrow-fill-color: var(--vscode-editor-foreground, #cccccc);
+  --arrow-hover-background-color: var(--vscode-list-hoverBackground, #2a2d2e);
+  --dot-color: var(--vscode-editor-foreground, #cccccc);
+  --input-background-color: var(--vscode-input-background, #3c3c3c);
+  --input-border-color: var(--vscode-input-border, #3c3c3c);
+  --input-focus-background-color: var(--vscode-input-background, #3c3c3c);
+  --input-focus-border-color: var(--vscode-focusBorder, #007fd4);
+  --add-entry-fill-color: var(--vscode-editor-foreground, #cccccc);
+  --add-entry-hover-fill-color: #ffffff;
+  --add-entry-hover-background-color: var(--vscode-button-background, #0e639c);
+  --dropdown-item-background-color: var(--vscode-dropdown-background, #3c3c3c);
+  --dropdown-item-hover-background-color: var(--vscode-list-hoverBackground, #094771);
+  --feel-inactive-color: var(--vscode-descriptionForeground, #8c8c8c);
+  --feel-hover-color: var(--vscode-editor-foreground, #cccccc);
+  --feel-hover-background-color: var(--vscode-list-hoverBackground, #2a2d2e);
 }
 
 .dmn-properties-panel .bio-properties-panel-header {
@@ -688,9 +723,60 @@ html, body {
   border-bottom: 1px solid var(--vscode-panel-border, #454545);
 }
 
+.dmn-properties-panel .bio-properties-panel-header-label {
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+.dmn-properties-panel .bio-properties-panel-header-type {
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+}
+
+.dmn-properties-panel .bio-properties-panel-group {
+  background: var(--vscode-editor-background, #1e1e1e);
+  border-bottom: 1px solid var(--vscode-panel-border, #454545);
+}
+
 .dmn-properties-panel .bio-properties-panel-group-header {
   background: var(--vscode-sideBar-background, #252526);
   border-bottom: 1px solid var(--vscode-panel-border, #454545);
+  cursor: pointer;
+}
+
+.dmn-properties-panel .bio-properties-panel-group-header:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.dmn-properties-panel .bio-properties-panel-group-header-title {
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+/* Ensure arrow buttons are clickable */
+.dmn-properties-panel .bio-properties-panel-arrow {
+  cursor: pointer;
+  fill: var(--vscode-editor-foreground, #cccccc);
+}
+
+.dmn-properties-panel .bio-properties-panel-arrow:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+  border-radius: 4px;
+}
+
+/* Group entries visibility */
+.dmn-properties-panel .bio-properties-panel-group-entries {
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+.dmn-properties-panel .bio-properties-panel-group-entries.open {
+  display: block;
+}
+
+/* Form labels and entries */
+.dmn-properties-panel .bio-properties-panel-label {
+  color: var(--vscode-editor-foreground, #cccccc);
+}
+
+.dmn-properties-panel .bio-properties-panel-entry {
+  color: var(--vscode-editor-foreground, #cccccc);
 }
 
 .dmn-properties-panel .bio-properties-panel-input {
@@ -701,6 +787,39 @@ html, body {
 
 .dmn-properties-panel .bio-properties-panel-input:focus {
   border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+/* Select dropdowns */
+.dmn-properties-panel select {
+  background: var(--vscode-dropdown-background, #3c3c3c);
+  color: var(--vscode-dropdown-foreground, #cccccc);
+  border: 1px solid var(--vscode-dropdown-border, #454545);
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+
+.dmn-properties-panel select:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+  outline: none;
+}
+
+/* Text areas */
+.dmn-properties-panel textarea {
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 4px;
+}
+
+.dmn-properties-panel textarea:focus {
+  border-color: var(--vscode-focusBorder, #007fd4);
+  outline: none;
+}
+
+/* Scroll container */
+.dmn-properties-panel .bio-properties-panel-scroll-container {
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* Scrollbar styling */

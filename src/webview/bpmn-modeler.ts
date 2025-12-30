@@ -175,6 +175,147 @@ export async function exportDiagram(modeler: Modeler): Promise<string> {
   // but BPMN 2.0 XSD requires lowercase like <bpmn:task>
   xml = fixBpmnElementCasing(xml);
 
+  // Add process variable mappings for REST tasks that use {variableName} placeholders
+  xml = addRestTaskVariableMappings(xml);
+
+  return xml;
+}
+
+/**
+ * Add process variable mappings for REST tasks that use {variableName} placeholders.
+ *
+ * jBPM/Kogito RESTWorkItemHandler expects variables to be passed as input parameters.
+ * When a URL or Content contains {variableName}, we need to:
+ * 1. Add a dataInput for that variable
+ * 2. Add a dataInputAssociation with sourceRef pointing to the process variable
+ *
+ * This allows the runtime to substitute {variableName} with the actual process variable value.
+ */
+function addRestTaskVariableMappings(xml: string): string {
+  // Parse the XML using DOMParser
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+
+  // Check for parse errors
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) {
+    console.warn('Failed to parse XML for REST task variable mapping:', parseError.textContent);
+    return xml;
+  }
+
+  // Find all tasks with drools:taskName="Rest"
+  const tasks = doc.querySelectorAll('task, Task');
+  let modified = false;
+
+  for (const task of tasks) {
+    const taskName = task.getAttribute('drools:taskName');
+    if (taskName !== 'Rest') continue;
+
+    const taskId = task.getAttribute('id') || '';
+
+    // Find the ioSpecification
+    const ioSpec = task.querySelector('ioSpecification, inputOutputSpecification');
+    if (!ioSpec) continue;
+
+    // Get existing dataInputs
+    const existingInputs = new Set<string>();
+    const dataInputs = ioSpec.querySelectorAll('dataInput, DataInput');
+    for (const input of dataInputs) {
+      const name = input.getAttribute('name');
+      if (name) existingInputs.add(name);
+    }
+
+    // Find all {variableName} placeholders in URL and Content
+    const variablesNeeded = new Set<string>();
+    const associations = task.querySelectorAll('dataInputAssociation, DataInputAssociation');
+
+    for (const assoc of associations) {
+      const targetRef = assoc.querySelector('targetRef');
+      if (!targetRef) continue;
+
+      const targetId = targetRef.textContent || '';
+      // Check if this is URL or Content
+      if (!targetId.includes('UrlInput') && !targetId.includes('ContentInput')) continue;
+
+      // Find the assignment value
+      const assignment = assoc.querySelector('assignment, Assignment');
+      if (!assignment) continue;
+
+      const fromExpr = assignment.querySelector('from');
+      if (!fromExpr) continue;
+
+      const value = fromExpr.textContent || '';
+
+      // Extract all {variableName} patterns
+      const regex = /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g;
+      let match;
+      while ((match = regex.exec(value)) !== null) {
+        const varName = match[1];
+        // Skip standard REST params
+        if (!['Url', 'Method', 'ContentType', 'Content', 'ConnectTimeout', 'ReadTimeout', 'Result'].includes(varName)) {
+          variablesNeeded.add(varName);
+        }
+      }
+    }
+
+    // Add dataInput and dataInputAssociation for each variable not already mapped
+    for (const varName of variablesNeeded) {
+      if (existingInputs.has(varName)) continue;
+
+      modified = true;
+      const inputId = `${taskId}_${varName}Input`;
+
+      // Create dataInput element
+      const dataInput = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:dataInput');
+      dataInput.setAttribute('id', inputId);
+      dataInput.setAttribute('name', varName);
+      dataInput.setAttribute('drools:dtype', 'java.lang.String');
+
+      // Add to ioSpecification (before inputSet)
+      const inputSet = ioSpec.querySelector('inputSet, InputSet');
+      if (inputSet) {
+        ioSpec.insertBefore(dataInput, inputSet);
+
+        // Add dataInputRefs to inputSet
+        const dataInputRefs = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:dataInputRefs');
+        dataInputRefs.textContent = inputId;
+        inputSet.appendChild(dataInputRefs);
+      } else {
+        ioSpec.appendChild(dataInput);
+      }
+
+      // Create dataInputAssociation with sourceRef
+      const dataInputAssoc = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:dataInputAssociation');
+
+      const sourceRef = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:sourceRef');
+      sourceRef.textContent = varName;
+
+      const targetRefElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:targetRef');
+      targetRefElem.textContent = inputId;
+
+      dataInputAssoc.appendChild(sourceRef);
+      dataInputAssoc.appendChild(targetRefElem);
+
+      // Find the last dataInputAssociation to insert after
+      const existingAssocs = task.querySelectorAll('dataInputAssociation, DataInputAssociation');
+      if (existingAssocs.length > 0) {
+        const lastAssoc = existingAssocs[existingAssocs.length - 1];
+        lastAssoc.parentNode?.insertBefore(dataInputAssoc, lastAssoc.nextSibling);
+      } else {
+        // Insert after ioSpecification
+        ioSpec.parentNode?.insertBefore(dataInputAssoc, ioSpec.nextSibling);
+      }
+
+      existingInputs.add(varName);
+    }
+  }
+
+  if (modified) {
+    // Serialize back to XML
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(doc);
+  }
+
   return xml;
 }
 

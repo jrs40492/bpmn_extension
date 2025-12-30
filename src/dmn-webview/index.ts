@@ -8,11 +8,21 @@ import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import 'dmn-js/dist/assets/dmn-js-literal-expression.css';
 import 'dmn-js/dist/assets/dmn-font/css/dmn.css';
 
+// Import dmn-js-properties-panel
+import {
+  DmnPropertiesPanelModule,
+  DmnPropertiesProviderModule
+} from 'dmn-js-properties-panel';
+import 'dmn-js-properties-panel/dist/assets/properties-panel.css';
+
 // Import editor styles
 import './styles/dmn-editor.css';
 
 // Import FEEL support extension
 import { initFeelSupport, type FeelSupportController } from './extensions/feel-support';
+
+// Import custom InputData properties extension
+import inputDataPropertiesModule from './extensions/input-data-properties';
 
 // Types
 interface DmnView {
@@ -60,6 +70,24 @@ function debounce<T extends (...args: unknown[]) => void>(
   };
 }
 
+// Normalize empty decision table cells to use "-" (any value) for IBM BPMN compatibility
+function normalizeEmptyCells(xml: string): string {
+  // Replace empty <text></text> within inputEntry elements with <text>-</text>
+  // The "-" represents "any value" (don't care) in DMN decision tables
+  xml = xml.replace(
+    /(<inputEntry[^>]*>)(\s*)<text><\/text>(\s*)(<\/inputEntry>)/g,
+    '$1$2<text>-</text>$3$4'
+  );
+
+  // Replace empty <text></text> within outputEntry elements with <text>-</text>
+  xml = xml.replace(
+    /(<outputEntry[^>]*>)(\s*)<text><\/text>(\s*)(<\/outputEntry>)/g,
+    '$1$2<text>-</text>$3$4'
+  );
+
+  return xml;
+}
+
 // Initialize the editor
 async function init(): Promise<void> {
   const container = document.getElementById('dmn-canvas');
@@ -70,9 +98,19 @@ async function init(): Promise<void> {
     return;
   }
 
-  // Create the dmn-js modeler
+  // Create the dmn-js modeler with properties panel
   const dmnModeler = new DmnJS({
     container,
+    drd: {
+      propertiesPanel: {
+        parent: propertiesContainer
+      },
+      additionalModules: [
+        DmnPropertiesPanelModule,
+        DmnPropertiesProviderModule,
+        inputDataPropertiesModule
+      ]
+    },
     common: {
       keyboard: {
         bindTo: document
@@ -101,8 +139,10 @@ async function init(): Promise<void> {
   const sendChange = debounce(async () => {
     try {
       const { xml } = await dmnModeler.saveXML({ format: true });
+      // Normalize empty cells to "-" for IBM BPMN compatibility
+      const normalizedXml = normalizeEmptyCells(xml);
       // Always send changes - extension-side handles deduplication
-      postMessage({ type: 'change', xml });
+      postMessage({ type: 'change', xml: normalizedXml });
     } catch (err) {
       console.error('Failed to export DMN:', err);
     }
