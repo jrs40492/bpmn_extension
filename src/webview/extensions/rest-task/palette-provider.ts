@@ -531,14 +531,49 @@ export function updateOutputVariable(element: any, outputName: string, variableN
     }
   }
 
-  // If no existing association, create one
-  const ioSpec = bo.ioSpecification;
+  // If no existing association, we need to create one
+  let ioSpec = bo.ioSpecification;
   if (!ioSpec) return;
 
-  // Find the dataOutput
-  const dataOutputs = ioSpec.dataOutputs || [];
-  const dataOutput = dataOutputs.find((d: any) => d.name === outputName);
-  if (!dataOutput) return;
+  // Find or create the dataOutput
+  let dataOutputs = ioSpec.dataOutputs || [];
+  let dataOutput = dataOutputs.find((d: any) => d.name === outputName);
+
+  // If dataOutput doesn't exist, create it (for existing REST tasks without StatusCode/StatusMsg)
+  if (!dataOutput) {
+    const taskId = bo.id || 'Task';
+    const outputId = `${taskId}_${outputName}Output`;
+
+    // Determine the data type based on output name
+    let dtype = 'java.lang.String';
+    if (outputName === 'StatusCode') {
+      dtype = 'java.lang.Integer';
+    }
+
+    dataOutput = bpmnFactory.create('bpmn:DataOutput', {
+      id: outputId,
+      name: outputName
+    });
+    dataOutput.set('drools:dtype', dtype);
+    dataOutput.$parent = ioSpec;
+
+    // Add to ioSpecification
+    if (!ioSpec.dataOutputs) {
+      ioSpec.dataOutputs = [];
+    }
+    ioSpec.dataOutputs.push(dataOutput);
+
+    // Add to outputSet
+    const outputSet = ioSpec.outputSets?.[0];
+    if (outputSet) {
+      if (!outputSet.dataOutputRefs) {
+        outputSet.dataOutputRefs = [];
+      }
+      outputSet.dataOutputRefs.push(dataOutput);
+    }
+
+    console.log(`[REST Task] Created missing dataOutput: ${outputName}`);
+  }
 
   // Create new output association
   const newAssoc = bpmnFactory.create('bpmn:DataOutputAssociation', {
