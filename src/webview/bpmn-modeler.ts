@@ -263,11 +263,12 @@ function fixIncompleteDataAssociations(xml: string): string {
       // Variable names don't contain underscores typically used in IDs
       if (varName && !varName.includes('_') && targetId) {
         // Create assignment-based mapping
+        // Use #{varName} expression syntax so jBPM/Kogito evaluates it as a process variable reference
         const assignmentElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
 
         const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
         fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-        fromExpr.textContent = varName;
+        fromExpr.textContent = `#{${varName}}`;
 
         const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
         toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
@@ -296,11 +297,12 @@ function fixIncompleteDataAssociations(xml: string): string {
       }
 
       // Use assignment-based format for better jBPM compatibility
+      // Use #{varName} expression syntax so jBPM/Kogito evaluates it as a process variable reference
       const assignmentElem = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
 
       const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
       fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-      fromExpr.textContent = varName;
+      fromExpr.textContent = `#{${varName}}`;
 
       const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
       toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
@@ -436,11 +438,12 @@ function addRestTaskVariableMappings(xml: string): string {
       dataInputAssoc.appendChild(targetRefElem);
 
       // Create assignment element with from/to expressions
+      // Use #{varName} expression syntax so jBPM/Kogito evaluates it as a process variable reference
       const assignment = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:assignment');
 
       const fromExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:from');
       fromExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');
-      fromExpr.textContent = varName;
+      fromExpr.textContent = `#{${varName}}`;
 
       const toExpr = doc.createElementNS('http://www.omg.org/spec/BPMN/20100524/MODEL', 'bpmn:to');
       toExpr.setAttribute('xsi:type', 'bpmn:tFormalExpression');

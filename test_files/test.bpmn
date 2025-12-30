@@ -150,7 +150,14 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <bpmn:from xsi:type="bpmn:tFormalExpression">30000</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_18pfejd_ReadTimeoutInput</bpmn:to>
         </bpmn:assignment>
-      </bpmn:dataInputAssociation><bpmn:dataInputAssociation><bpmn:targetRef>Activity_18pfejd_ddidInput</bpmn:targetRef><bpmn:assignment><bpmn:from xsi:type="bpmn:tFormalExpression">ddid</bpmn:from><bpmn:to xsi:type="bpmn:tFormalExpression">Activity_18pfejd_ddidInput</bpmn:to></bpmn:assignment></bpmn:dataInputAssociation>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_ddid">
+        <bpmn:targetRef>Activity_18pfejd_ddidInput</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">#{ddid}</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_18pfejd_ddidInput</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1eldclz">
         <bpmn:sourceRef>Activity_18pfejd_ResultOutput</bpmn:sourceRef>
         <bpmn:targetRef>result</bpmn:targetRef>
