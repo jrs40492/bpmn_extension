@@ -30,6 +30,9 @@ import eventColorsModule from './extensions/event-colors';
 // Custom compensation task context pad extension
 import compensationTaskModule from './extensions/compensation-task';
 
+// Custom sequence flow condition extension
+import sequenceFlowConditionModule from './extensions/sequence-flow-condition';
+
 // Type definitions for bpmn-js
 interface BpmnModelerInstance {
   importXML(xml: string): Promise<{ warnings: string[] }>;
@@ -111,7 +114,8 @@ export function createModeler(
   if (propertiesContainer) {
     additionalModules.push(
       BpmnPropertiesPanelModule,
-      BpmnPropertiesProviderModule
+      BpmnPropertiesProviderModule,
+      sequenceFlowConditionModule
     );
   }
 
