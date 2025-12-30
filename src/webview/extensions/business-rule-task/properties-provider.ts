@@ -493,12 +493,25 @@ function getDmnInputMapping(element: BpmnElement, inputName: string): string {
     const targetRef = assoc.targetRef;
     if (targetRef?.name === inputName) {
       // Check if this is a variable reference (sourceRef) vs a literal assignment
-      if (assoc.sourceRef && assoc.sourceRef.length > 0) {
-        const sourceRef = assoc.sourceRef[0];
+      // sourceRef can be an array of element references or strings
+      const sourceRefArray = (assoc as any).sourceRef;
+      if (sourceRefArray && Array.isArray(sourceRefArray) && sourceRefArray.length > 0) {
+        const sourceRef = sourceRefArray[0];
+        // Filter out invalid values
+        if (sourceRef === undefined || sourceRef === null || sourceRef === 'undefined') {
+          return '';
+        }
         if (typeof sourceRef === 'string') {
+          // Filter out the literal string "undefined"
+          if (sourceRef === 'undefined' || sourceRef === 'null') {
+            return '';
+          }
           return sourceRef;
-        } else if (sourceRef?.id || sourceRef?.name) {
-          return sourceRef.id || sourceRef.name;
+        } else if (sourceRef?.name) {
+          // It's a Property element reference - return the name
+          return sourceRef.name;
+        } else if (sourceRef?.id) {
+          return sourceRef.id;
         }
       }
       // Check assignment for variable expression
@@ -512,11 +525,43 @@ function getDmnInputMapping(element: BpmnElement, inputName: string): string {
   return '';
 }
 
+// Helper to find a process property by name
+function findProcessProperty(element: BpmnElement, propertyName: string): ModdleElement | undefined {
+  const bo = element.businessObject;
+  if (!bo) return undefined;
+
+  // Navigate up to find the process
+  let process: ModdleElement | undefined = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) return undefined;
+
+  // Look for property with matching name or id
+  const properties = (process as any).properties || [];
+  return properties.find((prop: ModdleElement) =>
+    prop.name === propertyName || prop.id === propertyName
+  );
+}
+
 // Helper to set DMN input mapping (map process variable to DMN input)
 function setDmnInputMapping(element: BpmnElement, inputName: string, variableName: string, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
+  // Strict validation to prevent writing "undefined" or invalid values
+  if (!variableName || typeof variableName !== 'string' || variableName === 'undefined' || variableName === 'null' || variableName.trim() === '') {
+    console.warn('[DMN Input Mapping] Ignoring invalid variable name:', variableName);
+    return;
+  }
+
   const bo = element.businessObject;
   if (!bo) return;
   const taskId = bo.id;
+
+  // Find the actual Property element for this variable
+  const propertyElement = findProcessProperty(element, variableName);
+  if (!propertyElement) {
+    console.warn('[DMN Input Mapping] Could not find property element for variable:', variableName);
+    return;
+  }
 
   // Ensure ioSpecification exists
   let ioSpec = bo.ioSpecification;
@@ -574,14 +619,12 @@ function setDmnInputMapping(element: BpmnElement, inputName: string, variableNam
 
   if (existingAssoc) {
     // Update existing association using commandStack
-    // Create new sourceRef array with the variable name
-    const newSourceRef = variableName ? [variableName] : [];
-
+    // Use the actual Property element reference, not just a string
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: existingAssoc,
       properties: {
-        sourceRef: newSourceRef,
+        sourceRef: [propertyElement],
         assignment: undefined // Remove assignment when using sourceRef
       }
     });
@@ -591,8 +634,8 @@ function setDmnInputMapping(element: BpmnElement, inputName: string, variableNam
       targetRef: dataInput
     }) as DataInputAssociation;
 
-    // Set sourceRef as array with variable name
-    (newAssoc as any).sourceRef = variableName ? [variableName] : [];
+    // Set sourceRef to reference the actual Property element
+    (newAssoc as any).sourceRef = [propertyElement];
     newAssoc.$parent = bo;
 
     // Add to associations list
@@ -812,13 +855,23 @@ function createDmnInputMappingComponent(inputName: string) {
     const commandStack = useService('commandStack') as CommandStack;
     const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
     const translate = useService('translate') as (text: string) => string;
+    const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
     const getValue = () => {
-      return getDmnInputMapping(element, inputName);
+      const value = getDmnInputMapping(element, inputName);
+      // Filter out invalid stored values
+      if (value === 'undefined' || value === 'null') {
+        return '';
+      }
+      return value;
     };
 
     const setValue = (value: string) => {
-      setDmnInputMapping(element, inputName, value, bpmnFactory, commandStack);
+      // Strict validation: only set if we have a valid, non-empty string
+      // that is not the literal string "undefined"
+      if (value && typeof value === 'string' && value !== 'undefined' && value !== 'null' && value.trim() !== '') {
+        setDmnInputMapping(element, inputName, value, bpmnFactory, commandStack);
+      }
     };
 
     const getOptions = () => {
@@ -828,10 +881,13 @@ function createDmnInputMappingComponent(inputName: string) {
 
       const variables = getAvailableProcessVariables(element);
       for (const v of variables) {
-        options.push({
-          value: v.name,
-          label: v.name
-        });
+        // Only add valid variable names
+        if (v.name && v.name !== 'undefined') {
+          options.push({
+            value: v.name,
+            label: v.name
+          });
+        }
       }
 
       return options;
@@ -843,7 +899,8 @@ function createDmnInputMappingComponent(inputName: string) {
       label: `${inputName}`,
       getValue,
       setValue,
-      getOptions
+      getOptions,
+      debounce
     });
   };
 }

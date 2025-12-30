@@ -9,6 +9,10 @@
   <bpmn:itemDefinition id="_ddidItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_drugResponseItem" structureRef="java.util.Map" />
   <bpmn:itemDefinition id="_Activity_1sh2xqa_drugResponseInputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_1im8ao1_namespaceInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1im8ao1_modelInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1im8ao1_decisionInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_1im8ao1_drugResponseInputXItem" structureRef="java.lang.Object" />
   <bpmn:process id="drugs" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -32,7 +36,7 @@
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_12vdxhy" sourceRef="StartEvent_1" targetRef="Activity_0as8h27" />
     <bpmn:exclusiveGateway id="Gateway_1dpe896" name="Step 4 Route" gatewayDirection="Diverging">
-      <bpmn:incoming>Flow_0tixfel</bpmn:incoming>
+      <bpmn:incoming>Flow_04zlnva</bpmn:incoming>
       <bpmn:outgoing>Flow_1du2ysb</bpmn:outgoing>
       <bpmn:outgoing>Flow_191lbsq</bpmn:outgoing>
     </bpmn:exclusiveGateway>
@@ -54,50 +58,6 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0zjmykc" activityRef="Activity_0as8h27" />
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_0tixfel" sourceRef="Activity_1sh2xqa" targetRef="Gateway_1dpe896" />
-    <bpmn:businessRuleTask id="Activity_1sh2xqa" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
-      <bpmn:extensionElements />
-      <bpmn:incoming>Flow_1sfhri7</bpmn:incoming>
-      <bpmn:outgoing>Flow_0tixfel</bpmn:outgoing>
-      <bpmn:ioSpecification>
-        <bpmn:dataInput id="Activity_1sh2xqa_namespaceInputX" itemSubjectRef="_Activity_1sh2xqa_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_1sh2xqa_modelInputX" itemSubjectRef="_Activity_1sh2xqa_modelInputXItem" name="model" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_1sh2xqa_decisionInputX" itemSubjectRef="_Activity_1sh2xqa_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_1sh2xqa_drugResponseInputX" itemSubjectRef="_Activity_1sh2xqa_drugResponseInputXItem" name="drugResponse" drools:dtype="java.lang.Object" />
-        <bpmn:inputSet>
-          <bpmn:dataInputRefs>Activity_1sh2xqa_namespaceInputX</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_1sh2xqa_modelInputX</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_1sh2xqa_decisionInputX</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_1sh2xqa_drugResponseInputX</bpmn:dataInputRefs>
-        </bpmn:inputSet>
-        <bpmn:outputSet />
-      </bpmn:ioSpecification>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1xb5h9m">
-        <bpmn:targetRef>Activity_1sh2xqa_namespaceInputX</bpmn:targetRef>
-        <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">http://camunda.org/schema/1.0/dmn</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1sh2xqa_namespaceInputX</bpmn:to>
-        </bpmn:assignment>
-      </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1luj5n3">
-        <bpmn:targetRef>Activity_1sh2xqa_modelInputX</bpmn:targetRef>
-        <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1sh2xqa_modelInputX</bpmn:to>
-        </bpmn:assignment>
-      </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1s6r81d">
-        <bpmn:targetRef>Activity_1sh2xqa_decisionInputX</bpmn:targetRef>
-        <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_1</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1sh2xqa_decisionInputX</bpmn:to>
-        </bpmn:assignment>
-      </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1f1s6un">
-        <bpmn:sourceRef>undefined</bpmn:sourceRef>
-        <bpmn:targetRef>Activity_1sh2xqa_drugResponseInputX</bpmn:targetRef>
-      </bpmn:dataInputAssociation>
-    </bpmn:businessRuleTask>
     <bpmn:task id="Activity_0nlku98" name="REST API Call" drools:taskName="Rest">
       <bpmn:incoming>Flow_01aysjx</bpmn:incoming>
       <bpmn:outgoing>Flow_1sfhri7</bpmn:outgoing>
@@ -192,7 +152,51 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:targetRef>drugResponse</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
-    <bpmn:sequenceFlow id="Flow_1sfhri7" sourceRef="Activity_0nlku98" targetRef="Activity_1sh2xqa" />
+    <bpmn:sequenceFlow id="Flow_1sfhri7" sourceRef="Activity_0nlku98" targetRef="Activity_1im8ao1" />
+    <bpmn:sequenceFlow id="Flow_04zlnva" sourceRef="Activity_1im8ao1" targetRef="Gateway_1dpe896" />
+    <bpmn:businessRuleTask id="Activity_1im8ao1" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
+      <bpmn:extensionElements />
+      <bpmn:incoming>Flow_1sfhri7</bpmn:incoming>
+      <bpmn:outgoing>Flow_04zlnva</bpmn:outgoing>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="Activity_1im8ao1_namespaceInputX" itemSubjectRef="_Activity_1im8ao1_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1im8ao1_modelInputX" itemSubjectRef="_Activity_1im8ao1_modelInputXItem" name="model" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1im8ao1_decisionInputX" itemSubjectRef="_Activity_1im8ao1_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1im8ao1_drugResponseInputX" itemSubjectRef="_Activity_1im8ao1_drugResponseInputXItem" name="drugResponse" drools:dtype="java.lang.Object" />
+        <bpmn:inputSet>
+          <bpmn:dataInputRefs>Activity_1im8ao1_namespaceInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1im8ao1_modelInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1im8ao1_decisionInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1im8ao1_drugResponseInputX</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet />
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_13u2e0g">
+        <bpmn:targetRef>Activity_1im8ao1_namespaceInputX</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">http://camunda.org/schema/1.0/dmn</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1im8ao1_namespaceInputX</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0ipkcid">
+        <bpmn:targetRef>Activity_1im8ao1_modelInputX</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1im8ao1_modelInputX</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0a64qfb">
+        <bpmn:targetRef>Activity_1im8ao1_decisionInputX</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression" />
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1im8ao1_decisionInputX</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_140qbpo">
+        <bpmn:sourceRef>drugResponse</bpmn:sourceRef>
+        <bpmn:targetRef>Activity_1im8ao1_drugResponseInputX</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+    </bpmn:businessRuleTask>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -229,12 +233,12 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <dc:Bounds x="769" y="365" width="63" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0ujhwbm_di" bpmnElement="Activity_1sh2xqa">
-        <dc:Bounds x="590" y="170" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0nlku98_di" bpmnElement="Activity_0nlku98">
         <dc:Bounds x="430" y="170" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_13b13tg_di" bpmnElement="Activity_1im8ao1">
+        <dc:Bounds x="600" y="170" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
@@ -256,13 +260,13 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <di:waypoint x="360" y="210" />
         <di:waypoint x="430" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0tixfel_di" bpmnElement="Flow_0tixfel">
-        <di:waypoint x="690" y="210" />
-        <di:waypoint x="775" y="210" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1sfhri7_di" bpmnElement="Flow_1sfhri7">
         <di:waypoint x="530" y="210" />
-        <di:waypoint x="590" y="210" />
+        <di:waypoint x="600" y="210" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04zlnva_di" bpmnElement="Flow_04zlnva">
+        <di:waypoint x="700" y="210" />
+        <di:waypoint x="775" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
         <di:waypoint x="320" y="268" />
