@@ -12,6 +12,11 @@ export interface DmnFileInfo {
     id: string;
     name: string;
   }>;
+  inputData?: Array<{
+    id: string;
+    name: string;
+    typeRef?: string;
+  }>;
 }
 
 // Extension -> Webview messages

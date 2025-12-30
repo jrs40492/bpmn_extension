@@ -8,6 +8,7 @@
   <bpmn:itemDefinition id="_Activity_1sh2xqa_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_ddidItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_drugResponseItem" structureRef="java.util.Map" />
+  <bpmn:itemDefinition id="_Activity_1sh2xqa_drugResponseInputXItem" structureRef="java.lang.Object" />
   <bpmn:process id="drugs" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -62,10 +63,12 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:dataInput id="Activity_1sh2xqa_namespaceInputX" itemSubjectRef="_Activity_1sh2xqa_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_1sh2xqa_modelInputX" itemSubjectRef="_Activity_1sh2xqa_modelInputXItem" name="model" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_1sh2xqa_decisionInputX" itemSubjectRef="_Activity_1sh2xqa_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_1sh2xqa_drugResponseInputX" itemSubjectRef="_Activity_1sh2xqa_drugResponseInputXItem" name="drugResponse" drools:dtype="java.lang.Object" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_1sh2xqa_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1sh2xqa_modelInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_1sh2xqa_decisionInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1sh2xqa_drugResponseInputX</bpmn:dataInputRefs>
         </bpmn:inputSet>
         <bpmn:outputSet />
       </bpmn:ioSpecification>
@@ -89,6 +92,10 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_1</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1sh2xqa_decisionInputX</bpmn:to>
         </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1f1s6un">
+        <bpmn:sourceRef>undefined</bpmn:sourceRef>
+        <bpmn:targetRef>Activity_1sh2xqa_drugResponseInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
     </bpmn:businessRuleTask>
     <bpmn:task id="Activity_0nlku98" name="REST API Call" drools:taskName="Rest">

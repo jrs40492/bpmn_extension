@@ -192,6 +192,9 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         // Parse model name from the DMN XML (required for Kogito/jBPM model input)
         const modelName = this.parseModelNameFromDmn(content);
 
+        // Parse input data from the DMN XML (required for Kogito/jBPM input mapping)
+        const inputData = this.parseInputDataFromDmn(content);
+
         // Get relative path for display
         const workspaceFolder = vscode.workspace.getWorkspaceFolder(file);
         const relativePath = workspaceFolder
@@ -203,7 +206,8 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
           name: relativePath,
           modelName,
           namespace,
-          decisions
+          decisions,
+          inputData
         });
       } catch (error) {
         console.error(`Error reading DMN file ${file.fsPath}:`, error);
@@ -236,6 +240,51 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     const nameRegex = /<(?:dmn:)?definitions[^>]*\sname\s*=\s*["']([^"']+)["']/i;
     const match = nameRegex.exec(xml);
     return match?.[1];
+  }
+
+  /**
+   * Parse input data elements from DMN XML content
+   * These are the inputs that DMN decisions expect to receive
+   */
+  private parseInputDataFromDmn(xml: string): Array<{ id: string; name: string; typeRef?: string }> {
+    const inputData: Array<{ id: string; name: string; typeRef?: string }> = [];
+
+    // Match inputData elements: <inputData id="..." name="...">
+    // Also capture the variable element inside for typeRef
+    const inputDataRegex = /<(?:dmn:)?inputData[^>]*\sid\s*=\s*["']([^"']+)["'][^>]*\sname\s*=\s*["']([^"']+)["'][^>]*>[\s\S]*?<(?:dmn:)?variable[^>]*(?:\stypeRef\s*=\s*["']([^"']+)["'])?[^>]*\/>[\s\S]*?<\/(?:dmn:)?inputData>/gi;
+
+    // Also try name before id
+    const inputDataRegexAlt = /<(?:dmn:)?inputData[^>]*\sname\s*=\s*["']([^"']+)["'][^>]*\sid\s*=\s*["']([^"']+)["'][^>]*>[\s\S]*?<(?:dmn:)?variable[^>]*(?:\stypeRef\s*=\s*["']([^"']+)["'])?[^>]*\/>[\s\S]*?<\/(?:dmn:)?inputData>/gi;
+
+    // Simpler regex that just gets id and name from the inputData element itself
+    const simpleRegex = /<(?:dmn:)?inputData[^>]*\sid\s*=\s*["']([^"']+)["'][^>]*\sname\s*=\s*["']([^"']+)["'][^>]*>/gi;
+    const simpleRegexAlt = /<(?:dmn:)?inputData[^>]*\sname\s*=\s*["']([^"']+)["'][^>]*\sid\s*=\s*["']([^"']+)["'][^>]*>/gi;
+
+    let match;
+
+    // Try simple regex first (id before name)
+    while ((match = simpleRegex.exec(xml)) !== null) {
+      const id = match[1];
+      const name = match[2];
+      inputData.push({ id, name });
+    }
+
+    // If no matches, try name before id
+    if (inputData.length === 0) {
+      while ((match = simpleRegexAlt.exec(xml)) !== null) {
+        const name = match[1];
+        const id = match[2];
+        inputData.push({ id, name });
+      }
+    }
+
+    // Deduplicate by ID
+    const seen = new Set<string>();
+    return inputData.filter(d => {
+      if (seen.has(d.id)) return false;
+      seen.add(d.id);
+      return true;
+    });
   }
 
   /**

@@ -132,6 +132,11 @@ export interface DmnFileInfo {
     id: string;
     name: string;
   }>;
+  inputData?: Array<{
+    id: string;
+    name: string;
+    typeRef?: string;
+  }>;
 }
 
 // Store for available DMN files (populated via messages from extension)
@@ -434,6 +439,187 @@ function setDataInputValue(element: BpmnElement, inputName: string, value: strin
   }
 }
 
+// Helper to get available process variables
+function getAvailableProcessVariables(element: BpmnElement): Array<{ id: string; name: string }> {
+  const bo = element.businessObject;
+  if (!bo) return [];
+  const variables: Array<{ id: string; name: string }> = [];
+
+  // Navigate up to find the process
+  let process: ModdleElement | undefined = bo.$parent;
+  while (process && process.$type !== 'bpmn:Process') {
+    process = process.$parent;
+  }
+  if (!process) return variables;
+
+  // Get variables from bpmn:property elements (standard BPMN)
+  const properties = (process as any).properties || [];
+  for (const prop of properties) {
+    if (prop.id || prop.name) {
+      variables.push({
+        id: prop.id || prop.name,
+        name: prop.name || prop.id
+      });
+    }
+  }
+
+  // Also get from bamoe:ProcessVariables extension (if exists)
+  const extensionElements = (process as any).extensionElements;
+  if (extensionElements?.values) {
+    const processVariables = extensionElements.values.find(
+      (ext: ModdleElement) => ext.$type === 'bamoe:ProcessVariables'
+    );
+    if (processVariables?.variables) {
+      for (const v of processVariables.variables) {
+        // Avoid duplicates
+        if (v.name && !variables.find(existing => existing.name === v.name)) {
+          variables.push({ id: v.name, name: v.name });
+        }
+      }
+    }
+  }
+
+  return variables;
+}
+
+// Helper to get DMN input mapping value (process variable mapped to DMN input)
+function getDmnInputMapping(element: BpmnElement, inputName: string): string {
+  const bo = element.businessObject;
+  if (!bo) return '';
+
+  // Look in dataInputAssociations for a mapping to this DMN input
+  const associations = bo.dataInputAssociations || [];
+  for (const assoc of associations) {
+    const targetRef = assoc.targetRef;
+    if (targetRef?.name === inputName) {
+      // Check if this is a variable reference (sourceRef) vs a literal assignment
+      if (assoc.sourceRef && assoc.sourceRef.length > 0) {
+        const sourceRef = assoc.sourceRef[0];
+        if (typeof sourceRef === 'string') {
+          return sourceRef;
+        } else if (sourceRef?.id || sourceRef?.name) {
+          return sourceRef.id || sourceRef.name;
+        }
+      }
+      // Check assignment for variable expression
+      const assignment = assoc.assignment?.[0];
+      if (assignment?.from?.body) {
+        return assignment.from.body;
+      }
+    }
+  }
+
+  return '';
+}
+
+// Helper to set DMN input mapping (map process variable to DMN input)
+function setDmnInputMapping(element: BpmnElement, inputName: string, variableName: string, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
+  const bo = element.businessObject;
+  if (!bo) return;
+  const taskId = bo.id;
+
+  // Ensure ioSpecification exists
+  let ioSpec = bo.ioSpecification;
+  if (!ioSpec) {
+    ensureIoSpecification(element, bpmnFactory, commandStack);
+    ioSpec = bo.ioSpecification;
+  }
+  if (!ioSpec) return;
+
+  // Check if dataInput for this DMN input already exists
+  const dataInputs = ioSpec.dataInputs || [];
+  let dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
+
+  // Get definitions for itemDefinition
+  const definitions = getDefinitions(element);
+
+  let needsIoSpecUpdate = false;
+
+  if (!dataInput) {
+    // Create new dataInput for this DMN input
+    const inputId = `${taskId}_${inputName}InputX`;
+    const itemDefId = `_${inputId}Item`;
+
+    // Ensure itemDefinition exists
+    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.Object', bpmnFactory);
+
+    dataInput = bpmnFactory.create('bpmn:DataInput', {
+      id: inputId,
+      name: inputName,
+      itemSubjectRef: itemDef
+    }) as DataInput;
+    dataInput.set?.('drools:dtype', 'java.lang.Object');
+    dataInput.$parent = ioSpec;
+
+    // Add to ioSpecification
+    if (!ioSpec.dataInputs) {
+      ioSpec.dataInputs = [];
+    }
+    ioSpec.dataInputs.push(dataInput);
+
+    // Add to inputSet
+    const inputSet = ioSpec.inputSets?.[0];
+    if (inputSet) {
+      if (!(inputSet as any).dataInputRefs) {
+        (inputSet as any).dataInputRefs = [];
+      }
+      (inputSet as any).dataInputRefs.push(dataInput);
+    }
+    needsIoSpecUpdate = true;
+  }
+
+  // Find existing dataInputAssociation for this input
+  const associations = bo.dataInputAssociations || [];
+  const existingAssoc = associations.find((a: DataInputAssociation) => a.targetRef?.name === inputName);
+
+  if (existingAssoc) {
+    // Update existing association using commandStack
+    // Create new sourceRef array with the variable name
+    const newSourceRef = variableName ? [variableName] : [];
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: existingAssoc,
+      properties: {
+        sourceRef: newSourceRef,
+        assignment: undefined // Remove assignment when using sourceRef
+      }
+    });
+  } else {
+    // Create new association
+    const newAssoc = bpmnFactory.create('bpmn:DataInputAssociation', {
+      targetRef: dataInput
+    }) as DataInputAssociation;
+
+    // Set sourceRef as array with variable name
+    (newAssoc as any).sourceRef = variableName ? [variableName] : [];
+    newAssoc.$parent = bo;
+
+    // Add to associations list
+    const newAssociations = [...associations, newAssoc];
+
+    // Update with new association list
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: {
+        dataInputAssociations: newAssociations
+      }
+    });
+  }
+
+  // Update ioSpecification if we added new dataInput
+  if (needsIoSpecUpdate) {
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: {
+        ioSpecification: ioSpec
+      }
+    });
+  }
+}
+
 // Remove legacy DecisionTaskConfig and migrate to new format
 function migrateLegacyConfig(element: BpmnElement, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
   const legacyConfig = getLegacyDecisionConfig(element);
@@ -619,6 +805,49 @@ function DmnNamespace(props: { element: BpmnElement; id: string }) {
   });
 }
 
+// DMN Input Mapping component - maps a single DMN input to a process variable
+function createDmnInputMappingComponent(inputName: string) {
+  return function DmnInputMapping(props: { element: BpmnElement; id: string }) {
+    const { element, id } = props;
+    const commandStack = useService('commandStack') as CommandStack;
+    const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+    const translate = useService('translate') as (text: string) => string;
+
+    const getValue = () => {
+      return getDmnInputMapping(element, inputName);
+    };
+
+    const setValue = (value: string) => {
+      setDmnInputMapping(element, inputName, value, bpmnFactory, commandStack);
+    };
+
+    const getOptions = () => {
+      const options = [
+        { value: '', label: translate('-- Select Variable --') }
+      ];
+
+      const variables = getAvailableProcessVariables(element);
+      for (const v of variables) {
+        options.push({
+          value: v.name,
+          label: v.name
+        });
+      }
+
+      return options;
+    };
+
+    return SelectEntry({
+      id,
+      element,
+      label: `${inputName}`,
+      getValue,
+      setValue,
+      getOptions
+    });
+  };
+}
+
 // Create entries for Business Rule Task
 function BusinessRuleTaskEntries(props: { element: BpmnElement }): PropertyEntry[] {
   const { element } = props;
@@ -644,6 +873,38 @@ function BusinessRuleTaskEntries(props: { element: BpmnElement }): PropertyEntry
       isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE)
     }
   ];
+}
+
+// Create entries for DMN Input Mappings
+function DmnInputMappingEntries(props: { element: BpmnElement }): PropertyEntry[] {
+  const { element } = props;
+
+  if (!isBusinessRuleTask(element)) {
+    return [];
+  }
+
+  // Get the selected DMN model
+  const currentModel = getDataInputValue(element, DMN_DATA_INPUTS.MODEL);
+  if (!currentModel) {
+    return [];
+  }
+
+  // Find the selected DMN file
+  const selectedFile = availableDmnFiles.find(f =>
+    (f.modelName || f.name) === currentModel ||
+    f.name === currentModel
+  );
+
+  if (!selectedFile?.inputData || selectedFile.inputData.length === 0) {
+    return [];
+  }
+
+  // Create an entry for each DMN input
+  return selectedFile.inputData.map(input => ({
+    id: `dmnInput_${input.name}`,
+    component: createDmnInputMappingComponent(input.name),
+    isEdited: () => !!getDmnInputMapping(element, input.name)
+  }));
 }
 
 // Request DMN files from extension
@@ -688,6 +949,16 @@ export default class BusinessRuleTaskPropertiesProvider {
         label: 'DMN Decision Configuration',
         entries: BusinessRuleTaskEntries({ element })
       });
+
+      // Add DMN Input Mappings group (only if DMN file is selected and has inputs)
+      const inputMappingEntries = DmnInputMappingEntries({ element });
+      if (inputMappingEntries.length > 0) {
+        groups.push({
+          id: 'dmn-input-mappings',
+          label: 'DMN Input Mappings',
+          entries: inputMappingEntries
+        });
+      }
 
       return groups;
     };
