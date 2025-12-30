@@ -10,6 +10,7 @@
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="ddid" required="true" />
+        <bamoe:variable name="result" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1" name="Start">
@@ -153,11 +154,13 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_05jwo4m_ReadTimeoutInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_ddid">
+        <bpmn:sourceRef>ddid</bpmn:sourceRef>
         <bpmn:targetRef>Activity_05jwo4m_ddidInput</bpmn:targetRef>
       </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0rp8ghz">
         <bpmn:sourceRef>Activity_05jwo4m_ResultOutput</bpmn:sourceRef>
+        <bpmn:targetRef>result</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_0gamo9o" sourceRef="Activity_05jwo4m" targetRef="Activity_1sh2xqa" />
