@@ -87,7 +87,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure Maven settings for Artifactory
-        run: mkdir -p ~/.m2 && cp cicd/maven-settings.xml ~/.m2/settings.xml
+        run: mkdir -p ~/.m2 && cp .github/workflows/../maven-settings.xml ~/.m2/settings.xml
 
       - name: Build and Test
         run: mvn -B clean verify --file ${{ matrix.project }}/pom.xml
@@ -140,7 +140,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure Maven settings for Artifactory
-        run: mkdir -p ~/.m2 && cp cicd/maven-settings.xml ~/.m2/settings.xml
+        run: mkdir -p ~/.m2 && cp .github/workflows/../maven-settings.xml ~/.m2/settings.xml
 
       - name: Run Checkstyle
         run: mvn -B checkstyle:check --file ${{ matrix.project }}/pom.xml
@@ -196,7 +196,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure Maven settings for Artifactory
-        run: mkdir -p ~/.m2 && cp cicd/maven-settings.xml ~/.m2/settings.xml
+        run: mkdir -p ~/.m2 && cp .github/workflows/../maven-settings.xml ~/.m2/settings.xml
 
       - name: OWASP Dependency Check
         run: mvn -B org.owasp:dependency-check-maven:check --file ${{ matrix.project }}/pom.xml
@@ -291,7 +291,7 @@ jobs:
           cache: 'maven'
 
       - name: Configure Maven settings for Artifactory
-        run: mkdir -p ~/.m2 && cp cicd/maven-settings.xml ~/.m2/settings.xml
+        run: mkdir -p ~/.m2 && cp .github/workflows/../maven-settings.xml ~/.m2/settings.xml
 
       - name: Deploy to Maven Repository
         run: mvn -B deploy -DskipTests --file ${{ matrix.project }}/pom.xml
