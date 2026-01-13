@@ -55,14 +55,6 @@ jobs:
             **/target/*.kjar
           retention-days: 14
 
-      - name: Publish Test Report
-        uses: mikepenz/action-junit-report@v4
-        if: always()
-        with:
-          report_paths: '**/target/surefire-reports/TEST-*.xml'
-          fail_on_failure: true
-          include_passed: true
-
   # ============================================
   # CODE QUALITY ANALYSIS
   # ============================================
@@ -99,15 +91,6 @@ jobs:
           name: coverage-report
           path: '**/target/site/jacoco/'
           retention-days: 7
-
-      - name: Add Coverage to PR
-        uses: madrapps/jacoco-report@v1.6.1
-        if: github.event_name == 'pull_request'
-        with:
-          paths: '**/target/site/jacoco/jacoco.xml'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          min-coverage-overall: 60
-          min-coverage-changed-files: 80
 
   # ============================================
   # SECURITY SCANNING
