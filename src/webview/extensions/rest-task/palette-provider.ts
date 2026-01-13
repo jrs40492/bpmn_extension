@@ -258,6 +258,46 @@ export function isRestTask(element: any): boolean {
 }
 
 /**
+ * Check if a REST task already has a boundary error event attached
+ */
+export function hasBoundaryErrorEvent(element: any): boolean {
+  if (!element?.attachers) return false;
+
+  for (const attacher of element.attachers) {
+    if (attacher.type === 'bpmn:BoundaryEvent') {
+      const bo = attacher.businessObject;
+      const eventDefs = bo?.eventDefinitions || [];
+      for (const eventDef of eventDefs) {
+        if (eventDef.$type === 'bpmn:ErrorEventDefinition') {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Get the boundary error event attached to a REST task (if any)
+ */
+export function getBoundaryErrorEvent(element: any): any | null {
+  if (!element?.attachers) return null;
+
+  for (const attacher of element.attachers) {
+    if (attacher.type === 'bpmn:BoundaryEvent') {
+      const bo = attacher.businessObject;
+      const eventDefs = bo?.eventDefinitions || [];
+      for (const eventDef of eventDefs) {
+        if (eventDef.$type === 'bpmn:ErrorEventDefinition') {
+          return attacher;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Get REST configuration from standard BPMN data input associations
  */
 export function getRestConfig(element: any): Record<string, string> | null {

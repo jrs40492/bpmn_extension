@@ -14,6 +14,7 @@
   <bpmn:itemDefinition id="_Activity_1im8ao1_drugResponseInputXItem" structureRef="java.lang.Object"/>
   <bpmn:itemDefinition id="_decisionItem" structureRef="java.lang.Object"/>
   <bpmn:itemDefinition id="_Activity_1im8ao1_DecisionOutputXItem" structureRef="java.lang.Object"/>
+  <bpmn:itemDefinition id="_drugStatusItem" structureRef="java.util.Map"/>
   <bpmn:process id="drugs" name="" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -58,7 +59,7 @@
       <bpmn:script>int current = (int) kcontext.getVariable("count");
 kcontext.setVariable("count", current - 1);</bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_01aysjx" sourceRef="Activity_0as8h27" targetRef="Activity_0x2d93e"/>
+    <bpmn:sequenceFlow id="Flow_01aysjx" sourceRef="Activity_0as8h27" targetRef="Activity_1qduwyy"/>
     <bpmn:endEvent id="Event_0n168m6" name="Compensate">
       <bpmn:incoming>Flow_191lbsq</bpmn:incoming>
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0zjmykc" activityRef="Activity_0as8h27"/>
@@ -66,7 +67,8 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
     <bpmn:sequenceFlow id="Flow_04zlnva" sourceRef="Activity_1im8ao1" targetRef="Gateway_1dpe896"/>
     <bpmn:businessRuleTask id="Activity_1im8ao1" name="Step 3 Decide" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements/>
-      <bpmn:incoming>Flow_1oqgtsn</bpmn:incoming>
+      <bpmn:incoming>Flow_17xfgg2</bpmn:incoming>
+      <bpmn:incoming>Flow_1t393h8</bpmn:incoming>
       <bpmn:outgoing>Flow_04zlnva</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_1im8ao1_namespaceInputX" itemSubjectRef="_Activity_1im8ao1_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String"/>
@@ -118,108 +120,113 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:targetRef>decision</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:task id="Activity_0x2d93e" name="REST API Call" drools:taskName="Rest">
+    <bpmn:task id="Activity_1qduwyy" name="REST API Call" drools:taskName="Rest">
       <bpmn:incoming>Flow_01aysjx</bpmn:incoming>
-      <bpmn:outgoing>Flow_1oqgtsn</bpmn:outgoing>
+      <bpmn:outgoing>Flow_17xfgg2</bpmn:outgoing>
       <bpmn:ioSpecification>
-        <bpmn:dataInput id="Activity_0x2d93e_UrlInput" name="Url" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_MethodInput" name="Method" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_ContentTypeInput" name="ContentType" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_AcceptHeaderInput" name="AcceptHeader" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_ContentInput" name="Content" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_ConnectTimeoutInput" name="ConnectTimeout" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_ReadTimeoutInput" name="ReadTimeout" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_ResultClassInput" name="ResultClass" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_HandleResponseErrorsInput" name="HandleResponseErrors" drools:dtype="java.lang.String"/>
-        <bpmn:dataOutput id="Activity_0x2d93e_ResultOutput" name="Result" drools:dtype="java.util.Map"/>
-        <bpmn:dataOutput id="Activity_0x2d93e_StatusOutput" name="Status" drools:dtype="java.lang.String"/>
-        <bpmn:dataOutput id="Activity_0x2d93e_StatusMsgOutput" name="StatusMsg" drools:dtype="java.lang.String"/>
-        <bpmn:dataInput id="Activity_0x2d93e_ddidInput" name="ddid" drools:dtype="java.lang.String"/><bpmn:inputSet>
-          <bpmn:dataInputRefs>Activity_0x2d93e_UrlInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_MethodInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_ContentTypeInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_AcceptHeaderInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_ContentInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_ConnectTimeoutInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_ReadTimeoutInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_ResultClassInput</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0x2d93e_HandleResponseErrorsInput</bpmn:dataInputRefs>
-        <bpmn:dataInputRefs>Activity_0x2d93e_ddidInput</bpmn:dataInputRefs></bpmn:inputSet>
+        <bpmn:dataInput id="Activity_1qduwyy_UrlInput" name="Url" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_MethodInput" name="Method" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_ContentTypeInput" name="ContentType" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_AcceptHeaderInput" name="AcceptHeader" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_ContentInput" name="Content" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_ConnectTimeoutInput" name="ConnectTimeout" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_ReadTimeoutInput" name="ReadTimeout" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_ResultClassInput" name="ResultClass" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_HandleResponseErrorsInput" name="HandleResponseErrors" drools:dtype="java.lang.String"/>
+        <bpmn:dataOutput id="Activity_1qduwyy_ResultOutput" name="Result" drools:dtype="java.util.Map"/>
+        <bpmn:dataOutput id="Activity_1qduwyy_StatusOutput" name="Status" drools:dtype="java.lang.String"/>
+        <bpmn:dataOutput id="Activity_1qduwyy_StatusMsgOutput" name="StatusMsg" drools:dtype="java.lang.String"/>
+        <bpmn:dataInput id="Activity_1qduwyy_ddidInput" name="ddid" drools:dtype="java.lang.String"/><bpmn:inputSet>
+          <bpmn:dataInputRefs>Activity_1qduwyy_UrlInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_MethodInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_ContentTypeInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_AcceptHeaderInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_ContentInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_ConnectTimeoutInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_ReadTimeoutInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_ResultClassInput</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_1qduwyy_HandleResponseErrorsInput</bpmn:dataInputRefs>
+        <bpmn:dataInputRefs>Activity_1qduwyy_ddidInput</bpmn:dataInputRefs></bpmn:inputSet>
         <bpmn:outputSet>
-          <bpmn:dataOutputRefs>Activity_0x2d93e_ResultOutput</bpmn:dataOutputRefs>
-          <bpmn:dataOutputRefs>Activity_0x2d93e_StatusOutput</bpmn:dataOutputRefs>
-          <bpmn:dataOutputRefs>Activity_0x2d93e_StatusMsgOutput</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_1qduwyy_ResultOutput</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_1qduwyy_StatusOutput</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_1qduwyy_StatusMsgOutput</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
-      <bpmn:dataInputAssociation id="DataInputAssociation_0ksajsy">
-        <bpmn:targetRef>Activity_0x2d93e_UrlInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1ectez7">
+        <bpmn:targetRef>Activity_1qduwyy_UrlInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">https://master-api.testing.covermymeds.com/drugs/{ddid}?api_id=test&amp;v=1</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_UrlInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_UrlInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1rwa9ny">
-        <bpmn:targetRef>Activity_0x2d93e_MethodInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_08biiln">
+        <bpmn:targetRef>Activity_1qduwyy_MethodInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">GET</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_MethodInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_MethodInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_06qheb5">
-        <bpmn:targetRef>Activity_0x2d93e_ContentTypeInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0qcxluf">
+        <bpmn:targetRef>Activity_1qduwyy_ContentTypeInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">application/json</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_ContentTypeInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_ContentTypeInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1ggencp">
-        <bpmn:targetRef>Activity_0x2d93e_AcceptHeaderInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1a4gl5w">
+        <bpmn:targetRef>Activity_1qduwyy_AcceptHeaderInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">application/json</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_AcceptHeaderInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_AcceptHeaderInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_0o3o10e">
-        <bpmn:targetRef>Activity_0x2d93e_ContentInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1jwxyk6">
+        <bpmn:targetRef>Activity_1qduwyy_ContentInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression"/>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_ContentInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_ContentInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_18wpvmm">
-        <bpmn:targetRef>Activity_0x2d93e_ConnectTimeoutInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0pu5xq2">
+        <bpmn:targetRef>Activity_1qduwyy_ConnectTimeoutInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">30000</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_ConnectTimeoutInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_ConnectTimeoutInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1sqiytv">
-        <bpmn:targetRef>Activity_0x2d93e_ReadTimeoutInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0g0qsra">
+        <bpmn:targetRef>Activity_1qduwyy_ReadTimeoutInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">30000</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_ReadTimeoutInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_ReadTimeoutInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_0z9guwg">
-        <bpmn:targetRef>Activity_0x2d93e_ResultClassInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0ijw4l2">
+        <bpmn:targetRef>Activity_1qduwyy_ResultClassInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">java.util.Map</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_ResultClassInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_ResultClassInput</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_0wmgfsa">
-        <bpmn:targetRef>Activity_0x2d93e_HandleResponseErrorsInput</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1qj7ize">
+        <bpmn:targetRef>Activity_1qduwyy_HandleResponseErrorsInput</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">false</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0x2d93e_HandleResponseErrorsInput</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_1qduwyy_HandleResponseErrorsInput</bpmn:to>
         </bpmn:assignment>
-      </bpmn:dataInputAssociation><bpmn:dataInputAssociation><bpmn:sourceRef>ddid</bpmn:sourceRef><bpmn:targetRef>Activity_0x2d93e_ddidInput</bpmn:targetRef></bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_1f0nxgs">
-        <bpmn:sourceRef>Activity_0x2d93e_ResultOutput</bpmn:sourceRef>
+      </bpmn:dataInputAssociation><bpmn:dataInputAssociation><bpmn:sourceRef>ddid</bpmn:sourceRef><bpmn:targetRef>Activity_1qduwyy_ddidInput</bpmn:targetRef></bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0lrbbjv">
+        <bpmn:sourceRef>Activity_1qduwyy_ResultOutput</bpmn:sourceRef>
         <bpmn:targetRef>drugResponse</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
-    <bpmn:sequenceFlow id="Flow_1oqgtsn" sourceRef="Activity_0x2d93e" targetRef="Activity_1im8ao1"/>
+    <bpmn:sequenceFlow id="Flow_17xfgg2" sourceRef="Activity_1qduwyy" targetRef="Activity_1im8ao1"/>
+    <bpmn:boundaryEvent id="Activity_1qduwyy_ErrorBoundary" name="Error" attachedToRef="Activity_1qduwyy">
+      <bpmn:outgoing>Flow_1t393h8</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="Activity_1qduwyy_ErrorEventDef"/>
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_1t393h8" sourceRef="Activity_1qduwyy_ErrorBoundary" targetRef="Activity_1im8ao1"/>
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw"/>
   </bpmn:process>
   <bpmn:itemDefinition id="_restResultItem" structureRef="java.util.Map"/>
@@ -261,12 +268,18 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <dc:Bounds x="600" y="170" width="100" height="80"/>
         <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0x2d93e_di" bpmnElement="Activity_0x2d93e">
+      <bpmndi:BPMNShape id="Activity_1qduwyy_di" bpmnElement="Activity_1qduwyy">
         <dc:Bounds x="440" y="170" width="100" height="80"/>
         <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0523nwg_di" bpmnElement="Event_0pll7s0">
         <dc:Bounds x="332" y="232" width="36" height="36"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qduwyy_ErrorBoundary_di" bpmnElement="Activity_1qduwyy_ErrorBoundary">
+        <dc:Bounds x="472" y="232" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="478" y="275" width="25" height="14"/>
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_12vdxhy_di" bpmnElement="Flow_12vdxhy">
         <di:waypoint x="218" y="210"/>
@@ -292,8 +305,15 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <di:waypoint x="350" y="268"/>
         <di:waypoint x="350" y="340"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1oqgtsn_di" bpmnElement="Flow_1oqgtsn">
+      <bpmndi:BPMNEdge id="Flow_17xfgg2_di" bpmnElement="Flow_17xfgg2">
         <di:waypoint x="540" y="210"/>
+        <di:waypoint x="600" y="210"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1t393h8_di" bpmnElement="Flow_1t393h8">
+        <di:waypoint x="490" y="268"/>
+        <di:waypoint x="490" y="290"/>
+        <di:waypoint x="550" y="290"/>
+        <di:waypoint x="550" y="210"/>
         <di:waypoint x="600" y="210"/>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
