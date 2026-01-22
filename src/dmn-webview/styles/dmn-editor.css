@@ -623,6 +623,16 @@ html, body {
   color: var(--vscode-input-placeholderForeground, #8c8c8c) !important;
 }
 
+/* ========================================
+   Direct Editing (inline text editing)
+   ======================================== */
+
+/* Keep text dark/black when editing (not gray) */
+.dmn-editor-container .djs-direct-editing-content {
+  color: #1e1e1e !important;
+  caret-color: #1e1e1e !important;
+}
+
 /* DRD elements */
 .dmn-editor-container .djs-element .djs-visual rect,
 .dmn-editor-container .djs-element .djs-visual polygon {
@@ -978,6 +988,12 @@ html, body {
 
 /* Connections - keep subtle gray */
 .dmn-editor-container .djs-connection .djs-visual > path {
+  stroke: #8c8c8c !important;
+}
+
+/* Arrow markers (arrowheads) for dark mode */
+.dmn-editor-container svg defs marker path {
+  fill: #8c8c8c !important;
   stroke: #8c8c8c !important;
 }
 

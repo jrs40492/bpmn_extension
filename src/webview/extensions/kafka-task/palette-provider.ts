@@ -1,6 +1,10 @@
 /**
  * Custom Palette Provider for Kafka Task
  * Adds Kafka Producer and Consumer task entries to the modeler palette
+ *
+ * IMPORTANT: We let bpmn-js create the shape normally (which assigns an ID),
+ * then add extension elements afterward. Passing a custom businessObject to
+ * createShape() bypasses ID generation and causes persistence issues.
  */
 
 interface PaletteEntry {
@@ -27,10 +31,18 @@ interface BpmnFactory {
 
 interface ModdleElement {
   $parent?: ModdleElement;
+  id?: string;
+  name?: string;
+  extensionElements?: ModdleElement & { values?: ModdleElement[] };
+  [key: string]: unknown;
 }
 
 interface Moddle {
   create: (type: string, attrs?: Record<string, unknown>) => ModdleElement;
+}
+
+interface Shape {
+  businessObject: ModdleElement;
 }
 
 export default class KafkaTaskPaletteProvider {
@@ -62,6 +74,16 @@ export default class KafkaTaskPaletteProvider {
     const moddle = this.moddle;
 
     function createKafkaProducerTask(event: Event): void {
+      // Let bpmn-js create the shape normally - this ensures proper ID assignment
+      const shape = elementFactory.createShape({
+        type: 'bpmn:SendTask'
+      }) as Shape;
+
+      const businessObject = shape.businessObject;
+
+      // Set task name AFTER creation
+      businessObject.name = 'Kafka Publish';
+
       // Create the Kafka task configuration using moddle
       const kafkaConfig = moddle.create('kafka:KafkaTaskConfig', {
         topic: 'my-topic',
@@ -76,30 +98,39 @@ export default class KafkaTaskPaletteProvider {
         responseVariable: 'kafkaResponse'
       });
 
-      // Create extension elements container
-      const extensionElements = moddle.create('bpmn:ExtensionElements', {
-        values: [kafkaConfig]
-      });
+      // Create or get extension elements container
+      let extensionElements = businessObject.extensionElements;
+      if (!extensionElements) {
+        extensionElements = moddle.create('bpmn:ExtensionElements', {
+          values: []
+        });
+        extensionElements.$parent = businessObject;
+        businessObject.extensionElements = extensionElements;
+      }
 
-      // Create the send task business object
-      const businessObject = moddle.create('bpmn:SendTask', {
-        name: 'Kafka Publish',
-        extensionElements: extensionElements
-      });
+      // Initialize values array if needed
+      if (!extensionElements.values) {
+        extensionElements.values = [];
+      }
 
-      // Link the extension elements back to the business object
-      extensionElements.$parent = businessObject;
+      // Add kafka config to extension elements
       kafkaConfig.$parent = extensionElements;
-
-      const shape = elementFactory.createShape({
-        type: 'bpmn:SendTask',
-        businessObject: businessObject
-      });
+      extensionElements.values.push(kafkaConfig);
 
       create.start(event, shape);
     }
 
     function createKafkaConsumerTask(event: Event): void {
+      // Let bpmn-js create the shape normally - this ensures proper ID assignment
+      const shape = elementFactory.createShape({
+        type: 'bpmn:ReceiveTask'
+      }) as Shape;
+
+      const businessObject = shape.businessObject;
+
+      // Set task name AFTER creation
+      businessObject.name = 'Kafka Consume';
+
       // Create the Kafka task configuration using moddle
       const kafkaConfig = moddle.create('kafka:KafkaTaskConfig', {
         topic: 'my-topic',
@@ -111,25 +142,24 @@ export default class KafkaTaskPaletteProvider {
         responseVariable: 'kafkaMessage'
       });
 
-      // Create extension elements container
-      const extensionElements = moddle.create('bpmn:ExtensionElements', {
-        values: [kafkaConfig]
-      });
+      // Create or get extension elements container
+      let extensionElements = businessObject.extensionElements;
+      if (!extensionElements) {
+        extensionElements = moddle.create('bpmn:ExtensionElements', {
+          values: []
+        });
+        extensionElements.$parent = businessObject;
+        businessObject.extensionElements = extensionElements;
+      }
 
-      // Create the receive task business object
-      const businessObject = moddle.create('bpmn:ReceiveTask', {
-        name: 'Kafka Consume',
-        extensionElements: extensionElements
-      });
+      // Initialize values array if needed
+      if (!extensionElements.values) {
+        extensionElements.values = [];
+      }
 
-      // Link the extension elements back to the business object
-      extensionElements.$parent = businessObject;
+      // Add kafka config to extension elements
       kafkaConfig.$parent = extensionElements;
-
-      const shape = elementFactory.createShape({
-        type: 'bpmn:ReceiveTask',
-        businessObject: businessObject
-      });
+      extensionElements.values.push(kafkaConfig);
 
       create.start(event, shape);
     }

@@ -73,6 +73,25 @@ function debounce<T extends (...args: unknown[]) => void>(
   };
 }
 
+/**
+ * Returns an empty DMN diagram XML for new files
+ */
+function getEmptyDmnDiagram(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+             id="Definitions_1"
+             name="DRD"
+             namespace="http://camunda.org/schema/1.0/dmn">
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>`;
+}
+
 // Normalize empty decision table cells to use "-" (any value) for IBM BPMN compatibility
 function normalizeEmptyCells(xml: string): string {
   // Replace empty <text></text> within inputEntry elements with <text>-</text>
@@ -146,25 +165,15 @@ async function init(): Promise<void> {
   let currentViews: DmnView[] = [];
   let activeView: DmnView | null = null;
 
-  // Track if we should skip the next change event
-  let skipNextChange = false;
-  let lastKnownXml = '';
-
   // Debounced function to send changes to extension
+  // Extension-side handles deduplication, so we always send
   const sendChange = debounce(async () => {
     console.log('[DMN Editor] sendChange executing...');
     try {
       const { xml } = await dmnModeler.saveXML({ format: true });
       console.log('[DMN Editor] saveXML completed, xml length:', xml.length);
-      // Log a snippet of the XML to see if variable is included
-      if (xml.includes('variable')) {
-        console.log('[DMN Editor] XML contains "variable" element');
-      } else {
-        console.log('[DMN Editor] XML does NOT contain "variable" element');
-      }
       // Normalize empty cells to "-" for IBM BPMN compatibility
       const normalizedXml = normalizeEmptyCells(xml);
-      // Always send changes - extension-side handles deduplication
       console.log('[DMN Editor] Posting change message to extension');
       postMessage({ type: 'change', xml: normalizedXml });
     } catch (err) {
@@ -175,17 +184,22 @@ async function init(): Promise<void> {
   // Handler for command stack changes
   const handleCommandStackChanged = () => {
     console.log('[DMN Editor] commandStack.changed event fired');
-    if (skipNextChange) {
-      console.log('[DMN Editor] Skipping change (skipNextChange=true)');
-      skipNextChange = false;
-      return;
-    }
-    console.log('[DMN Editor] Calling sendChange()');
     sendChange();
   };
 
   // Listen for changes on the main modeler (for DRD changes)
   dmnModeler.on('commandStack.changed', handleCommandStackChanged);
+
+  // Also listen for element changes which fire more reliably in some cases
+  dmnModeler.on('elements.changed', () => {
+    console.log('[DMN Editor] elements.changed event fired');
+    sendChange();
+  });
+
+  // Listen for import.done to ensure we catch the initial state
+  dmnModeler.on('import.done', () => {
+    console.log('[DMN Editor] import.done event fired');
+  });
 
   // Listen for custom properties changed events from extensions
   // This is needed because the DRD viewer's eventBus is isolated from the main modeler
@@ -194,8 +208,38 @@ async function init(): Promise<void> {
     sendChange();
   });
 
+  // Fallback: Listen for input/change events on the canvas to catch all edits
+  // This catches changes that might not trigger dmn-js events
+  if (container) {
+    container.addEventListener('input', () => {
+      console.log('[DMN Editor] Input event detected in container');
+      sendChange();
+    }, true);
+
+    container.addEventListener('change', () => {
+      console.log('[DMN Editor] Change event detected in container');
+      sendChange();
+    }, true);
+
+    // Also listen for blur events which indicate editing completed
+    container.addEventListener('blur', (e) => {
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' ||
+          (e.target as HTMLElement)?.tagName === 'TEXTAREA' ||
+          (e.target as HTMLElement)?.getAttribute('contenteditable')) {
+        console.log('[DMN Editor] Blur event on editable element');
+        sendChange();
+      }
+    }, true);
+  }
+
   // Track the current active viewer to manage event listeners
   let currentActiveViewer: any = null;
+
+  // Handler for viewer-specific changes (bypasses skipNextChange for reliability)
+  const handleViewerChange = () => {
+    console.log('[DMN Editor] Viewer change detected');
+    sendChange();
+  };
 
   // Function to attach change listener to a viewer
   const attachViewerChangeListener = (viewer: any) => {
@@ -204,10 +248,15 @@ async function init(): Promise<void> {
     try {
       const eventBus = viewer.get('eventBus');
       if (eventBus) {
-        eventBus.on('commandStack.changed', handleCommandStackChanged);
+        // Listen to multiple events to catch all changes
+        eventBus.on('commandStack.changed', handleViewerChange);
+        eventBus.on('elements.changed', handleViewerChange);
+        eventBus.on('element.changed', handleViewerChange);
+        console.log('[DMN Editor] Attached change listeners to viewer');
       }
     } catch (err) {
       // Viewer might not have eventBus (e.g., during initialization)
+      console.log('[DMN Editor] Could not attach listeners to viewer:', err);
     }
   };
 
@@ -218,7 +267,9 @@ async function init(): Promise<void> {
     try {
       const eventBus = viewer.get('eventBus');
       if (eventBus) {
-        eventBus.off('commandStack.changed', handleCommandStackChanged);
+        eventBus.off('commandStack.changed', handleViewerChange);
+        eventBus.off('elements.changed', handleViewerChange);
+        eventBus.off('element.changed', handleViewerChange);
       }
     } catch (err) {
       // Ignore errors during cleanup
@@ -317,9 +368,12 @@ async function init(): Promise<void> {
     switch (message.type) {
       case 'init':
         try {
-          skipNextChange = true;
-          lastKnownXml = message.xml;
-          await dmnModeler.importXML(message.xml);
+          // Use empty diagram for new/empty files
+          let xmlToImport = message.xml;
+          if (!xmlToImport || xmlToImport.trim() === '') {
+            xmlToImport = getEmptyDmnDiagram();
+          }
+          await dmnModeler.importXML(xmlToImport);
 
           // Attach change listener to the active viewer (decision table, etc.)
           attachToCurrentViewer();
@@ -332,24 +386,29 @@ async function init(): Promise<void> {
               canvas.zoom('fit-viewport');
             }
           }
+
+          // If we used the empty diagram for a new file, trigger a save
+          // so the file gets the initial DMN structure
+          if (message.xml !== xmlToImport) {
+            sendChange();
+          }
         } catch (err) {
           console.error('Failed to import DMN:', err);
-          skipNextChange = false;
         }
         break;
 
       case 'update':
         try {
-          if (message.xml === lastKnownXml) {
-            break;
+          // Use empty diagram for empty content
+          let xmlToUpdate = message.xml;
+          if (!xmlToUpdate || xmlToUpdate.trim() === '') {
+            xmlToUpdate = getEmptyDmnDiagram();
           }
 
           // Save current view
           const currentActiveView = activeView;
 
-          skipNextChange = true;
-          lastKnownXml = message.xml;
-          await dmnModeler.importXML(message.xml);
+          await dmnModeler.importXML(xmlToUpdate);
 
           // Attach change listener to the active viewer
           attachToCurrentViewer();
@@ -364,7 +423,6 @@ async function init(): Promise<void> {
           }
         } catch (err) {
           console.error('Failed to import DMN:', err);
-          skipNextChange = false;
         }
         break;
     }

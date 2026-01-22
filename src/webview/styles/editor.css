@@ -221,10 +221,18 @@ html, body {
   color: #ff4d4f !important;
 }
 
-/* Intermediate Events - Orange/Amber */
-.djs-palette [class*="bpmn-icon-intermediate-event"]::before,
-.djs-context-pad [class*="bpmn-icon-intermediate-event"]::before {
+/* Intermediate Catch Events - Orange/Amber */
+.djs-palette [class*="bpmn-icon-intermediate-event-catch"]::before,
+.djs-context-pad [class*="bpmn-icon-intermediate-event-catch"]::before {
   color: #fa8c16 !important;
+}
+
+/* Intermediate Throw Events - Blue */
+.djs-palette [class*="bpmn-icon-intermediate-event-throw"]::before,
+.djs-palette .bpmn-icon-intermediate-event-none::before,
+.djs-context-pad [class*="bpmn-icon-intermediate-event-throw"]::before,
+.djs-context-pad .bpmn-icon-intermediate-event-none::before {
+  color: #1890ff !important;
 }
 
 /* Tasks - Blue */
@@ -400,6 +408,32 @@ html, body {
   stroke: #8c8c8c !important;
 }
 
+/* Arrow markers (arrowheads) for dark mode */
+/* These are SVG markers defined in <defs> that need explicit fill styling */
+.djs-container svg defs marker path {
+  fill: #8c8c8c !important;
+  stroke: #8c8c8c !important;
+}
+
+/* Specifically target sequence flow end markers */
+.djs-container svg defs marker[id*="sequenceflow-end"] path,
+.djs-container svg defs marker[id*="association-end"] path,
+.djs-container svg defs marker[id*="messageflow-end"] path {
+  fill: #8c8c8c !important;
+  stroke: #8c8c8c !important;
+}
+
+/* Conditional flow markers (diamond) */
+.djs-container svg defs marker[id*="conditional-flow"] path {
+  fill: var(--vscode-editor-background, #1e1e1e) !important;
+  stroke: #8c8c8c !important;
+}
+
+/* Default flow markers (slash) */
+.djs-container svg defs marker[id*="conditional-default"] path {
+  stroke: #8c8c8c !important;
+}
+
 /* Message Flows - dashed gray */
 [data-element-id*="MessageFlow"] .djs-visual > path {
   stroke: #8c8c8c !important;
@@ -440,10 +474,18 @@ html, body {
   color: #ff4d4f !important;
 }
 
-/* Intermediate Events - Orange/Amber */
-.bio-properties-panel-header [class*="bpmn-icon-intermediate-event"]::before,
-.bio-properties-panel [class*="bpmn-icon-intermediate-event"]::before {
+/* Intermediate Catch Events - Orange/Amber */
+.bio-properties-panel-header [class*="bpmn-icon-intermediate-event-catch"]::before,
+.bio-properties-panel [class*="bpmn-icon-intermediate-event-catch"]::before {
   color: #fa8c16 !important;
+}
+
+/* Intermediate Throw Events - Blue */
+.bio-properties-panel-header [class*="bpmn-icon-intermediate-event-throw"]::before,
+.bio-properties-panel-header .bpmn-icon-intermediate-event-none::before,
+.bio-properties-panel [class*="bpmn-icon-intermediate-event-throw"]::before,
+.bio-properties-panel .bpmn-icon-intermediate-event-none::before {
+  color: #1890ff !important;
 }
 
 /* Tasks - Blue */

@@ -8,7 +8,7 @@
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="boolean">
-          <text>drugResponse != null and drugResponse.data != null</text>
+          <text>drugResponse.drug != null</text>
         </inputExpression>
       </input>
       <output id="Output_1" name="decision" typeRef="string" />

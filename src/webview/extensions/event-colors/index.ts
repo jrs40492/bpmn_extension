@@ -5,9 +5,10 @@
 
 // Color constants matching the palette icons
 const COLORS = {
-  startEvent: '#52c41a',  // Green
-  endEvent: '#ff4d4f',    // Red
-  intermediateEvent: '#fa8c16'  // Orange
+  startEvent: '#52c41a',           // Green
+  endEvent: '#ff4d4f',             // Red
+  intermediateThrowEvent: '#1890ff', // Blue - for throw events
+  intermediateCatchEvent: '#fa8c16'  // Orange/Yellow - for catch events
 };
 
 interface Element {
@@ -37,8 +38,8 @@ function getEventColor(element: Element): string | null {
 
   if (type === 'bpmn:StartEvent') return COLORS.startEvent;
   if (type === 'bpmn:EndEvent') return COLORS.endEvent;
-  if (type === 'bpmn:IntermediateThrowEvent') return COLORS.intermediateEvent;
-  if (type === 'bpmn:IntermediateCatchEvent') return COLORS.intermediateEvent;
+  if (type === 'bpmn:IntermediateThrowEvent') return COLORS.intermediateThrowEvent;
+  if (type === 'bpmn:IntermediateCatchEvent') return COLORS.intermediateCatchEvent;
 
   return null;
 }

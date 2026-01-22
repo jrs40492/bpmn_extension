@@ -24,6 +24,9 @@ import businessRuleTaskModule, { businessRuleTaskDescriptor } from './extensions
 // Custom Process Variables extension
 import processVariablesModule, { processVariablesDescriptor } from './extensions/process-variables';
 
+// Custom Message Event extension
+import messageEventModule, { messageEventDescriptor } from './extensions/message-event';
+
 // Custom event colors extension
 import eventColorsModule from './extensions/event-colors';
 
@@ -38,6 +41,9 @@ import sequenceFlowConditionModule from './extensions/sequence-flow-condition';
 
 // Custom gateway direction extension
 import gatewayDirectionModule from './extensions/gateway-direction';
+
+// Custom task resize extension
+import taskResizeModule from './extensions/task-resize';
 
 // Type definitions for bpmn-js
 interface BpmnModelerInstance {
@@ -111,9 +117,11 @@ export function createModeler(
     scriptTaskModule,
     businessRuleTaskModule,
     processVariablesModule,
+    messageEventModule,
     eventColorsModule,
     compensationTaskModule,
-    tokenSimulationModule
+    tokenSimulationModule,
+    taskResizeModule
   ];
 
   // Add properties panel if container is provided
@@ -138,7 +146,8 @@ export function createModeler(
       kafka: kafkaTaskDescriptor,
       dmn: businessRuleTaskDescriptor,
       bamoe: processVariablesDescriptor,
-      drools: droolsDescriptor
+      drools: droolsDescriptor,
+      msgevt: messageEventDescriptor
     },
     propertiesPanel: propertiesContainer ? {
       parent: propertiesContainer

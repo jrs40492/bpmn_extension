@@ -36,6 +36,45 @@ function getVariables(element: any): any[] {
   return processVariables?.variables || [];
 }
 
+// Map our type values to Java types for IBM BAMOE compatibility
+function getJavaType(type: string): string {
+  switch (type) {
+    case 'string':
+      return 'java.lang.String';
+    case 'number':
+      return 'java.lang.Double';
+    case 'boolean':
+      return 'java.lang.Boolean';
+    case 'object':
+      return 'java.lang.Object';
+    case 'array':
+      return 'java.util.List';
+    default:
+      return 'java.lang.Object';
+  }
+}
+
+// Get definitions (root element) from a business object
+function getDefinitions(bo: any): any {
+  let definitions = bo.$parent;
+  while (definitions && definitions.$type !== 'bpmn:Definitions') {
+    definitions = definitions.$parent;
+  }
+  return definitions;
+}
+
+// Find an itemDefinition by id
+function findItemDefinition(definitions: any, id: string): any {
+  const rootElements = definitions?.rootElements || [];
+  return rootElements.find((elem: any) => elem.$type === 'bpmn:ItemDefinition' && elem.id === id);
+}
+
+// Find a property by id in the process
+function findProperty(bo: any, id: string): any {
+  const properties = bo.properties || [];
+  return properties.find((prop: any) => prop.id === id);
+}
+
 // Variable entry component - renders the fields for a single variable
 function VariableEntry(props: { idPrefix: string; variable: any; element: any }) {
   const { idPrefix, variable, element } = props;
@@ -87,6 +126,7 @@ function VariableName(props: { id: string; variable: any; element: any }) {
   const commandStack = useService('commandStack');
   const translate = useService('translate');
   const debounce = useService('debounceInput');
+  const bpmnFactory = useService('bpmnFactory');
 
   const getValue = () => variable.name || '';
 
@@ -100,6 +140,11 @@ function VariableName(props: { id: string; variable: any; element: any }) {
       moddleElement: variable,
       properties: { name: newName }
     });
+
+    // Create or update BPMN property and itemDefinition for IBM BAMOE compatibility
+    if (newName) {
+      ensureBpmnPropertyAndItemDefinition(element, variable, oldName, newName, bpmnFactory, commandStack);
+    }
 
     // Update all references if the name actually changed
     if (oldName && oldName !== newName) {
@@ -115,6 +160,85 @@ function VariableName(props: { id: string; variable: any; element: any }) {
     setValue,
     debounce
   });
+}
+
+/**
+ * Ensure that a bpmn:property and bpmn:itemDefinition exist for IBM BAMOE compatibility
+ */
+function ensureBpmnPropertyAndItemDefinition(
+  element: any,
+  variable: any,
+  oldName: string | undefined,
+  newName: string,
+  bpmnFactory: any,
+  commandStack: any
+): void {
+  const bo = getBusinessObject(element);
+  if (!bo) return;
+
+  const definitions = getDefinitions(bo);
+  if (!definitions) return;
+
+  const variableType = variable.type || 'string';
+  const javaType = getJavaType(variableType);
+  const itemDefinitionId = `_${newName}Item`;
+
+  // Check if we're renaming (oldName exists and is different)
+  const isRename = oldName && oldName !== newName;
+  const oldItemDefinitionId = oldName ? `_${oldName}Item` : null;
+
+  // Find existing itemDefinition (by old name if renaming)
+  let itemDefinition = isRename
+    ? findItemDefinition(definitions, oldItemDefinitionId!)
+    : findItemDefinition(definitions, itemDefinitionId);
+
+  // Create itemDefinition if it doesn't exist
+  if (!itemDefinition) {
+    itemDefinition = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemDefinitionId,
+      structureRef: javaType
+    });
+    itemDefinition.$parent = definitions;
+
+    // Add to rootElements
+    const newRootElements = [...(definitions.rootElements || []), itemDefinition];
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: definitions,
+      properties: { rootElements: newRootElements }
+    });
+  } else if (isRename) {
+    // Update existing itemDefinition id when renaming
+    itemDefinition.id = itemDefinitionId;
+  }
+
+  // Find existing property (by old name if renaming)
+  let property = isRename
+    ? findProperty(bo, oldName!)
+    : findProperty(bo, newName);
+
+  // Create property if it doesn't exist
+  if (!property) {
+    property = bpmnFactory.create('bpmn:Property', {
+      id: newName,
+      name: newName,
+      itemSubjectRef: itemDefinition
+    });
+    property.$parent = bo;
+
+    // Add to process properties
+    const newProperties = [...(bo.properties || []), property];
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: { properties: newProperties }
+    });
+  } else if (isRename) {
+    // Update existing property when renaming
+    property.id = newName;
+    property.name = newName;
+    property.itemSubjectRef = itemDefinition;
+  }
 }
 
 /**
@@ -268,6 +392,21 @@ function VariableType(props: { id: string; variable: any; element: any }) {
       moddleElement: variable,
       properties: { type: value }
     });
+
+    // Update the bpmn:itemDefinition structureRef for IBM BAMOE compatibility
+    const variableName = variable.name;
+    if (variableName) {
+      const bo = getBusinessObject(element);
+      const definitions = getDefinitions(bo);
+      if (definitions) {
+        const itemDefinitionId = `_${variableName}Item`;
+        const itemDefinition = findItemDefinition(definitions, itemDefinitionId);
+        if (itemDefinition) {
+          const javaType = getJavaType(value);
+          itemDefinition.structureRef = javaType;
+        }
+      }
+    }
   };
 
   const getOptions = () => [
@@ -411,8 +550,10 @@ function createRemoveHandler(commandStack: any, element: any, variable: any) {
     const processVariables = getProcessVariables(element);
     if (!processVariables) return;
 
+    const variableName = variable.name;
     const newVariables = processVariables.variables.filter((v: any) => v !== variable);
 
+    // Remove from bamoe:processVariables
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: processVariables,
@@ -420,6 +561,37 @@ function createRemoveHandler(commandStack: any, element: any, variable: any) {
         variables: newVariables
       }
     });
+
+    // Also remove the bpmn:property and bpmn:itemDefinition for IBM BAMOE compatibility
+    if (variableName) {
+      const bo = getBusinessObject(element);
+      const definitions = getDefinitions(bo);
+
+      // Remove bpmn:property from process
+      const property = findProperty(bo, variableName);
+      if (property && bo.properties) {
+        const newProperties = bo.properties.filter((p: any) => p !== property);
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: bo,
+          properties: { properties: newProperties }
+        });
+      }
+
+      // Remove bpmn:itemDefinition from definitions
+      if (definitions) {
+        const itemDefinitionId = `_${variableName}Item`;
+        const itemDefinition = findItemDefinition(definitions, itemDefinitionId);
+        if (itemDefinition && definitions.rootElements) {
+          const newRootElements = definitions.rootElements.filter((e: any) => e !== itemDefinition);
+          commandStack.execute('element.updateModdleProperties', {
+            element,
+            moddleElement: definitions,
+            properties: { rootElements: newRootElements }
+          });
+        }
+      }
+    }
   };
 }
 
