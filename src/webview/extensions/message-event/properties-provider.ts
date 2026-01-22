@@ -247,6 +247,13 @@ function ensurePayloadDefinition(
     throw new Error('No business object');
   }
 
+  // Ensure a message exists for jBPM compatibility
+  // jBPM requires every Start Message Event to have a bpmn:Message reference
+  const msgEvtDef = getMessageEventDefinition(element);
+  if (msgEvtDef && !msgEvtDef.messageRef) {
+    getOrCreateMessage(element, bpmnFactory, commandStack);
+  }
+
   // Ensure extensionElements exists
   let extensionElements = bo.extensionElements;
   if (!extensionElements) {
@@ -975,6 +982,15 @@ export default class MessageEventPropertiesProvider {
     return (groups: PropertiesGroup[]) => {
       if (!isStartMessageEvent(element)) {
         return groups;
+      }
+
+      // Ensure message exists for jBPM compatibility
+      // jBPM requires every Start Message Event to have a bpmn:Message reference
+      const msgEvtDef = getMessageEventDefinition(element);
+      if (msgEvtDef && !msgEvtDef.messageRef) {
+        const bpmnFactory = (this.injector as { get: (name: string) => BpmnFactory }).get('bpmnFactory');
+        const commandStack = (this.injector as { get: (name: string) => CommandStack }).get('commandStack');
+        getOrCreateMessage(element, bpmnFactory, commandStack);
       }
 
       // Add Message Event Configuration group

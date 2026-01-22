@@ -32,6 +32,9 @@
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0x5w6za">
+        <bpmn:targetRef>userId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_07qdqhz">
         <bpmn:sourceRef>Event_0mwopfv_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
