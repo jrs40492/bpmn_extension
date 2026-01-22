@@ -24,7 +24,7 @@
         </drools:metaData>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
-      <bpmn:outgoing>Flow_1m8bzaj</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0929l0r</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_0lb2cub_namespaceInputX" itemSubjectRef="_Activity_0lb2cub_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_0lb2cub_modelInputX" itemSubjectRef="_Activity_0lb2cub_modelInputXItem" name="model" drools:dtype="java.lang.String" />
@@ -75,10 +75,17 @@
       <bpmn:outgoing>Flow_0kwe8aw</bpmn:outgoing>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0ulejps" messageRef="Message_Event_1imz6h6" />
     </bpmn:startEvent>
-    <bpmn:endEvent id="Event_1qgl3f2">
-      <bpmn:incoming>Flow_1m8bzaj</bpmn:incoming>
+    <bpmn:exclusiveGateway id="Gateway_1sz93tf">
+      <bpmn:incoming>Flow_0929l0r</bpmn:incoming>
+      <bpmn:outgoing>Flow_127hff5</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_0929l0r" sourceRef="Activity_0lb2cub" targetRef="Gateway_1sz93tf" />
+    <bpmn:endEvent id="Event_1atloo0">
+      <bpmn:incoming>Flow_127hff5</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1m8bzaj" sourceRef="Activity_0lb2cub" targetRef="Event_1qgl3f2" />
+    <bpmn:sequenceFlow id="Flow_127hff5" sourceRef="Gateway_1sz93tf" targetRef="Event_1atloo0">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
@@ -91,16 +98,23 @@
       <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
         <dc:Bounds x="242" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1qgl3f2_di" bpmnElement="Event_1qgl3f2">
-        <dc:Bounds x="522" y="322" width="36" height="36" />
+      <bpmndi:BPMNShape id="Gateway_1sz93tf_di" bpmnElement="Gateway_1sz93tf" isMarkerVisible="true">
+        <dc:Bounds x="535" y="315" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1atloo0_di" bpmnElement="Event_1atloo0">
+        <dc:Bounds x="672" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
         <di:waypoint x="278" y="340" />
         <di:waypoint x="350" y="340" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1m8bzaj_di" bpmnElement="Flow_1m8bzaj">
+      <bpmndi:BPMNEdge id="Flow_0929l0r_di" bpmnElement="Flow_0929l0r">
         <di:waypoint x="450" y="340" />
-        <di:waypoint x="522" y="340" />
+        <di:waypoint x="535" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_127hff5_di" bpmnElement="Flow_127hff5">
+        <di:waypoint x="585" y="340" />
+        <di:waypoint x="672" y="340" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
