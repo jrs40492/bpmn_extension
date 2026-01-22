@@ -25,6 +25,13 @@
   <bpmn:message id="Message_Event_0zldgie" name="renewalRequest" itemRef="_Message_Event_0zldgie_Item" />
   <bpmn:itemDefinition id="_Message_Event_09m90m9_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_09m90m9" name="renewalResponse" itemRef="_Message_Event_09m90m9_Item" />
+  <bpmn:itemDefinition id="_Message_Event_18q08n0_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_18q08n0" name="message_Event_18q08n0" itemRef="_Message_Event_18q08n0_Item" />
+  <bpmn:itemDefinition id="_Event_18q08n0_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Message_Event_0pxm1pv_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_0pxm1pv" name="renewalRequest" itemRef="_Message_Event_0pxm1pv_Item" />
+  <bpmn:itemDefinition id="_Message_Event_06jg1y2_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_06jg1y2" name="renewalResponse" itemRef="_Message_Event_06jg1y2_Item" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -60,7 +67,7 @@
       <bpmn:outgoing>Flow_1nmsucy</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="Activity_0ffilov" name="Step 7 Confirm Renewals API Response">
-      <bpmn:incoming>Flow_0dwpoqd</bpmn:incoming>
+      <bpmn:incoming>Flow_10dgd2g</bpmn:incoming>
       <bpmn:outgoing>Flow_18xjfz6</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:receiveTask name="Kafka Consume">
@@ -79,7 +86,7 @@
       <bpmn:extensionElements />
       <bpmn:incoming>Flow_1mv9z6w</bpmn:incoming>
       <bpmn:incoming>Flow_0xkrgsb</bpmn:incoming>
-      <bpmn:incoming>Flow_16blc3b</bpmn:incoming>
+      <bpmn:incoming>Flow_0r2rkal</bpmn:incoming>
       <bpmn:outgoing>Flow_1nd1es5</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_0zwqyjg_namespaceInputX" itemSubjectRef="_Activity_0zwqyjg_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
@@ -126,16 +133,6 @@
         <bpmn:targetRef>Activity_0zwqyjg_userIdInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:intermediateThrowEvent id="Event_0zldgie" name="Step 5 Send renwal request">
-      <bpmn:incoming>Flow_1nmsucy</bpmn:incoming>
-      <bpmn:outgoing>Flow_0ykqmsl</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_1gn4y2j" messageRef="Message_Event_0zldgie" />
-    </bpmn:intermediateThrowEvent>
-    <bpmn:intermediateCatchEvent id="Event_09m90m9" name="Step 6 Wait for renweal service">
-      <bpmn:incoming>Flow_0ykqmsl</bpmn:incoming>
-      <bpmn:outgoing>Flow_0dwpoqd</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_06fchkq" messageRef="Message_Event_09m90m9" />
-    </bpmn:intermediateCatchEvent>
     <bpmn:sequenceFlow id="Flow_1mv9z6w" targetRef="Activity_0zwqyjg" />
     <bpmn:sequenceFlow id="Flow_1nd1es5" sourceRef="Activity_0zwqyjg" targetRef="Gateway_1uim89g" />
     <bpmn:sequenceFlow id="Flow_0xkrgsb" targetRef="Activity_0zwqyjg" />
@@ -146,23 +143,34 @@
     <bpmn:sequenceFlow id="Flow_0kcy7jb" sourceRef="Gateway_1uim89g" targetRef="Activity_16av043">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="java">hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_1nmsucy" sourceRef="Activity_16av043" targetRef="Event_0zldgie" />
-    <bpmn:sequenceFlow id="Flow_0dwpoqd" sourceRef="Event_09m90m9" targetRef="Activity_0ffilov" />
+    <bpmn:sequenceFlow id="Flow_1nmsucy" sourceRef="Activity_16av043" targetRef="Event_0pxm1pv" />
     <bpmn:sequenceFlow id="Flow_18xjfz6" sourceRef="Activity_0ffilov" targetRef="Event_08nx1k5" />
-    <bpmn:sequenceFlow id="Flow_0ykqmsl" sourceRef="Event_0zldgie" targetRef="Event_09m90m9" />
-    <bpmn:startEvent id="Event_1y20vj3" ioSpecification="[object Object]">
+    <bpmn:sequenceFlow id="Flow_0r2rkal" sourceRef="Event_18q08n0" targetRef="Activity_0zwqyjg" />
+    <bpmn:startEvent id="Event_18q08n0" ioSpecification="[object Object]">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
           <msgevt:payloadField name="userId" expression="$.data.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_16blc3b</bpmn:outgoing>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_0d86jvz">
+      <bpmn:outgoing>Flow_0r2rkal</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_12mpc91">
+        <bpmn:sourceRef>Event_18q08n0_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_04v9f15" messageRef="Message_Event_1y20vj3" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_02j6fgf" messageRef="Message_Event_18q08n0" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_16blc3b" sourceRef="Event_1y20vj3" targetRef="Activity_0zwqyjg" />
+    <bpmn:sequenceFlow id="Flow_1w25fr6" sourceRef="Event_0pxm1pv" targetRef="Event_06jg1y2" />
+    <bpmn:intermediateThrowEvent id="Event_0pxm1pv">
+      <bpmn:incoming>Flow_1nmsucy</bpmn:incoming>
+      <bpmn:outgoing>Flow_1w25fr6</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0q81g4e" messageRef="Message_Event_0pxm1pv" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_10dgd2g" sourceRef="Event_06jg1y2" targetRef="Activity_0ffilov" />
+    <bpmn:intermediateCatchEvent id="Event_06jg1y2">
+      <bpmn:incoming>Flow_1w25fr6</bpmn:incoming>
+      <bpmn:outgoing>Flow_10dgd2g</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_08jqfzj" messageRef="Message_Event_06jg1y2" />
+    </bpmn:intermediateCatchEvent>
   </bpmn:process>
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:itemDefinition id="_renewalResponseItem" structureRef="java.lang.String" />
@@ -201,20 +209,14 @@
         <dc:Bounds x="430" y="300" width="100" height="80" />
         <bpmndi:BPMNLabel id="_BB44A6E4-0165-4FE7-B369-903D71BBBA6A" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_00kqwoy_di" bpmnElement="Event_0zldgie">
+      <bpmndi:BPMNShape id="Event_0zll0dd_di" bpmnElement="Event_18q08n0">
+        <dc:Bounds x="322" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1h3cpsh_di" bpmnElement="Event_0pxm1pv">
         <dc:Bounds x="772" y="192" width="36" height="36" />
-        <bpmndi:BPMNLabel id="_47ACBDC7-B4DE-4735-9329-0EDC7CF95F20">
-          <dc:Bounds x="754" y="235" width="73" height="27" />
-        </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1jb8k14_di" bpmnElement="Event_09m90m9">
+      <bpmndi:BPMNShape id="Event_1c7jw17_di" bpmnElement="Event_06jg1y2">
         <dc:Bounds x="902" y="192" width="36" height="36" />
-        <bpmndi:BPMNLabel id="_DABE59EE-646B-402E-AFB3-2A1D5D05FE1D">
-          <dc:Bounds x="882" y="235" width="77" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_033lvqz_di" bpmnElement="Event_1y20vj3">
-        <dc:Bounds x="312" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1nd1es5_di" bpmnElement="Flow_1nd1es5">
         <di:waypoint x="530" y="340" />
@@ -236,21 +238,21 @@
         <di:waypoint x="690" y="210" />
         <di:waypoint x="772" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0dwpoqd_di" bpmnElement="Flow_0dwpoqd">
-        <di:waypoint x="938" y="210" />
-        <di:waypoint x="1030" y="210" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_18xjfz6_di" bpmnElement="Flow_18xjfz6">
         <di:waypoint x="1130" y="210" />
         <di:waypoint x="1232" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0ykqmsl_di" bpmnElement="Flow_0ykqmsl">
+      <bpmndi:BPMNEdge id="Flow_0r2rkal_di" bpmnElement="Flow_0r2rkal">
+        <di:waypoint x="358" y="340" />
+        <di:waypoint x="430" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1w25fr6_di" bpmnElement="Flow_1w25fr6">
         <di:waypoint x="808" y="210" />
         <di:waypoint x="902" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_16blc3b_di" bpmnElement="Flow_16blc3b">
-        <di:waypoint x="348" y="340" />
-        <di:waypoint x="430" y="340" />
+      <bpmndi:BPMNEdge id="Flow_10dgd2g_di" bpmnElement="Flow_10dgd2g">
+        <di:waypoint x="938" y="210" />
+        <di:waypoint x="1030" y="210" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
