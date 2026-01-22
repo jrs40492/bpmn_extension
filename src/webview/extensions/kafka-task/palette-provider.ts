@@ -161,6 +161,9 @@ export default class KafkaTaskPaletteProvider {
       kafkaConfig.$parent = extensionElements;
       extensionElements.values.push(kafkaConfig);
 
+      // Note: jBPM requires ReceiveTask to have a messageRef
+      // The KafkaTaskPropertiesProvider will auto-create the message when the task is selected
+
       create.start(event, shape);
     }
 

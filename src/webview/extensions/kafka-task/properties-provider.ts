@@ -25,6 +25,71 @@ function isKafkaTask(element: any): boolean {
   return getKafkaConfig(element) !== null;
 }
 
+// Helper to check if element is a Kafka receive task
+function isKafkaReceiveTask(element: any): boolean {
+  if (!element?.businessObject) return false;
+  const bo = element.businessObject;
+  if (bo.$type !== 'bpmn:ReceiveTask') return false;
+  return getKafkaConfig(element) !== null;
+}
+
+// Helper to get definitions (root of BPMN document)
+function getDefinitions(element: any): any {
+  let current = element.businessObject;
+  while (current?.$parent) {
+    current = current.$parent;
+  }
+  return current;
+}
+
+// Ensure Kafka receive task has a message reference (required by jBPM)
+function ensureMessageRef(element: any, bpmnFactory: any, commandStack: any): void {
+  const bo = element.businessObject;
+  if (bo.$type !== 'bpmn:ReceiveTask' || bo.messageRef) return;
+
+  const definitions = getDefinitions(element);
+  const messageId = `Message_${bo.id}`;
+  const itemDefId = `_${messageId}_Item`;
+  const messageName = `kafka_${bo.id}`;
+
+  // Create itemDefinition for the message
+  const itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+    id: itemDefId,
+    structureRef: 'java.lang.Object'
+  });
+  itemDef.$parent = definitions;
+
+  // Create message
+  const message = bpmnFactory.create('bpmn:Message', {
+    id: messageId,
+    name: messageName,
+    itemRef: itemDef
+  });
+  message.$parent = definitions;
+
+  // Add itemDefinition and message to definitions rootElements
+  const rootElements = [...(definitions.rootElements || [])];
+  const processIndex = rootElements.findIndex((el: any) => el.$type === 'bpmn:Process');
+  if (processIndex >= 0) {
+    rootElements.splice(processIndex, 0, itemDef, message);
+  } else {
+    rootElements.push(itemDef, message);
+  }
+
+  commandStack.execute('element.updateModdleProperties', {
+    element,
+    moddleElement: definitions,
+    properties: { rootElements }
+  });
+
+  // Set messageRef on the receive task
+  commandStack.execute('element.updateModdleProperties', {
+    element,
+    moddleElement: bo,
+    properties: { messageRef: message }
+  });
+}
+
 // Helper to get or create Kafka config
 function getOrCreateKafkaConfig(element: any, moddle: any, modeling: any): any {
   let kafkaConfig = getKafkaConfig(element);
@@ -274,6 +339,13 @@ export default class KafkaTaskPropertiesProvider {
 
   getGroups(element: any) {
     return (groups: any[]) => {
+      // For Kafka receive tasks, ensure they have a messageRef (required by jBPM)
+      if (isKafkaReceiveTask(element)) {
+        const bpmnFactory = this.injector.get('bpmnFactory');
+        const commandStack = this.injector.get('commandStack');
+        ensureMessageRef(element, bpmnFactory, commandStack);
+      }
+
       const kafkaGroup = KafkaPropertiesGroup(element, this.injector);
       if (kafkaGroup) {
         groups.push(kafkaGroup);

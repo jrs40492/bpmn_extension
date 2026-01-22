@@ -32,6 +32,10 @@
   <bpmn:message id="Message_Event_0pxm1pv" name="renewalRequest" itemRef="_Message_Event_0pxm1pv_Item" />
   <bpmn:itemDefinition id="_Message_Event_06jg1y2_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_06jg1y2" name="renewalResponse" itemRef="_Message_Event_06jg1y2_Item" />
+  <bpmn:itemDefinition id="_Message_kafka1_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_kafka1" name="kafkaMessage1" itemRef="_Message_kafka1_Item" />
+  <bpmn:itemDefinition id="_Message_kafka2_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_kafka2" name="kafkaMessage2" itemRef="_Message_kafka2_Item" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -70,13 +74,13 @@
       <bpmn:incoming>Flow_10dgd2g</bpmn:incoming>
       <bpmn:outgoing>Flow_18xjfz6</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:receiveTask name="Kafka Consume">
+    <bpmn:receiveTask id="Activity_kafka1" name="Kafka Consume" messageRef="Message_kafka1">
       <bpmn:extensionElements>
         <kafka:kafkaTaskConfig topic="my-topic" operation="consume" groupId="my-consumer-group" responseVariable="kafkaMessage" />
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1mv9z6w</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:receiveTask name="Kafka Consume">
+    <bpmn:receiveTask id="Activity_kafka2" name="Kafka Consume" messageRef="Message_kafka2">
       <bpmn:extensionElements>
         <kafka:kafkaTaskConfig topic="my-topic" operation="consume" groupId="my-consumer-group" responseVariable="kafkaMessage" />
       </bpmn:extensionElements>
