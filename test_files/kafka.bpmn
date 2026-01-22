@@ -94,8 +94,8 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0xkrgsb</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:sequenceFlow id="Flow_1mv9z6w" sourceRef="Activity_kafka1" targetRef="Activity_0zwqyjg" />
-    <bpmn:sequenceFlow id="Flow_0xkrgsb" sourceRef="Activity_kafka2" targetRef="Activity_0zwqyjg" />
+    <bpmn:sequenceFlow id="Flow_1mv9z6w" sourceRef="Activity_kafka1" />
+    <bpmn:sequenceFlow id="Flow_0xkrgsb" sourceRef="Activity_kafka2" />
     <bpmn:sequenceFlow id="Flow_1s28d3i" sourceRef="Gateway_1uim89g" targetRef="Activity_18cp35c">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">!hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
@@ -125,18 +125,13 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1v4opva</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0vow2ao">
-        <bpmn:sourceRef>Event_01mlphv_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:messageEventDefinition id="MessageEventDefinition_11bphf0" messageRef="Message_Event_01mlphv" />
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1v4opva" sourceRef="Event_01mlphv" targetRef="Activity_0fyfdja" />
     <bpmn:businessRuleTask id="Activity_0fyfdja" name="Activity_0fyfdja" implementation="http://www.jboss.org/drools/dmn">
-      <bpmn:extensionElements>
-        <drools:metaData name="elementname">
-          <drools:metaValue>Activity_0fyfdja</drools:metaValue>
-        </drools:metaData>
-      </bpmn:extensionElements>
+      <bpmn:extensionElements />
       <bpmn:incoming>Flow_1v4opva</bpmn:incoming>
       <bpmn:outgoing>Flow_1jxqvea</bpmn:outgoing>
       <bpmn:ioSpecification>

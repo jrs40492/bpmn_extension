@@ -750,8 +750,10 @@ function getDmnOutputMapping(element: BpmnElement, outputName: string): string {
   // Look in dataOutputAssociations for a mapping from this DMN output
   const associations = (bo as any).dataOutputAssociations || [];
   for (const assoc of associations) {
+    // sourceRef can be an array (bpmn-js moddle) or a single object
     const sourceRef = assoc.sourceRef;
-    if (sourceRef?.name === outputName) {
+    const sourceElement = Array.isArray(sourceRef) ? sourceRef[0] : sourceRef;
+    if (sourceElement?.name === outputName) {
       // Get the target (process variable)
       const targetRef = assoc.targetRef;
       if (targetRef) {
@@ -840,7 +842,12 @@ function setDmnOutputMapping(element: BpmnElement, outputName: string, variableN
 
   // Find existing dataOutputAssociation for this output
   const associations = (bo as any).dataOutputAssociations || [];
-  const existingAssoc = associations.find((a: DataOutputAssociation) => a.sourceRef?.name === outputName);
+  const existingAssoc = associations.find((a: DataOutputAssociation) => {
+    // sourceRef can be an array (bpmn-js moddle) or a single object
+    const sourceRef = (a as any).sourceRef;
+    const sourceElement = Array.isArray(sourceRef) ? sourceRef[0] : sourceRef;
+    return sourceElement?.name === outputName;
+  });
 
   if (existingAssoc) {
     // Update existing association using commandStack
