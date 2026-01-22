@@ -2,7 +2,7 @@ import { createModeler, importDiagram, exportDiagram } from './bpmn-modeler';
 import { setupMessageHandler, postMessage } from './message-handler';
 import { initRestPanel } from './extensions/rest-task/rest-panel';
 import { initKafkaPanel } from './extensions/kafka-task/kafka-panel';
-import { setAvailableDmnFiles } from './extensions/business-rule-task';
+import { setAvailableDmnFiles, getAvailableDmnFiles, validateBusinessRuleTasks } from './extensions/business-rule-task';
 import { initTemplatesPanel } from './features/templates';
 import { initSearchPanel } from './features/search';
 import { initCommentsPanel } from './features/comments';
@@ -86,14 +86,28 @@ async function init(): Promise<void> {
     }
   }, 300);
 
-  // Listen for diagram changes
+  // Get services needed for validation
   const eventBus = modeler.get('eventBus');
+  const elementRegistry = modeler.get('elementRegistry');
+
+  // Listen for diagram changes
   eventBus.on('commandStack.changed', () => {
     if (skipNextChange) {
       skipNextChange = false;
       return;
     }
     sendChange();
+
+    // Re-run DMN validation after changes
+    const dmnFiles = getAvailableDmnFiles();
+    if (dmnFiles.length > 0) {
+      const issues = validateBusinessRuleTasks(
+        elementRegistry as Parameters<typeof validateBusinessRuleTasks>[0],
+        dmnFiles
+      );
+      // Always send validation (even empty array to clear previous issues)
+      postMessage(vscode, { type: 'validation', issues });
+    }
   });
 
   // Handle validation results
@@ -128,7 +142,6 @@ async function init(): Promise<void> {
   initKafkaPanel(eventBus, modeling);
 
   // Initialize Phase 3 features
-  const elementRegistry = modeler.get('elementRegistry');
   const selection = modeler.get('selection');
   const canvas = modeler.get('canvas');
 
@@ -272,6 +285,16 @@ async function init(): Promise<void> {
         // Update available DMN files for Business Rule Task properties
         console.log('[BAMOE Webview] Received dmnFiles:', message.files);
         setAvailableDmnFiles(message.files);
+
+        // Run DMN reference validation
+        const dmnValidationIssues = validateBusinessRuleTasks(
+          elementRegistry as Parameters<typeof validateBusinessRuleTasks>[0],
+          message.files
+        );
+        if (dmnValidationIssues.length > 0) {
+          console.log('[BAMOE Webview] DMN validation issues:', dmnValidationIssues);
+          postMessage(vscode, { type: 'validation', issues: dmnValidationIssues });
+        }
         break;
     }
   });

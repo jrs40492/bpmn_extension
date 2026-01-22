@@ -7,6 +7,7 @@
   <bpmn:itemDefinition id="_Activity_0lb2cub_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_userIdInputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_hasUserIdOutputXItem" structureRef="java.lang.Object" />
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -18,11 +19,7 @@
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
     <bpmn:businessRuleTask id="Activity_0lb2cub" name="Activity_0lb2cub" implementation="http://www.jboss.org/drools/dmn">
-      <bpmn:extensionElements>
-        <drools:metaData name="elementname">
-          <drools:metaValue>Activity_0lb2cub</drools:metaValue>
-        </drools:metaData>
-      </bpmn:extensionElements>
+      <bpmn:extensionElements />
       <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
       <bpmn:outgoing>Flow_0929l0r</bpmn:outgoing>
       <bpmn:ioSpecification>
@@ -31,6 +28,7 @@
         <bpmn:dataInput id="Activity_0lb2cub_decisionInputX" itemSubjectRef="_Activity_0lb2cub_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_0lb2cub_userIdInputX" itemSubjectRef="_Activity_0lb2cub_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
         <bpmn:dataOutput id="Activity_0lb2cub_Decision_020986qOutputX" itemSubjectRef="_Activity_0lb2cub_Decision_020986qOutputXItem" name="Decision_020986q" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_0lb2cub_hasUserIdOutputX" itemSubjectRef="_Activity_0lb2cub_hasUserIdOutputXItem" name="hasUserId" drools:dtype="java.lang.Object" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_0lb2cub_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_0lb2cub_modelInputX</bpmn:dataInputRefs>
@@ -39,6 +37,7 @@
         </bpmn:inputSet>
         <bpmn:outputSet>
           <bpmn:dataOutputRefs>Activity_0lb2cub_Decision_020986qOutputX</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_0lb2cub_hasUserIdOutputX</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
       <bpmn:dataInputAssociation id="DataInputAssociation_11eoho4">
@@ -68,6 +67,10 @@
       </bpmn:dataInputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_012kmwy">
         <bpmn:sourceRef>Activity_0lb2cub_Decision_020986qOutputX</bpmn:sourceRef>
+        <bpmn:targetRef>hasUserId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1o6g7w9">
+        <bpmn:sourceRef>Activity_0lb2cub_hasUserIdOutputX</bpmn:sourceRef>
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
