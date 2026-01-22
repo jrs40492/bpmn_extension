@@ -141,6 +141,9 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1gbbla5</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_08zaaxx">
+        <bpmn:targetRef>userId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0swcppg">
         <bpmn:sourceRef>Event_0ay0ojp_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>

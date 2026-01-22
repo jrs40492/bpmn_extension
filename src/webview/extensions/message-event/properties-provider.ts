@@ -308,7 +308,9 @@ function ensureItemDefinition(
   definitions: Definitions,
   itemId: string,
   structureRef: string,
-  bpmnFactory: BpmnFactory
+  bpmnFactory: BpmnFactory,
+  element: BpmnElement,
+  commandStack: CommandStack
 ): ModdleElement {
   const rootElements = definitions.rootElements || [];
   let itemDef = rootElements.find((el: ModdleElement) =>
@@ -322,13 +324,20 @@ function ensureItemDefinition(
     });
     itemDef.$parent = definitions;
 
-    // Add to rootElements (insert before process elements)
-    const processIndex = rootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+    // Add to rootElements using commandStack for proper persistence
+    const newRootElements = [...rootElements];
+    const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
     if (processIndex >= 0) {
-      definitions.rootElements!.splice(processIndex, 0, itemDef);
+      newRootElements.splice(processIndex, 0, itemDef);
     } else {
-      definitions.rootElements = [...rootElements, itemDef];
+      newRootElements.push(itemDef);
     }
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: definitions,
+      properties: { rootElements: newRootElements }
+    });
   }
 
   return itemDef;
@@ -354,7 +363,7 @@ function ensureProcessProperty(
     // Create itemDefinition first
     const definitions = getDefinitions(element);
     const itemDefId = `_${propertyName}Item`;
-    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.Object', bpmnFactory);
+    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.Object', bpmnFactory, element, commandStack);
 
     // Create property
     property = bpmnFactory.create('bpmn:Property', {
@@ -394,11 +403,13 @@ function ensureDataOutput(
   const itemDefId = `_${outputId}Item`;
 
   // Ensure itemDefinition exists
-  const itemDef = ensureItemDefinition(definitions, itemDefId, getJavaType(fieldType), bpmnFactory);
+  const itemDef = ensureItemDefinition(definitions, itemDefId, getJavaType(fieldType), bpmnFactory, element, commandStack);
 
-  // Check if ioSpecification exists
+  // Check if ioSpecification exists and is valid (not a corrupted string like "[object Object]")
   let ioSpec = bo.ioSpecification as IoSpecification;
-  if (!ioSpec) {
+  const isValidIoSpec = ioSpec && typeof ioSpec === 'object' && ioSpec.$type === 'bpmn:InputOutputSpecification';
+
+  if (!isValidIoSpec) {
     // Create outputSet first
     const outputSet = bpmnFactory.create('bpmn:OutputSet', {});
 
