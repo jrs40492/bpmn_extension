@@ -451,18 +451,24 @@ function ensureDataOutput(
 
     const newDataOutputs = [...dataOutputs, dataOutput];
 
-    // Also update outputSet
-    const outputSet = ioSpec.outputSets?.[0];
-    if (outputSet) {
-      const dataOutputRefs = (outputSet as unknown as { dataOutputRefs?: DataOutput[] }).dataOutputRefs || [];
-      (outputSet as unknown as { dataOutputRefs: DataOutput[] }).dataOutputRefs = [...dataOutputRefs, dataOutput];
-    }
-
+    // Update ioSpecification with new dataOutput
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: ioSpec,
       properties: { dataOutputs: newDataOutputs }
     });
+
+    // Also update outputSet dataOutputRefs through commandStack
+    const outputSet = ioSpec.outputSets?.[0];
+    if (outputSet) {
+      const dataOutputRefs = (outputSet as unknown as { dataOutputRefs?: DataOutput[] }).dataOutputRefs || [];
+      const newDataOutputRefs = [...dataOutputRefs, dataOutput];
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: outputSet,
+        properties: { dataOutputRefs: newDataOutputRefs }
+      });
+    }
   }
 
   return dataOutput;

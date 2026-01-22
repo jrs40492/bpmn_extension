@@ -138,13 +138,20 @@
     <bpmn:sequenceFlow id="Flow_18xjfz6" sourceRef="Activity_0ffilov" targetRef="Event_08nx1k5" />
     <bpmn:sequenceFlow id="Flow_0ykqmsl" sourceRef="Event_0zldgie" targetRef="Event_09m90m9" />
     <bpmn:sequenceFlow id="Flow_01rz022" sourceRef="Event_13vas7v" targetRef="Activity_0zwqyjg" />
-    <bpmn:startEvent id="Event_13vas7v">
+    <bpmn:startEvent id="Event_13vas7v" ioSpecification="[object Object]">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
           <msgevt:payloadField name="userId" expression="$.data.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_01rz022</bpmn:outgoing>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_13vas7v_userId">
+        <bpmn:targetRef>userId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1s3t9jv">
+        <bpmn:sourceRef>Event_13vas7v_userId</bpmn:sourceRef>
+        <bpmn:targetRef>userId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
       <bpmn:messageEventDefinition id="MessageEventDefinition_039bsz8" messageRef="Message_Event_13vas7v" />
     </bpmn:startEvent>
   </bpmn:process>
