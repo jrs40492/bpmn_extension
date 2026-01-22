@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:itemDefinition id="_Message_Event_1imz6h6_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_1imz6h6" name="message_Event_1imz6h6" itemRef="_Message_Event_1imz6h6_Item" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_namespaceInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_modelInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_decisionInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_userIdInputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:extensionElements>
+      <bamoe:processVariables>
+        <bamoe:variable name="userId" />
+        <bamoe:variable name="hasUserId" type="boolean" defaultValue="false" />
+      </bamoe:processVariables>
+    </bpmn:extensionElements>
+    <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
+    <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
+    <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
+    <bpmn:businessRuleTask id="Activity_0lb2cub" name="Activity_0lb2cub" implementation="http://www.jboss.org/drools/dmn">
+      <bpmn:extensionElements>
+        <drools:metaData name="elementname">
+          <drools:metaValue>Activity_0lb2cub</drools:metaValue>
+        </drools:metaData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
+      <bpmn:ioSpecification>
+        <bpmn:dataInput id="Activity_0lb2cub_namespaceInputX" itemSubjectRef="_Activity_0lb2cub_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_0lb2cub_modelInputX" itemSubjectRef="_Activity_0lb2cub_modelInputXItem" name="model" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_0lb2cub_decisionInputX" itemSubjectRef="_Activity_0lb2cub_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_0lb2cub_userIdInputX" itemSubjectRef="_Activity_0lb2cub_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_0lb2cub_Decision_020986qOutputX" itemSubjectRef="_Activity_0lb2cub_Decision_020986qOutputXItem" name="Decision_020986q" drools:dtype="java.lang.Object" />
+        <bpmn:inputSet>
+          <bpmn:dataInputRefs>Activity_0lb2cub_namespaceInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_modelInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_decisionInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_userIdInputX</bpmn:dataInputRefs>
+        </bpmn:inputSet>
+        <bpmn:outputSet>
+          <bpmn:dataOutputRefs>Activity_0lb2cub_Decision_020986qOutputX</bpmn:dataOutputRefs>
+        </bpmn:outputSet>
+      </bpmn:ioSpecification>
+      <bpmn:dataInputAssociation id="DataInputAssociation_11eoho4">
+        <bpmn:targetRef>Activity_0lb2cub_namespaceInputX</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">http://camunda.org/schema/1.0/dmn</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_namespaceInputX</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1wn5kf9">
+        <bpmn:targetRef>Activity_0lb2cub_modelInputX</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">DRD</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_modelInputX</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1n66neu">
+        <bpmn:targetRef>Activity_0lb2cub_decisionInputX</bpmn:targetRef>
+        <bpmn:assignment>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_020986q</bpmn:from>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_decisionInputX</bpmn:to>
+        </bpmn:assignment>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataInputAssociation id="DataInputAssociation_0wgntqv">
+        <bpmn:sourceRef>userId</bpmn:sourceRef>
+        <bpmn:targetRef>Activity_0lb2cub_userIdInputX</bpmn:targetRef>
+      </bpmn:dataInputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_012kmwy">
+        <bpmn:sourceRef>Activity_0lb2cub_Decision_020986qOutputX</bpmn:sourceRef>
+        <bpmn:targetRef>hasUserId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+    </bpmn:businessRuleTask>
+    <bpmn:startEvent id="Event_1imz6h6">
+      <bpmn:outgoing>Flow_0kwe8aw</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0ulejps" messageRef="Message_Event_1imz6h6" />
+    </bpmn:startEvent>
+  </bpmn:process>
+  <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="Activity_1eza76r_di" bpmnElement="Activity_0lb2cub">
+        <dc:Bounds x="350" y="300" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
+        <dc:Bounds x="242" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
+        <di:waypoint x="278" y="340" />
+        <di:waypoint x="350" y="340" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
