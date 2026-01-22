@@ -410,6 +410,16 @@ function ensureDataOutput(
   const isValidIoSpec = ioSpec && typeof ioSpec === 'object' && ioSpec.$type === 'bpmn:InputOutputSpecification';
 
   if (!isValidIoSpec) {
+    // If there's a corrupted ioSpecification (string instead of object), clear it first
+    if (ioSpec && typeof ioSpec === 'string') {
+      // Remove the corrupted attribute by setting to undefined first
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: bo,
+        properties: { ioSpecification: undefined }
+      });
+    }
+
     // Create outputSet first
     const outputSet = bpmnFactory.create('bpmn:OutputSet', {});
 
@@ -995,13 +1005,32 @@ export default class MessageEventPropertiesProvider {
         return groups;
       }
 
+      const bpmnFactory = (this.injector as { get: (name: string) => BpmnFactory }).get('bpmnFactory');
+      const commandStack = (this.injector as { get: (name: string) => CommandStack }).get('commandStack');
+
       // Ensure message exists for jBPM compatibility
       // jBPM requires every Start Message Event to have a bpmn:Message reference
       const msgEvtDef = getMessageEventDefinition(element);
       if (msgEvtDef && !msgEvtDef.messageRef) {
-        const bpmnFactory = (this.injector as { get: (name: string) => BpmnFactory }).get('bpmnFactory');
-        const commandStack = (this.injector as { get: (name: string) => CommandStack }).get('commandStack');
         getOrCreateMessage(element, bpmnFactory, commandStack);
+      }
+
+      // Clean up corrupted ioSpecification (string "[object Object]" instead of proper element)
+      const bo = element.businessObject;
+      if (bo) {
+        const ioSpec = bo.ioSpecification;
+        if (ioSpec && typeof ioSpec === 'string') {
+          // Remove the corrupted attribute and any orphaned associations
+          // (associations without valid dataOutputs would cause jBPM errors)
+          commandStack.execute('element.updateModdleProperties', {
+            element,
+            moddleElement: bo,
+            properties: {
+              ioSpecification: undefined,
+              dataOutputAssociations: undefined
+            }
+          });
+        }
       }
 
       // Add Message Event Configuration group
