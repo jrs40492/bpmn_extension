@@ -137,9 +137,9 @@
         <bpmn:targetRef>Activity_0zwqyjg_userIdInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:sequenceFlow id="Flow_1mv9z6w" targetRef="Activity_0zwqyjg" />
+    <bpmn:sequenceFlow id="Flow_1mv9z6w" sourceRef="Activity_kafka1" targetRef="Activity_0zwqyjg" />
     <bpmn:sequenceFlow id="Flow_1nd1es5" sourceRef="Activity_0zwqyjg" targetRef="Gateway_1uim89g" />
-    <bpmn:sequenceFlow id="Flow_0xkrgsb" targetRef="Activity_0zwqyjg" />
+    <bpmn:sequenceFlow id="Flow_0xkrgsb" sourceRef="Activity_kafka2" targetRef="Activity_0zwqyjg" />
     <bpmn:sequenceFlow id="Flow_1s28d3i" sourceRef="Gateway_1uim89g" targetRef="Activity_18cp35c">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" >!hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
