@@ -141,11 +141,11 @@
     <bpmn:sequenceFlow id="Flow_1nd1es5" sourceRef="Activity_0zwqyjg" targetRef="Gateway_1uim89g" />
     <bpmn:sequenceFlow id="Flow_0xkrgsb" sourceRef="Activity_kafka2" targetRef="Activity_0zwqyjg" />
     <bpmn:sequenceFlow id="Flow_1s28d3i" sourceRef="Gateway_1uim89g" targetRef="Activity_18cp35c">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" >!hasUserId;</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">!hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1ga0b7j" sourceRef="Activity_18cp35c" targetRef="Event_0x0fdgz" />
     <bpmn:sequenceFlow id="Flow_0kcy7jb" sourceRef="Gateway_1uim89g" targetRef="Activity_16av043">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" >hasUserId;</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1nmsucy" sourceRef="Activity_16av043" targetRef="Event_0pxm1pv" />
     <bpmn:sequenceFlow id="Flow_18xjfz6" sourceRef="Activity_0ffilov" targetRef="Event_08nx1k5" />
@@ -158,7 +158,6 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0r2rkal</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_12mpc91">
-        <bpmn:sourceRef>Event_18q08n0_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:messageEventDefinition id="MessageEventDefinition_02j6fgf" messageRef="Message_Event_18q08n0" />
@@ -213,14 +212,14 @@
         <dc:Bounds x="430" y="300" width="100" height="80" />
         <bpmndi:BPMNLabel id="_BB44A6E4-0165-4FE7-B369-903D71BBBA6A" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0zll0dd_di" bpmnElement="Event_18q08n0">
-        <dc:Bounds x="322" y="322" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1h3cpsh_di" bpmnElement="Event_0pxm1pv">
         <dc:Bounds x="772" y="192" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1c7jw17_di" bpmnElement="Event_06jg1y2">
         <dc:Bounds x="902" y="192" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0zll0dd_di" bpmnElement="Event_18q08n0">
+        <dc:Bounds x="282" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_1nd1es5_di" bpmnElement="Flow_1nd1es5">
         <di:waypoint x="530" y="340" />
@@ -247,7 +246,7 @@
         <di:waypoint x="1232" y="210" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0r2rkal_di" bpmnElement="Flow_0r2rkal">
-        <di:waypoint x="358" y="340" />
+        <di:waypoint x="318" y="340" />
         <di:waypoint x="430" y="340" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_1w25fr6_di" bpmnElement="Flow_1w25fr6">

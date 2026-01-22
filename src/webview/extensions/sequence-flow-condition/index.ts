@@ -213,15 +213,13 @@ function ExpressionLanguage(props: { element: any; id: string }) {
     }
   };
 
+  // jBPM-compatible language URIs
   const getOptions = () => [
-    { value: '', label: translate('Default (JUEL/EL)') },
-    { value: 'java', label: 'Java' },
-    { value: 'javascript', label: 'JavaScript' },
-    { value: 'groovy', label: 'Groovy' },
-    { value: 'mvel', label: 'MVEL' },
-    { value: 'feel', label: 'FEEL' },
-    { value: 'juel', label: 'JUEL (Unified EL)' },
-    { value: 'xpath', label: 'XPath' }
+    { value: '', label: translate('Default (MVEL)') },
+    { value: 'http://www.mvel.org/2.0', label: 'MVEL' },
+    { value: 'http://www.java.com/java', label: 'Java' },
+    { value: 'http://www.w3.org/1999/XPath', label: 'XPath' },
+    { value: 'feel', label: 'FEEL' }
   ];
 
   // Only show if there's a condition expression
