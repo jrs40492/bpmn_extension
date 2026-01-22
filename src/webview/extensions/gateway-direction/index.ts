@@ -124,9 +124,12 @@ function GatewayEntries(props: { element: BpmnElement }): PropertyEntry[] {
 // ============================================================================
 
 class GatewayDirectionPropertiesProvider {
-  static $inject = ['propertiesPanel'];
+  static $inject = ['propertiesPanel', 'injector'];
 
-  constructor(propertiesPanel: PropertiesPanel) {
+  private injector: unknown;
+
+  constructor(propertiesPanel: PropertiesPanel, injector: unknown) {
+    this.injector = injector;
     propertiesPanel.registerProvider(500, this);
   }
 
@@ -134,6 +137,32 @@ class GatewayDirectionPropertiesProvider {
     return (groups: PropertiesGroup[]) => {
       if (!isGateway(element)) {
         return groups;
+      }
+
+      const bo = element.businessObject as GatewayBusinessObject;
+
+      // Auto-set gateway direction if not set (required by jBPM)
+      if (!bo?.gatewayDirection) {
+        const commandStack = (this.injector as { get: (name: string) => CommandStack }).get('commandStack');
+
+        // Calculate direction based on incoming/outgoing flows
+        const incoming = (bo as unknown as { incoming?: unknown[] })?.incoming || [];
+        const outgoing = (bo as unknown as { outgoing?: unknown[] })?.outgoing || [];
+
+        let direction: 'Diverging' | 'Converging' | 'Mixed' | 'Unspecified' = 'Diverging';
+        if (incoming.length > 1 && outgoing.length > 1) {
+          direction = 'Mixed';
+        } else if (incoming.length > 1) {
+          direction = 'Converging';
+        } else if (outgoing.length > 1) {
+          direction = 'Diverging';
+        }
+
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: bo,
+          properties: { gatewayDirection: direction }
+        });
       }
 
       // Find the general group and add gateway direction entry to it

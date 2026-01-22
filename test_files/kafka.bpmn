@@ -42,7 +42,7 @@
     <bpmn:endEvent id="Event_08nx1k5" name="Step 8 end">
       <bpmn:incoming>Flow_18xjfz6</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="Gateway_1uim89g">
+    <bpmn:exclusiveGateway id="Gateway_1uim89g" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_1nd1es5</bpmn:incoming>
       <bpmn:outgoing>Flow_1s28d3i</bpmn:outgoing>
       <bpmn:outgoing>Flow_0kcy7jb</bpmn:outgoing>
