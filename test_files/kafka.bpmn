@@ -141,11 +141,11 @@
     <bpmn:sequenceFlow id="Flow_1nd1es5" sourceRef="Activity_0zwqyjg" targetRef="Gateway_1uim89g" />
     <bpmn:sequenceFlow id="Flow_0xkrgsb" targetRef="Activity_0zwqyjg" />
     <bpmn:sequenceFlow id="Flow_1s28d3i" sourceRef="Gateway_1uim89g" targetRef="Activity_18cp35c">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="java">!hasUserId;</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" >!hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1ga0b7j" sourceRef="Activity_18cp35c" targetRef="Event_0x0fdgz" />
     <bpmn:sequenceFlow id="Flow_0kcy7jb" sourceRef="Gateway_1uim89g" targetRef="Activity_16av043">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" language="java">hasUserId;</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" >hasUserId;</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_1nmsucy" sourceRef="Activity_16av043" targetRef="Event_0pxm1pv" />
     <bpmn:sequenceFlow id="Flow_18xjfz6" sourceRef="Activity_0ffilov" targetRef="Event_08nx1k5" />
