@@ -193,13 +193,21 @@ function getOrCreateMessage(
         });
         itemDef.$parent = definitions;
 
-        // Add itemDefinition to rootElements
+        // Add itemDefinition to rootElements BEFORE the message that references it
+        // jBPM requires itemDefinition to appear before the message in the XML
         const newRootElements = [...rootElements];
-        const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
-        if (processIndex >= 0) {
-          newRootElements.splice(processIndex, 0, itemDef);
+        const messageIndex = newRootElements.findIndex((el: ModdleElement) => el === existingMessage);
+        if (messageIndex >= 0) {
+          // Insert itemDef right before the message
+          newRootElements.splice(messageIndex, 0, itemDef);
         } else {
-          newRootElements.push(itemDef);
+          // Fallback: insert before process
+          const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+          if (processIndex >= 0) {
+            newRootElements.splice(processIndex, 0, itemDef);
+          } else {
+            newRootElements.push(itemDef);
+          }
         }
 
         commandStack.execute('element.updateModdleProperties', {
@@ -1100,13 +1108,21 @@ export default class MessageEventPropertiesProvider {
             });
             itemDef.$parent = definitions;
 
-            // Add itemDefinition to rootElements
+            // Add itemDefinition to rootElements BEFORE the message that references it
+            // jBPM requires itemDefinition to appear before the message in the XML
             const newRootElements = [...(definitions.rootElements || [])];
-            const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
-            if (processIndex >= 0) {
-              newRootElements.splice(processIndex, 0, itemDef);
+            const messageIndex = newRootElements.findIndex((el: ModdleElement) => el === message);
+            if (messageIndex >= 0) {
+              // Insert itemDef right before the message
+              newRootElements.splice(messageIndex, 0, itemDef);
             } else {
-              newRootElements.push(itemDef);
+              // Fallback: insert before process
+              const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+              if (processIndex >= 0) {
+                newRootElements.splice(processIndex, 0, itemDef);
+              } else {
+                newRootElements.push(itemDef);
+              }
             }
 
             commandStack.execute('element.updateModdleProperties', {
