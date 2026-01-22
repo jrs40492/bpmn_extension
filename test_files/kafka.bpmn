@@ -6,11 +6,11 @@
   <bpmn:itemDefinition id="_Event_0mwopfv_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_0zwqyjg_priorAuthInputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Activity_0zwqyjg_userIdInputXItem" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0ay0ojp" name="" />
+  <bpmn:message id="Message_Event_0ay0ojp" name="" itemRef="_Message_Event_0ay0ojp_Item" />
   <bpmn:itemDefinition id="_Event_0ay0ojp_userIdItem" structureRef="java.lang.String" />
-  <bpmn:message id="Message_Event_10o58ja" name="" />
+  <bpmn:message id="Message_Event_10o58ja" name="" itemRef="_Message_Event_10o58ja_Item" />
   <bpmn:itemDefinition id="_Event_10o58ja_userIdItem" structureRef="java.lang.String" />
-  <bpmn:message id="Message_Event_13vas7v" name="" />
+  <bpmn:message id="Message_Event_13vas7v" name="" itemRef="_Message_Event_13vas7v_Item" />
   <bpmn:itemDefinition id="_Event_13vas7v_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_05poqal_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_05poqal" name="" itemRef="_Message_Event_05poqal_Item" />
@@ -18,6 +18,10 @@
   <bpmn:itemDefinition id="_Message_Event_1y20vj3_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_1y20vj3" name="" itemRef="_Message_Event_1y20vj3_Item" />
   <bpmn:itemDefinition id="_Event_1y20vj3_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Message_Event_0ay0ojp_Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_Event_10o58ja_Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_Event_13vas7v_Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_1rtlkj6_Item" structureRef="java.lang.Object" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -151,7 +155,6 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_16blc3b</bpmn:outgoing>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0d86jvz">
-        <bpmn:sourceRef>Event_1y20vj3_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:messageEventDefinition id="MessageEventDefinition_04v9f15" messageRef="Message_Event_1y20vj3" />
@@ -162,7 +165,7 @@
   <bpmn:itemDefinition id="_renewalResponseItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_renewalRequestItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_priorAuthItem" structureRef="java.lang.String" />
-  <bpmn:message id="Message_1rtlkj6" name="renewals" />
+  <bpmn:message id="Message_1rtlkj6" name="renewals" itemRef="_Message_1rtlkj6_Item" />
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">

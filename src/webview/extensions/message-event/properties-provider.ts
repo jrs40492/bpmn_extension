@@ -1077,6 +1077,54 @@ export default class MessageEventPropertiesProvider {
         getOrCreateMessage(element, bpmnFactory, commandStack);
       }
 
+      // Fix ALL messages in definitions that are missing itemRef (including orphaned messages)
+      // jBPM requires all messages to have a valid itemRef
+      const definitions = getDefinitions(element);
+      const rootElements = definitions.rootElements || [];
+      const allMessages = rootElements.filter((el: ModdleElement) => el.$type === 'bpmn:Message');
+
+      for (const message of allMessages) {
+        if (!(message as unknown as { itemRef?: ModdleElement }).itemRef) {
+          const itemDefId = `_${message.id}_Item`;
+
+          // Check if itemDefinition already exists
+          let itemDef = rootElements.find((el: ModdleElement) =>
+            el.$type === 'bpmn:ItemDefinition' && el.id === itemDefId
+          );
+
+          if (!itemDef) {
+            // Create itemDefinition for the message
+            itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+              id: itemDefId,
+              structureRef: 'java.lang.Object'
+            });
+            itemDef.$parent = definitions;
+
+            // Add itemDefinition to rootElements
+            const newRootElements = [...(definitions.rootElements || [])];
+            const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+            if (processIndex >= 0) {
+              newRootElements.splice(processIndex, 0, itemDef);
+            } else {
+              newRootElements.push(itemDef);
+            }
+
+            commandStack.execute('element.updateModdleProperties', {
+              element,
+              moddleElement: definitions,
+              properties: { rootElements: newRootElements }
+            });
+          }
+
+          // Set itemRef on the message
+          commandStack.execute('element.updateModdleProperties', {
+            element,
+            moddleElement: message,
+            properties: { itemRef: itemDef }
+          });
+        }
+      }
+
       // Clean up corrupted ioSpecification (string "[object Object]" instead of proper element)
       const bo = element.businessObject;
       if (bo) {
