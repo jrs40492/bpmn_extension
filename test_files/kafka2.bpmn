@@ -18,7 +18,7 @@
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
-    <bpmn:businessRuleTask id="Activity_0lb2cub" name="Activity_0lb2cub" implementation="http://www.jboss.org/drools/dmn">
+    <bpmn:businessRuleTask id="Activity_0lb2cub" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
       <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
       <bpmn:outgoing>Flow_0929l0r</bpmn:outgoing>
@@ -132,6 +132,9 @@
       <bpmndi:BPMNEdge id="Flow_0txb5rf_di" bpmnElement="Flow_0txb5rf">
         <di:waypoint x="560" y="365" />
         <di:waypoint x="560" y="472" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="559" y="416" width="32" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
