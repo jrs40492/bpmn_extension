@@ -81,6 +81,7 @@
     <bpmn:exclusiveGateway id="Gateway_1sz93tf">
       <bpmn:incoming>Flow_0929l0r</bpmn:incoming>
       <bpmn:outgoing>Flow_127hff5</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0txb5rf</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_0929l0r" sourceRef="Activity_0lb2cub" targetRef="Gateway_1sz93tf" />
     <bpmn:endEvent id="Event_1atloo0">
@@ -88,6 +89,12 @@
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_127hff5" sourceRef="Gateway_1sz93tf" targetRef="Event_1atloo0">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_0pe5dkf">
+      <bpmn:incoming>Flow_0txb5rf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0txb5rf" sourceRef="Gateway_1sz93tf" targetRef="Event_0pe5dkf">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">!hasUserId</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
@@ -107,6 +114,9 @@
       <bpmndi:BPMNShape id="Event_1atloo0_di" bpmnElement="Event_1atloo0">
         <dc:Bounds x="672" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pe5dkf_di" bpmnElement="Event_0pe5dkf">
+        <dc:Bounds x="542" y="472" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
         <di:waypoint x="278" y="340" />
         <di:waypoint x="350" y="340" />
@@ -118,6 +128,10 @@
       <bpmndi:BPMNEdge id="Flow_127hff5_di" bpmnElement="Flow_127hff5">
         <di:waypoint x="585" y="340" />
         <di:waypoint x="672" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0txb5rf_di" bpmnElement="Flow_0txb5rf">
+        <di:waypoint x="560" y="365" />
+        <di:waypoint x="560" y="472" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
