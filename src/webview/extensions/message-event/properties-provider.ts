@@ -179,21 +179,31 @@ function getOrCreateMessage(
   const definitions = getDefinitions(element);
   const bo = element.businessObject;
   const messageId = `Message_${bo?.id || 'unknown'}`;
+  const itemDefId = `_${messageId}_Item`;
+
+  // Create itemDefinition for the message (required by jBPM)
+  const itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+    id: itemDefId,
+    structureRef: 'java.lang.Object'
+  });
+  itemDef.$parent = definitions;
 
   const message = bpmnFactory.create('bpmn:Message', {
     id: messageId,
-    name: ''
+    name: '',
+    itemRef: itemDef
   }) as Message;
   message.$parent = definitions;
 
-  // Add message to definitions rootElements
+  // Add itemDefinition and message to definitions rootElements
   const newRootElements = [...(definitions.rootElements || [])];
   // Insert before the first process element
   const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
   if (processIndex >= 0) {
-    newRootElements.splice(processIndex, 0, message);
+    // Insert itemDef first, then message
+    newRootElements.splice(processIndex, 0, itemDef, message);
   } else {
-    newRootElements.push(message);
+    newRootElements.push(itemDef, message);
   }
 
   commandStack.execute('element.updateModdleProperties', {
