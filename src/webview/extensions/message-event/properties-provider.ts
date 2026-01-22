@@ -300,9 +300,11 @@ function getOrCreateMessage(
   });
   itemDef.$parent = definitions;
 
+  // Use a default name based on event ID (jBPM requires non-empty message names)
+  const defaultName = `message_${bo?.id || 'unknown'}`;
   const message = bpmnFactory.create('bpmn:Message', {
     id: messageId,
-    name: '',
+    name: defaultName,
     itemRef: itemDef
   }) as Message;
   message.$parent = definitions;

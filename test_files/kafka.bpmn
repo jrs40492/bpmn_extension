@@ -7,19 +7,19 @@
   <bpmn:itemDefinition id="_Activity_0zwqyjg_priorAuthInputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Activity_0zwqyjg_userIdInputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Message_Event_0ay0ojp_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0ay0ojp" name="" itemRef="_Message_Event_0ay0ojp_Item" />
+  <bpmn:message id="Message_Event_0ay0ojp" name="message_0ay0ojp" itemRef="_Message_Event_0ay0ojp_Item" />
   <bpmn:itemDefinition id="_Event_0ay0ojp_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_10o58ja_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_10o58ja" name="" itemRef="_Message_Event_10o58ja_Item" />
+  <bpmn:message id="Message_Event_10o58ja" name="message_10o58ja" itemRef="_Message_Event_10o58ja_Item" />
   <bpmn:itemDefinition id="_Event_10o58ja_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_13vas7v_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_13vas7v" name="" itemRef="_Message_Event_13vas7v_Item" />
+  <bpmn:message id="Message_Event_13vas7v" name="message_13vas7v" itemRef="_Message_Event_13vas7v_Item" />
   <bpmn:itemDefinition id="_Event_13vas7v_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_05poqal_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_05poqal" name="" itemRef="_Message_Event_05poqal_Item" />
+  <bpmn:message id="Message_Event_05poqal" name="message_05poqal" itemRef="_Message_Event_05poqal_Item" />
   <bpmn:itemDefinition id="_Event_05poqal_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_1y20vj3_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_1y20vj3" name="" itemRef="_Message_Event_1y20vj3_Item" />
+  <bpmn:message id="Message_Event_1y20vj3" name="startMessage" itemRef="_Message_Event_1y20vj3_Item" />
   <bpmn:itemDefinition id="_Event_1y20vj3_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_0zldgie_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_0zldgie" name="renewalRequest" itemRef="_Message_Event_0zldgie_Item" />
