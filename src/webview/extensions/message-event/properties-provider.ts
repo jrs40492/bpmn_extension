@@ -127,7 +127,66 @@ function isStartMessageEvent(element: BpmnElement): boolean {
 }
 
 /**
- * Get the message event definition from a start message event
+ * Check if element is an Intermediate Catch Message Event
+ */
+function isIntermediateCatchMessageEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+  if (bo.$type !== 'bpmn:IntermediateCatchEvent') return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Check if element is an Intermediate Throw Message Event
+ */
+function isIntermediateThrowMessageEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+  if (bo.$type !== 'bpmn:IntermediateThrowEvent') return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Check if element is an End Message Event
+ */
+function isEndMessageEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+  if (bo.$type !== 'bpmn:EndEvent') return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Check if element is a Boundary Message Event
+ */
+function isBoundaryMessageEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+  if (bo.$type !== 'bpmn:BoundaryEvent') return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Check if element is any type of Message Event
+ */
+function isMessageEvent(element: BpmnElement): boolean {
+  return isStartMessageEvent(element) ||
+    isIntermediateCatchMessageEvent(element) ||
+    isIntermediateThrowMessageEvent(element) ||
+    isEndMessageEvent(element) ||
+    isBoundaryMessageEvent(element);
+}
+
+/**
+ * Get the message event definition from any message event
  */
 function getMessageEventDefinition(element: BpmnElement): MessageEventDefinition | null {
   const bo = element?.businessObject;
@@ -1029,7 +1088,8 @@ function PayloadFieldsGroup(props: { element: BpmnElement; injector: unknown }) 
 function MessageEventEntries(props: { element: BpmnElement }): PropertyEntry[] {
   const { element } = props;
 
-  if (!isStartMessageEvent(element)) {
+  // Works for all message event types
+  if (!isMessageEvent(element)) {
     return [];
   }
 
@@ -1070,7 +1130,8 @@ export default class MessageEventPropertiesProvider {
 
   getGroups(element: BpmnElement) {
     return (groups: PropertiesGroup[]) => {
-      if (!isStartMessageEvent(element)) {
+      // Handle all types of message events (Start, Intermediate Catch/Throw, End, Boundary)
+      if (!isMessageEvent(element)) {
         return groups;
       }
 
@@ -1078,7 +1139,7 @@ export default class MessageEventPropertiesProvider {
       const commandStack = (this.injector as { get: (name: string) => CommandStack }).get('commandStack');
 
       // Ensure message exists with itemRef for jBPM compatibility
-      // jBPM requires every Start Message Event to have a bpmn:Message reference with a valid itemRef
+      // jBPM requires every Message Event to have a bpmn:Message reference with a valid itemRef
       const msgEvtDef = getMessageEventDefinition(element);
       if (msgEvtDef) {
         // This will create message if missing, or add itemRef to existing message if missing
@@ -1159,21 +1220,24 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
-      // Add Message Event Configuration group
+      // Add Message Event Configuration group for all message event types
       groups.push({
         id: 'message-event-configuration',
         label: 'Message Event Configuration',
         entries: MessageEventEntries({ element })
       });
 
-      // Add Payload Fields as a ListGroup
-      const payloadGroup = PayloadFieldsGroup({ element, injector: this.injector });
-      if (payloadGroup) {
-        groups.push({
-          id: 'message-payload-fields',
-          component: ListGroup,
-          ...payloadGroup
-        } as PropertiesGroup);
+      // Add Payload Fields as a ListGroup (only for Start Message Events and Intermediate Catch Events)
+      // These event types receive incoming messages and may need to extract data
+      if (isStartMessageEvent(element) || isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
+        const payloadGroup = PayloadFieldsGroup({ element, injector: this.injector });
+        if (payloadGroup) {
+          groups.push({
+            id: 'message-payload-fields',
+            component: ListGroup,
+            ...payloadGroup
+          } as PropertiesGroup);
+        }
       }
 
       return groups;
