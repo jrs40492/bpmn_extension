@@ -4,6 +4,7 @@
     <variable id="InputData_0zj43q1_variable" name="userId" typeRef="string" />
   </inputData>
   <decision id="Decision_020986q" name="hasUserId">
+    <variable id="Decision_020986q_variable" name="hasUserId" typeRef="boolean" />
     <informationRequirement id="InformationRequirement_1959nq5">
       <requiredInput href="#InputData_0zj43q1" />
     </informationRequirement>
