@@ -172,7 +172,52 @@ function getOrCreateMessage(
 
   // Check if message already exists
   if (msgEvtDef.messageRef) {
-    return msgEvtDef.messageRef;
+    const existingMessage = msgEvtDef.messageRef;
+
+    // Check if existing message has itemRef - if not, create one (required by jBPM)
+    if (!(existingMessage as unknown as { itemRef?: ModdleElement }).itemRef) {
+      const definitions = getDefinitions(element);
+      const itemDefId = `_${existingMessage.id}_Item`;
+
+      // Check if itemDefinition already exists
+      const rootElements = definitions.rootElements || [];
+      let itemDef = rootElements.find((el: ModdleElement) =>
+        el.$type === 'bpmn:ItemDefinition' && el.id === itemDefId
+      );
+
+      if (!itemDef) {
+        // Create itemDefinition for the message
+        itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+          id: itemDefId,
+          structureRef: 'java.lang.Object'
+        });
+        itemDef.$parent = definitions;
+
+        // Add itemDefinition to rootElements
+        const newRootElements = [...rootElements];
+        const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+        if (processIndex >= 0) {
+          newRootElements.splice(processIndex, 0, itemDef);
+        } else {
+          newRootElements.push(itemDef);
+        }
+
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: definitions,
+          properties: { rootElements: newRootElements }
+        });
+      }
+
+      // Set itemRef on the existing message
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: existingMessage,
+        properties: { itemRef: itemDef }
+      });
+    }
+
+    return existingMessage;
   }
 
   // Create new message at definitions level
@@ -1024,10 +1069,11 @@ export default class MessageEventPropertiesProvider {
       const bpmnFactory = (this.injector as { get: (name: string) => BpmnFactory }).get('bpmnFactory');
       const commandStack = (this.injector as { get: (name: string) => CommandStack }).get('commandStack');
 
-      // Ensure message exists for jBPM compatibility
-      // jBPM requires every Start Message Event to have a bpmn:Message reference
+      // Ensure message exists with itemRef for jBPM compatibility
+      // jBPM requires every Start Message Event to have a bpmn:Message reference with a valid itemRef
       const msgEvtDef = getMessageEventDefinition(element);
-      if (msgEvtDef && !msgEvtDef.messageRef) {
+      if (msgEvtDef) {
+        // This will create message if missing, or add itemRef to existing message if missing
         getOrCreateMessage(element, bpmnFactory, commandStack);
       }
 
