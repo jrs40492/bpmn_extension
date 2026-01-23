@@ -98,15 +98,18 @@
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0kwe8aw</bpmn:outgoing>
       <bpmn:dataOutput id="Event_1imz6h6_OutputX" itemSubjectRef="_Event_1imz6h6_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutput id="Event_1imz6h6_userId" itemSubjectRef="_Event_1imz6h6_userIdItem" name="userId" drools:dtype="java.lang.String" />
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1jtx6fi">
         <bpmn:sourceRef>Event_1imz6h6_OutputX</bpmn:sourceRef>
         <bpmn:targetRef>message_Event_1imz6h6</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0xslqfi">
+        <bpmn:sourceRef>Event_1imz6h6_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:outputSet>
         <bpmn:dataOutputRefs>Event_1imz6h6_OutputX</bpmn:dataOutputRefs>
+        <bpmn:dataOutputRefs>Event_1imz6h6_userId</bpmn:dataOutputRefs>
       </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0ulejps" messageRef="Message_Event_1imz6h6" />
     </bpmn:startEvent>
