@@ -1111,6 +1111,9 @@ function MessageEventEntries(props: { element: BpmnElement }): PropertyEntry[] {
 // Properties Provider Class
 // ============================================================================
 
+// Track elements that have had their drools:dtype fixed to prevent infinite loops
+const fixedDtypeElements = new WeakSet<object>();
+
 export default class MessageEventPropertiesProvider {
   static $inject = ['propertiesPanel', 'injector', 'eventBus'];
 
@@ -1224,15 +1227,22 @@ export default class MessageEventPropertiesProvider {
 
       // Fix message throw events (Intermediate Throw and End) that have data inputs missing drools:dtype
       // Kogito requires drools:dtype attribute on all data inputs for proper code generation
+      // Use a WeakSet guard to prevent infinite loops from commandStack triggering re-renders
       if (isIntermediateThrowMessageEvent(element) || isEndMessageEvent(element)) {
         const throwBo = element.businessObject;
         if (throwBo) {
           // For events, dataInputs is directly on the event (not in ioSpecification)
           const dataInputs = (throwBo as unknown as { dataInputs?: ModdleElement[] }).dataInputs || [];
           for (const dataInput of dataInputs) {
+            // Skip if we've already processed this dataInput
+            if (fixedDtypeElements.has(dataInput)) {
+              continue;
+            }
             // Check if drools:dtype is missing
             const dtype = (dataInput as unknown as { 'drools:dtype'?: string })['drools:dtype'];
             if (!dtype) {
+              // Mark as fixed BEFORE executing command to prevent re-entry
+              fixedDtypeElements.add(dataInput);
               // Add the missing drools:dtype attribute
               commandStack.execute('element.updateModdleProperties', {
                 element,
