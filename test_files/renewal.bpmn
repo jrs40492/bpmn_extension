@@ -18,8 +18,8 @@
   <bpmn:message id="Message_Event_0kdesbw" name="receiveRenewalData" itemRef="_Message_Event_0kdesbw_Item" />
   <bpmn:itemDefinition id="_message_Event_0kdesbwItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0kdesbw_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_1imz6h6_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_1imz6h6Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_1imz6h6_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
+  <bpmn:itemDefinition id="_message_Event_1imz6h6Item" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:itemDefinition id="_Event_1imz6h6_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_DecisionTable_1slxj73OutputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1imz6h6_hasUserIdItem" structureRef="java.lang.Boolean" />
@@ -105,7 +105,7 @@
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0kwe8aw</bpmn:outgoing>
-      <bpmn:dataOutput id="Event_1imz6h6_OutputX" itemSubjectRef="_Event_1imz6h6_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutput id="Event_1imz6h6_OutputX" itemSubjectRef="_Event_1imz6h6_OutputItem" name="event" drools:dtype="com.example.payload.RenewalsPayload" />
       <bpmn:dataOutput id="Event_1imz6h6_userId" itemSubjectRef="_Event_1imz6h6_userIdItem" name="userId" drools:dtype="java.lang.String" />
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1jtx6fi">
         <bpmn:sourceRef>Event_1imz6h6_OutputX</bpmn:sourceRef>
