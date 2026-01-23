@@ -11,6 +11,8 @@
   <bpmn:itemDefinition id="_Message_Event_0kdmp29_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_0kdmp29" name="requestRenewal" itemRef="_Message_Event_0kdmp29_Item" />
   <bpmn:itemDefinition id="_Event_0kdmp29_InputItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Message_Event_04677a1_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_04677a1" name="receiveRenewalData" itemRef="_Message_Event_04677a1_Item" />
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -97,7 +99,7 @@
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="Event_0pu6xnn">
-      <bpmn:incoming>Flow_1jnjil8</bpmn:incoming>
+      <bpmn:incoming>Flow_1t14h7v</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1k7fkw6" sourceRef="Activity_0xhu28a" targetRef="Event_0kdmp29" />
     <bpmn:scriptTask id="Activity_0xhu28a" scriptFormat="java">
@@ -105,7 +107,7 @@
       <bpmn:outgoing>Flow_1k7fkw6</bpmn:outgoing>
       <bpmn:script>kcontext.setVariable("result", true);</bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_1jnjil8" sourceRef="Event_0kdmp29" targetRef="Event_0pu6xnn" />
+    <bpmn:sequenceFlow id="Flow_1jnjil8" sourceRef="Event_0kdmp29" targetRef="Event_04677a1" />
     <bpmn:intermediateThrowEvent id="Event_0kdmp29">
       <bpmn:incoming>Flow_1k7fkw6</bpmn:incoming>
       <bpmn:outgoing>Flow_1jnjil8</bpmn:outgoing>
@@ -122,6 +124,12 @@
       </bpmn:inputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1ehv49z" messageRef="Message_Event_0kdmp29" />
     </bpmn:intermediateThrowEvent>
+    <bpmn:sequenceFlow id="Flow_1t14h7v" sourceRef="Event_04677a1" targetRef="Event_0pu6xnn" />
+    <bpmn:intermediateCatchEvent id="Event_04677a1">
+      <bpmn:incoming>Flow_1jnjil8</bpmn:incoming>
+      <bpmn:outgoing>Flow_1t14h7v</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0om5pih" messageRef="Message_Event_04677a1" />
+    </bpmn:intermediateCatchEvent>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
@@ -140,14 +148,17 @@
       <bpmndi:BPMNShape id="Gateway_0p81tid_di" bpmnElement="Gateway_0p81tid" isMarkerVisible="true">
         <dc:Bounds x="535" y="315" width="50" height="50" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0pu6xnn_di" bpmnElement="Event_0pu6xnn">
-        <dc:Bounds x="752" y="162" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_09ltk0o_di" bpmnElement="Activity_0xhu28a">
         <dc:Bounds x="510" y="160" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1g7ryqf_di" bpmnElement="Event_0kdmp29">
         <dc:Bounds x="662" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pu6xnn_di" bpmnElement="Event_0pu6xnn">
+        <dc:Bounds x="852" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0qfuwa7_di" bpmnElement="Event_04677a1">
+        <dc:Bounds x="752" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
         <di:waypoint x="278" y="340" />
@@ -172,6 +183,10 @@
       <bpmndi:BPMNEdge id="Flow_1jnjil8_di" bpmnElement="Flow_1jnjil8">
         <di:waypoint x="698" y="180" />
         <di:waypoint x="752" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1t14h7v_di" bpmnElement="Flow_1t14h7v">
+        <di:waypoint x="788" y="180" />
+        <di:waypoint x="852" y="180" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
