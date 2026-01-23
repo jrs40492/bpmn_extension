@@ -183,11 +183,11 @@
       <bpmn:script>// Extract userId from the payload object
 com.example.payload.RenewalsPayload payload =
     (com.example.payload.RenewalsPayload) kcontext.getVariable("message_Event_1imz6h6");
-String userId = payload != null ? payload.getUserId() : null;
-kcontext.setVariable("userId", userId);
+String extractedUserId = payload != null ? payload.getUserId() : null;
+kcontext.setVariable("userId", extractedUserId);
 
 System.out.println("testing testing testing");
-System.out.println("userId: " + userId);</bpmn:script>
+System.out.println("userId: " + extractedUserId);</bpmn:script>
     </bpmn:scriptTask>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
