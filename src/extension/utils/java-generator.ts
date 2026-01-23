@@ -156,35 +156,41 @@ ${gettersSetters}
 }
 
 /**
- * Get the effective JsonPath for extraction in the deserializer.
- * Kogito unwraps CloudEvents, so $.data.userId becomes $.userId
- * since the deserializer receives just the data portion.
+ * Get the path segments for navigating JSON structure.
+ * Returns array of property names to traverse.
+ * e.g., "$.data.userId" -> ["data", "userId"]
+ *       "$.userId" -> ["userId"]
  */
-function getEffectiveJsonPath(expression: string): string {
-  if (!expression) return '';
-  let path = expression.trim();
-  // Strip $.data. prefix since Kogito unwraps CloudEvents
-  // $.data.userId -> $.userId
-  // $.data.nested.field -> $.nested.field
-  if (path.startsWith('$.data.')) {
-    path = '$.' + path.substring(7); // Remove "$.data." prefix, keep "$."
-  }
-  return path;
+function getPathSegments(expression: string): string[] {
+  if (!expression) return [];
+  // Remove leading $. and split by .
+  return expression.trim().replace(/^\$\.?/, '').split('.').filter(s => s);
 }
 
 /**
- * Check if any field actually requires JsonPath library (after CloudEvent unwrapping).
- * This is different from requiresCustomDeserializer - a deserializer may be needed
- * but can use simple Jackson field access instead of JsonPath.
+ * Check if any field actually requires JsonPath library.
+ * We use JsonPath for paths with 3+ segments (e.g., $.data.nested.field)
+ * For simpler paths like $.data.userId (2 segments), we can use Jackson traversal.
  */
 export function requiresJsonPathLibrary(fields: PayloadFieldDefinition[]): boolean {
   return fields.some(f => {
-    const expr = f.expression?.trim() || '';
-    const effectivePath = getEffectiveJsonPath(expr);
-    const effectiveDotCount = (effectivePath.match(/\./g) || []).length;
-    // Needs JsonPath if effective path has 2+ dots (e.g., $.nested.field)
-    return effectiveDotCount >= 2;
+    const segments = getPathSegments(f.expression || '');
+    // Needs JsonPath if path has 3+ segments (deeply nested)
+    return segments.length >= 3;
   });
+}
+
+/**
+ * Generate code to traverse JSON and extract a value.
+ * For paths like $.data.userId, generates: root.path("data").path("userId")
+ */
+function generateJsonTraversal(segments: string[], javaType: string): string {
+  if (segments.length === 0) {
+    return 'root';
+  }
+  // Build path traversal: root.path("data").path("userId")
+  const pathCalls = segments.map(s => `path("${s}")`).join('.');
+  return `root.${pathCalls}`;
 }
 
 export function generateDeserializerClass(
@@ -198,39 +204,39 @@ export function generateDeserializerClass(
       const fieldName = toCamelCase(field.name);
       const methodSuffix = toPascalCase(field.name);
       const expression = field.expression?.trim() || '';
-      // Get the effective path (with $.data. stripped for CloudEvent unwrapping)
-      const effectivePath = getEffectiveJsonPath(expression);
+      const segments = getPathSegments(expression);
 
-      // Check if effective path still has nested structure (after stripping $.data.)
-      // $.userId has 1 dot - simple field access
-      // $.nested.field has 2 dots - needs JsonPath
-      const effectiveDotCount = (effectivePath.match(/\./g) || []).length;
-      const isNestedPath = effectiveDotCount >= 2;
-
-      if (!isNestedPath) {
-        // Simple field access - extract the field name from effective path or use field name
-        // $.userId -> userId, or just use the field name
-        const simpleKey = effectivePath.replace(/^\$\./, '') || fieldName;
-        return `        if (root.has("${simpleKey}")) {
-            payload.set${methodSuffix}(root.get("${simpleKey}").${getJsonNodeMethod(javaType)});
+      // Use field name if no expression provided
+      if (segments.length === 0) {
+        return `        if (root.has("${fieldName}")) {
+            payload.set${methodSuffix}(root.get("${fieldName}").${getJsonNodeMethod(javaType)});
         }`;
       }
 
-      // For nested paths, use JsonPath with the effective expression
-      return `        try {
-            ${javaType} ${fieldName}Value = JsonPath.read(json, "${effectivePath}");
+      // For deeply nested paths (3+ segments), use JsonPath
+      if (segments.length >= 3) {
+        return `        try {
+            ${javaType} ${fieldName}Value = JsonPath.read(json, "${expression}");
             payload.set${methodSuffix}(${fieldName}Value);
         } catch (PathNotFoundException e) {
             // Field not found in payload, leave as null
         }`;
+      }
+
+      // For 1-2 segment paths, use Jackson's path() method for safe traversal
+      // This handles both $.userId and $.data.userId
+      const traversal = generateJsonTraversal(segments, javaType);
+      const lastSegment = segments[segments.length - 1];
+      return `        JsonNode ${fieldName}Node = ${traversal};
+        if (${fieldName}Node != null && !${fieldName}Node.isMissingNode()) {
+            payload.set${methodSuffix}(${fieldName}Node.${getJsonNodeMethod(javaType)});
+        }`;
     })
     .join('\n\n');
 
-  const hasNestedPaths = fields.some(f => {
-    const expr = f.expression?.trim() || '';
-    const effectivePath = getEffectiveJsonPath(expr);
-    const effectiveDotCount = (effectivePath.match(/\./g) || []).length;
-    return effectiveDotCount >= 2;
+  const hasDeepPaths = fields.some(f => {
+    const segments = getPathSegments(f.expression || '');
+    return segments.length >= 3;
   });
 
   let imports = `package ${packageName};
@@ -241,7 +247,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;`;
 
-  if (hasNestedPaths) {
+  if (hasDeepPaths) {
     imports += `
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;`;

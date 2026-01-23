@@ -19,8 +19,9 @@ public class RenewalsPayloadDeserializer extends JsonDeserializer<RenewalsPayloa
 
         RenewalsPayload payload = new RenewalsPayload();
 
-        if (root.has("userId")) {
-            payload.setUserId(root.get("userId").asText());
+        JsonNode userIdNode = root.path("data").path("userId");
+        if (userIdNode != null && !userIdNode.isMissingNode()) {
+            payload.setUserId(userIdNode.asText());
         }
 
         return payload;
