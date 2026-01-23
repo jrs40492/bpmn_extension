@@ -19,12 +19,15 @@
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
   <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
-  <bpmn:itemDefinition id="_Message_Event_0x2mg5v_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0x2mg5v" name="renewals" itemRef="_Message_Event_0x2mg5v_Item" />
   <bpmn:itemDefinition id="_message_Event_0x2mg5vItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0x2mg5v_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_0x2mg5vItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0x2mg5v_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Message_Event_140n6p3_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_140n6p3" name="renewals" itemRef="_Message_Event_140n6p3_Item" />
+  <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_140n6p3_OutputItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_140n6p3_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -38,7 +41,8 @@
     <bpmn:property id="message_Event_0tyznr4" itemSubjectRef="_message_Event_0tyznr4Item" name="message_Event_0tyznr4" />
     <bpmn:property id="message_Event_1n6xats" itemSubjectRef="_message_Event_1n6xatsItem" name="message_Event_1n6xats" />
     <bpmn:property id="message_Event_0x2mg5v" itemSubjectRef="_message_Event_0x2mg5vItem" name="message_Event_0x2mg5v" />
-    <bpmn:property id="message_Event_0x2mg5v" itemSubjectRef="_message_Event_0x2mg5vItem" name="message_Event_0x2mg5v" />
+    <bpmn:property id="message_Event_140n6p3" itemSubjectRef="_message_Event_140n6p3Item" name="message_Event_140n6p3" />
+    <bpmn:property id="message_Event_140n6p3" itemSubjectRef="_message_Event_140n6p3Item" name="message_Event_140n6p3" />
     <bpmn:endEvent id="Event_0b78j8f">
       <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
     </bpmn:endEvent>
@@ -51,7 +55,7 @@
       <bpmn:outgoing>Flow_14t4myq</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:scriptTask id="Activity_03vtzas" name="Step 1" scriptFormat="java">
-      <bpmn:incoming>Flow_13u4noz</bpmn:incoming>
+      <bpmn:incoming>Flow_188qfib</bpmn:incoming>
       <bpmn:outgoing>Flow_09guua2</bpmn:outgoing>
       <bpmn:script>// userId is now automatically extracted by MessagePayloadExtractor
 String extractedUserId = (String) kcontext.getVariable("userId");
@@ -154,30 +158,30 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
     <bpmn:sequenceFlow id="Flow_0qmkn3d" sourceRef="Activity_10h9hba" targetRef="Event_0tyznr4" />
     <bpmn:sequenceFlow id="Flow_00etiw2" sourceRef="Event_0tyznr4" targetRef="Event_1n6xats" />
     <bpmn:sequenceFlow id="Flow_1g5hh8f" sourceRef="Event_1n6xats" targetRef="Event_1o1kbe7" />
-    <bpmn:sequenceFlow id="Flow_13u4noz" sourceRef="Event_0x2mg5v" targetRef="Activity_03vtzas" />
-    <bpmn:startEvent id="Event_0x2mg5v">
+    <bpmn:startEvent id="Event_140n6p3">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
           <msgevt:payloadField name="userId" expression="$.data.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_13u4noz</bpmn:outgoing>
-      <bpmn:dataOutput id="Event_0x2mg5v_OutputX" itemSubjectRef="_Event_0x2mg5v_OutputItem" name="event" drools:dtype="java.lang.Object" />
-      <bpmn:dataOutput id="Event_0x2mg5v_userId" itemSubjectRef="_Event_0x2mg5v_userIdItem" name="userId" drools:dtype="java.lang.String" />
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_0rm3e1l">
-        <bpmn:sourceRef>Event_0x2mg5v_OutputX</bpmn:sourceRef>
-        <bpmn:targetRef>message_Event_0x2mg5v</bpmn:targetRef>
+      <bpmn:outgoing>Flow_188qfib</bpmn:outgoing>
+      <bpmn:dataOutput id="Event_140n6p3_OutputX" itemSubjectRef="_Event_140n6p3_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutput id="Event_140n6p3_userId" itemSubjectRef="_Event_140n6p3_userIdItem" name="userId" drools:dtype="java.lang.String" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1jnr9l3">
+        <bpmn:sourceRef>Event_140n6p3_OutputX</bpmn:sourceRef>
+        <bpmn:targetRef>message_Event_140n6p3</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_1x5zjdm">
-        <bpmn:sourceRef>Event_0x2mg5v_userId</bpmn:sourceRef>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1a6yt7l">
+        <bpmn:sourceRef>Event_140n6p3_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:outputSet>
-        <bpmn:dataOutputRefs>Event_0x2mg5v_OutputX</bpmn:dataOutputRefs>
-        <bpmn:dataOutputRefs>Event_0x2mg5v_userId</bpmn:dataOutputRefs>
+        <bpmn:dataOutputRefs>Event_140n6p3_OutputX</bpmn:dataOutputRefs>
+        <bpmn:dataOutputRefs>Event_140n6p3_userId</bpmn:dataOutputRefs>
       </bpmn:outputSet>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0tocc7w" messageRef="Message_Event_0x2mg5v" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0kaz670" messageRef="Message_Event_140n6p3" />
     </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_188qfib" sourceRef="Event_140n6p3" targetRef="Activity_03vtzas" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
@@ -217,7 +221,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
           <dc:Bounds x="1014" y="175" width="32" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1rkevga_di" bpmnElement="Event_0x2mg5v">
+      <bpmndi:BPMNShape id="Event_1qd7iq1_di" bpmnElement="Event_140n6p3">
         <dc:Bounds x="242" y="292" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_09guua2_di" bpmnElement="Flow_09guua2">
@@ -248,7 +252,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
         <di:waypoint x="1048" y="150" />
         <di:waypoint x="1122" y="150" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_13u4noz_di" bpmnElement="Flow_13u4noz">
+      <bpmndi:BPMNEdge id="Flow_188qfib_di" bpmnElement="Flow_188qfib">
         <di:waypoint x="278" y="310" />
         <di:waypoint x="360" y="310" />
       </bpmndi:BPMNEdge>

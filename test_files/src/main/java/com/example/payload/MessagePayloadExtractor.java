@@ -28,8 +28,8 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
 
-            if ("Event_0x2mg5v".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_0x2mg5v");
+            if ("Event_140n6p3".equals(nodeId)) {
+                Object messageData = variables.get("message_Event_140n6p3");
                 if (messageData != null) {
                     if (messageData instanceof com.example.payload.RenewalsPayload) {
                         // Typed payload - BPMN has correct structureRef
