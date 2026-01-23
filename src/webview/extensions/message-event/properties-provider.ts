@@ -1254,10 +1254,10 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
-      // Fix message catch events (Intermediate Catch and Boundary) that are missing data outputs
+      // Fix message receive events (Start, Intermediate Catch, and Boundary) that are missing data outputs
       // Kogito requires data output structures to know where to store received message data
       // Without this, the code generator throws a NullPointerException
-      if (isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
+      if (isStartMessageEvent(element) || isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
         const catchBo = element.businessObject;
         if (catchBo) {
           // Check if data outputs are missing

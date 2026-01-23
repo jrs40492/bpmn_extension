@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:msgevt="http://bamoe.io/schema/message-event" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:itemDefinition id="_Message_Event_1imz6h6_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_1imz6h6" name="renewals" itemRef="_Message_Event_1imz6h6_Item" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_namespaceInputXItem" structureRef="java.lang.String" />
@@ -18,6 +18,9 @@
   <bpmn:message id="Message_Event_0kdesbw" name="receiveRenewalData" itemRef="_Message_Event_0kdesbw_Item" />
   <bpmn:itemDefinition id="_message_Event_0kdesbwItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0kdesbw_OutputItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_1imz6h6_OutputItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_message_Event_1imz6h6Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_1imz6h6_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -29,6 +32,7 @@
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:property id="message_Event_0vjdxlp" itemSubjectRef="_message_Event_0vjdxlpItem" name="message_Event_0vjdxlp" />
     <bpmn:property id="message_Event_0kdesbw" itemSubjectRef="_message_Event_0kdesbwItem" name="message_Event_0kdesbw" />
+    <bpmn:property id="message_Event_1imz6h6" itemSubjectRef="_message_Event_1imz6h6Item" name="message_Event_1imz6h6" />
     <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
     <bpmn:businessRuleTask id="Activity_0lb2cub" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
@@ -86,8 +90,25 @@
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:startEvent id="Event_1imz6h6">
+    <bpmn:startEvent id="Event_1imz6h6" ioSpecification="[object Object]">
+      <bpmn:extensionElements>
+        <msgevt:payloadDefinition>
+          <msgevt:payloadField name="userId" expression="$.data.userId" />
+        </msgevt:payloadDefinition>
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0kwe8aw</bpmn:outgoing>
+      <bpmn:dataOutput id="Event_1imz6h6_OutputX" itemSubjectRef="_Event_1imz6h6_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1jtx6fi">
+        <bpmn:sourceRef>Event_1imz6h6_OutputX</bpmn:sourceRef>
+        <bpmn:targetRef>message_Event_1imz6h6</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_0xslqfi">
+        <bpmn:sourceRef>Event_1imz6h6_userId</bpmn:sourceRef>
+        <bpmn:targetRef>userId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
+      <bpmn:outputSet>
+        <bpmn:dataOutputRefs>Event_1imz6h6_OutputX</bpmn:dataOutputRefs>
+      </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0ulejps" messageRef="Message_Event_1imz6h6" />
     </bpmn:startEvent>
     <bpmn:endEvent id="Event_0pe5dkf">

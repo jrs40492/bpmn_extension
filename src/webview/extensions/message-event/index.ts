@@ -93,6 +93,19 @@ function isMessageCatchEvent(element: BpmnElement): boolean {
 }
 
 /**
+ * Check if element is a message start event
+ */
+function isMessageStartEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+
+  if (bo.$type !== 'bpmn:StartEvent') return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
  * Get the message event definition
  */
 function getMessageEventDefinition(element: BpmnElement): MessageEventDefinition | null {
@@ -159,6 +172,19 @@ class MessageEventCreationHandler {
 
       // Handle message catch events (Intermediate Catch and Boundary events)
       if (isMessageCatchEvent(element)) {
+        // Check if data outputs already exist (event already configured)
+        if (bo.dataOutputs && bo.dataOutputs.length > 0) {
+          return;
+        }
+
+        // Use setTimeout to ensure element is fully initialized
+        setTimeout(() => {
+          this.setupCatchEventDataStructures(element, bpmnFactory, commandStack);
+        }, 0);
+      }
+
+      // Handle message start events (they also receive messages and need data outputs)
+      if (isMessageStartEvent(element)) {
         // Check if data outputs already exist (event already configured)
         if (bo.dataOutputs && bo.dataOutputs.length > 0) {
           return;
