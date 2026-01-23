@@ -105,7 +105,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
       <bpmn:dataInputAssociation id="DataInputAssociation_02evvy7">
         <bpmn:targetRef>Activity_05r7j6b_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_020986q</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_0lj4elf</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_05r7j6b_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
