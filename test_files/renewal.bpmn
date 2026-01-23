@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:msgevt="http://bamoe.io/schema/message-event" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:itemDefinition id="_Message_Event_1imz6h6_Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_Event_1imz6h6_Item" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:message id="Message_Event_1imz6h6" name="renewals" itemRef="_Message_Event_1imz6h6_Item" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_namespaceInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_modelInputXItem" structureRef="java.lang.String" />
