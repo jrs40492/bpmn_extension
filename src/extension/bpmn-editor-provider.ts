@@ -2,6 +2,13 @@ import * as vscode from 'vscode';
 import { getNonce } from './util/nonce';
 import { Disposable, disposeAll } from './util/dispose';
 import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo } from '../shared/message-types';
+import {
+  extractMessageEventsFromContent,
+  generateJavaClasses,
+  updateBpmnWithItemDefinition,
+  MessageEventInfo
+} from './commands/generate-message-classes';
+import { getProjectInfo } from './utils/project-utils';
 
 /**
  * Provider for BPMN custom editors.
@@ -138,12 +145,88 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
       });
     });
 
+    // Handle document save for auto-generation of message classes
+    const documentSaveHandler = vscode.workspace.onDidSaveTextDocument(async (savedDocument) => {
+      if (savedDocument.uri.toString() !== document.uri.toString()) {
+        return;
+      }
+
+      // Check if auto-generation is enabled
+      const config = vscode.workspace.getConfiguration('bamoe');
+      const autoGenerate = config.get<boolean>('autoGenerateMessageClasses', true);
+
+      if (!autoGenerate) {
+        return;
+      }
+
+      // Extract message events from the saved BPMN
+      const bpmnXml = savedDocument.getText();
+      const events = extractMessageEventsFromContent(bpmnXml, savedDocument.uri.fsPath);
+
+      // Only generate if there are message events with payload definitions
+      if (events.length === 0) {
+        return;
+      }
+
+      // Auto-generate Java classes in the background
+      try {
+        await this.autoGenerateMessageClasses(events);
+      } catch (error) {
+        // Log error but don't interrupt the save flow
+        console.error('[BAMOE] Auto-generation failed:', error);
+      }
+    });
+
     // Clean up when the editor is closed
     webviewPanel.onDidDispose(() => {
       messageHandler.dispose();
       documentChangeHandler.dispose();
+      documentSaveHandler.dispose();
       this.diagnosticCollection.delete(document.uri);
     });
+  }
+
+  /**
+   * Auto-generate Java message classes when BPMN is saved
+   * Shows subtle status bar notification instead of dialog
+   */
+  private async autoGenerateMessageClasses(events: MessageEventInfo[]): Promise<void> {
+    // Get project info
+    const projectInfo = await getProjectInfo();
+
+    if (!projectInfo.projectRoot) {
+      return; // No workspace, skip silently
+    }
+
+    // Show status bar message
+    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+    statusBarItem.text = '$(sync~spin) Generating message classes...';
+    statusBarItem.show();
+
+    try {
+      // Generate classes
+      const { generated } = await generateJavaClasses(
+        events,
+        projectInfo.basePackage,
+        projectInfo.projectRoot
+      );
+
+      // Update BPMN files with itemDefinition references (skip to avoid save loop)
+      // Note: We don't update BPMN here since it would cause another save trigger
+      // The manual command can be used if itemDefinition updates are needed
+
+      // Update status bar to show success briefly
+      if (generated.length > 0) {
+        statusBarItem.text = `$(check) Generated ${generated.length} message class(es)`;
+        setTimeout(() => statusBarItem.dispose(), 3000);
+      } else {
+        statusBarItem.dispose();
+      }
+    } catch (error) {
+      statusBarItem.text = '$(error) Message class generation failed';
+      setTimeout(() => statusBarItem.dispose(), 3000);
+      throw error;
+    }
   }
 
   /**

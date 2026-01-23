@@ -21,6 +21,12 @@ export const messageEventDescriptor = {
       superClass: ['Element'],
       properties: [
         {
+          name: 'cloudEvents',
+          type: 'Boolean',
+          isAttr: true,
+          default: true
+        },
+        {
           name: 'fields',
           type: 'PayloadField',
           isMany: true

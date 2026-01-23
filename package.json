@@ -83,6 +83,16 @@
         "when": "activeCustomEditorId == bamoe.bpmnEditor"
       }
     ],
+    "configuration": {
+      "title": "BAMOE",
+      "properties": {
+        "bamoe.autoGenerateMessageClasses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically generate Java message classes when saving BPMN files that contain message events with payload definitions."
+        }
+      }
+    },
     "languages": [
       {
         "id": "bpmn",

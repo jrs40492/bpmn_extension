@@ -13,6 +13,20 @@ export interface PayloadFieldDefinition {
 }
 
 /**
+ * Build the full JSONPath expression based on CloudEvents mode
+ * @param fieldName - The simple field name (e.g., "userId")
+ * @param isCloudEvents - Whether CloudEvents format is enabled
+ * @returns The full JSONPath expression (e.g., "$.data.userId" or "$.userId")
+ */
+export function buildCloudEventsExpression(fieldName: string, isCloudEvents: boolean): string {
+  if (!fieldName) return '';
+  if (isCloudEvents) {
+    return `$.data.${fieldName}`;
+  }
+  return `$.${fieldName}`;
+}
+
+/**
  * Type mapping from BAMOE types to Java types
  */
 const TYPE_MAPPING: Record<string, string> = {

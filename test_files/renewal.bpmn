@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:msgevt="http://bamoe.io/schema/message-event" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:itemDefinition id="_Message_Event_0m799to_Item" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:message id="Message_Event_0m799to" name="renewals" itemRef="_Message_Event_0m799to_Item" />
   <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_userIdItem" structureRef="java.lang.String" />
@@ -13,12 +12,15 @@
   <bpmn:itemDefinition id="_message_Event_0tyznr4Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0tyznr4_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Message_Event_0tyznr4_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
   <bpmn:itemDefinition id="_Event_0tyznr4_InputItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_1n6xats_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
   <bpmn:itemDefinition id="_message_Event_1n6xatsItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1n6xats_OutputItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
+  <bpmn:message id="Message_Event_0m799to" name="renewals" itemRef="_Message_Event_0m799to_Item" />
+  <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
+  <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -54,15 +56,34 @@
       </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0daj3sz" messageRef="Message_Event_0m799to" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_0mlcruj" sourceRef="Event_0m799to" targetRef="Activity_03vtzas" />
+    <bpmn:endEvent id="Event_0b78j8f">
+      <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="Event_1o1kbe7">
+      <bpmn:incoming>Flow_1g5hh8f</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_14o5swb" name="Ste p3" gatewayDirection="Diverging">
+      <bpmn:incoming>Flow_0x8oimr</bpmn:incoming>
+      <bpmn:outgoing>Flow_18b53td</bpmn:outgoing>
+      <bpmn:outgoing>Flow_14t4myq</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
     <bpmn:scriptTask id="Activity_03vtzas" name="Step 1" scriptFormat="java">
       <bpmn:incoming>Flow_0mlcruj</bpmn:incoming>
       <bpmn:outgoing>Flow_09guua2</bpmn:outgoing>
-      <bpmn:script>// userId is automatically set by MessagePayloadExtractor listener
+      <bpmn:script>// Extract userId from the payload object
+com.example.payload.RenewalsPayload payload =
+    (com.example.payload.RenewalsPayload) kcontext.getVariable("message_Event_1imz6h6");
+String extractedUserId = payload != null ? payload.getUserId() : null;
+kcontext.setVariable("userId", extractedUserId);
+
 System.out.println("testing testing testing");
-System.out.println("userId: " + kcontext.getVariable("userId"));</bpmn:script>
+System.out.println("userId: " + extractedUserId);</bpmn:script>
     </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_09guua2" sourceRef="Activity_03vtzas" targetRef="Activity_05r7j6b" />
+    <bpmn:scriptTask id="Activity_10h9hba" name="Step 4" scriptFormat="java">
+      <bpmn:incoming>Flow_18b53td</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qmkn3d</bpmn:outgoing>
+      <bpmn:script></bpmn:script>
+    </bpmn:scriptTask>
     <bpmn:businessRuleTask id="Activity_05r7j6b" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
       <bpmn:incoming>Flow_09guua2</bpmn:incoming>
@@ -113,26 +134,6 @@ System.out.println("userId: " + kcontext.getVariable("userId"));</bpmn:script>
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:exclusiveGateway id="Gateway_14o5swb" name="Ste p3" gatewayDirection="Diverging">
-      <bpmn:incoming>Flow_0x8oimr</bpmn:incoming>
-      <bpmn:outgoing>Flow_18b53td</bpmn:outgoing>
-      <bpmn:outgoing>Flow_14t4myq</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_0x8oimr" sourceRef="Activity_05r7j6b" targetRef="Gateway_14o5swb" />
-    <bpmn:scriptTask id="Activity_10h9hba" name="Step 4" scriptFormat="java">
-      <bpmn:incoming>Flow_18b53td</bpmn:incoming>
-      <bpmn:outgoing>Flow_0qmkn3d</bpmn:outgoing>
-      <bpmn:script></bpmn:script>
-    </bpmn:scriptTask>
-    <bpmn:sequenceFlow id="Flow_18b53td" sourceRef="Gateway_14o5swb" targetRef="Activity_10h9hba">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:endEvent id="Event_0b78j8f">
-      <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_14t4myq" sourceRef="Gateway_14o5swb" targetRef="Event_0b78j8f">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return !Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
     <bpmn:intermediateThrowEvent id="Event_0tyznr4" name="Step 5">
       <bpmn:incoming>Flow_0qmkn3d</bpmn:incoming>
       <bpmn:outgoing>Flow_00etiw2</bpmn:outgoing>
@@ -149,8 +150,6 @@ System.out.println("userId: " + kcontext.getVariable("userId"));</bpmn:script>
       </bpmn:inputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_17ocijl" messageRef="Message_Event_0tyznr4" />
     </bpmn:intermediateThrowEvent>
-    <bpmn:sequenceFlow id="Flow_0qmkn3d" sourceRef="Activity_10h9hba" targetRef="Event_0tyznr4" />
-    <bpmn:sequenceFlow id="Flow_00etiw2" sourceRef="Event_0tyznr4" targetRef="Event_1n6xats" />
     <bpmn:intermediateCatchEvent id="Event_1n6xats" name="Step 6">
       <bpmn:incoming>Flow_00etiw2</bpmn:incoming>
       <bpmn:outgoing>Flow_1g5hh8f</bpmn:outgoing>
@@ -164,53 +163,59 @@ System.out.println("userId: " + kcontext.getVariable("userId"));</bpmn:script>
       </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1tw1uj9" messageRef="Message_Event_1n6xats" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:endEvent id="Event_1o1kbe7">
-      <bpmn:incoming>Flow_1g5hh8f</bpmn:incoming>
-    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0mlcruj" sourceRef="Event_0m799to" targetRef="Activity_03vtzas" />
+    <bpmn:sequenceFlow id="Flow_09guua2" sourceRef="Activity_03vtzas" targetRef="Activity_05r7j6b" />
+    <bpmn:sequenceFlow id="Flow_0x8oimr" sourceRef="Activity_05r7j6b" targetRef="Gateway_14o5swb" />
+    <bpmn:sequenceFlow id="Flow_18b53td" sourceRef="Gateway_14o5swb" targetRef="Activity_10h9hba">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_14t4myq" sourceRef="Gateway_14o5swb" targetRef="Event_0b78j8f">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return !Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0qmkn3d" sourceRef="Activity_10h9hba" targetRef="Event_0tyznr4" />
+    <bpmn:sequenceFlow id="Flow_00etiw2" sourceRef="Event_0tyznr4" targetRef="Event_1n6xats" />
     <bpmn:sequenceFlow id="Flow_1g5hh8f" sourceRef="Event_1n6xats" targetRef="Event_1o1kbe7" />
   </bpmn:process>
-  <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
       <bpmndi:BPMNShape id="Event_1jm45pr_di" bpmnElement="Event_0m799to">
         <dc:Bounds x="232" y="292" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0thapl2_di" bpmnElement="Activity_03vtzas">
-        <dc:Bounds x="360" y="270" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_04fycw1_di" bpmnElement="Activity_05r7j6b">
-        <dc:Bounds x="560" y="270" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_14o5swb_di" bpmnElement="Gateway_14o5swb" isMarkerVisible="true">
-        <dc:Bounds x="755" y="285" width="50" height="50" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="844" y="300" width="32" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_18xu45g_di" bpmnElement="Activity_10h9hba">
-        <dc:Bounds x="730" y="110" width="100" height="80" />
-        <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0b78j8f_di" bpmnElement="Event_0b78j8f">
         <dc:Bounds x="762" y="452" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1o1kbe7_di" bpmnElement="Event_1o1kbe7">
+        <dc:Bounds x="1122" y="132" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_14o5swb_di" bpmnElement="Gateway_14o5swb" isMarkerVisible="true">
+        <dc:Bounds x="755" y="285" width="50" height="50" />
+        <bpmndi:BPMNLabel id="_29BF88AC-20CA-4A8C-B683-E627A901C8CF">
+          <dc:Bounds x="844" y="300" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0thapl2_di" bpmnElement="Activity_03vtzas">
+        <dc:Bounds x="360" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel id="_10703F5D-6E61-4E52-842E-1486A270E52F" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18xu45g_di" bpmnElement="Activity_10h9hba">
+        <dc:Bounds x="730" y="110" width="100" height="80" />
+        <bpmndi:BPMNLabel id="_FDA46D30-A1BB-4C32-8188-E60BAEEB00EE" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_04fycw1_di" bpmnElement="Activity_05r7j6b">
+        <dc:Bounds x="560" y="270" width="100" height="80" />
+        <bpmndi:BPMNLabel id="_F63A68B4-3D14-46E6-9EFC-404355988E51" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1xh10t6_di" bpmnElement="Event_0tyznr4">
         <dc:Bounds x="902" y="132" width="36" height="36" />
-        <bpmndi:BPMNLabel>
+        <bpmndi:BPMNLabel id="_00B1DCE1-FD0A-4259-8225-1ADABD92FAF1">
           <dc:Bounds x="904" y="175" width="32" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0vgmreb_di" bpmnElement="Event_1n6xats">
         <dc:Bounds x="1012" y="132" width="36" height="36" />
-        <bpmndi:BPMNLabel>
+        <bpmndi:BPMNLabel id="_73CE2243-BE79-4180-ACB6-233F72A5BF6B">
           <dc:Bounds x="1014" y="175" width="32" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1o1kbe7_di" bpmnElement="Event_1o1kbe7">
-        <dc:Bounds x="1122" y="132" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0mlcruj_di" bpmnElement="Flow_0mlcruj">
         <di:waypoint x="268" y="310" />

@@ -26,11 +26,12 @@ import {
 /**
  * Message event info extracted from BPMN
  */
-interface MessageEventInfo {
+export interface MessageEventInfo {
   eventId: string;
   messageName: string;
   fields: PayloadFieldDefinition[];
   bpmnFile: string;
+  cloudEvents?: boolean;
 }
 
 /**
@@ -65,6 +66,9 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
     const messageMatch = bpmnXml.match(messagePattern);
     const messageName = messageMatch ? messageMatch[1] : messageRef;
 
+    // Extract CloudEvents flag from PayloadDefinition (default true)
+    const cloudEvents = extractCloudEventsFlag(eventBlock);
+
     // Extract payload fields from extension elements
     const fields = extractPayloadFields(eventBlock);
 
@@ -74,12 +78,35 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
         eventId,
         messageName,
         fields,
-        bpmnFile
+        bpmnFile,
+        cloudEvents
       });
     }
   }
 
   return events;
+}
+
+/**
+ * Extract message events from a single BPMN file content
+ * Exposed for use by auto-generation feature
+ */
+export function extractMessageEventsFromContent(bpmnXml: string, bpmnFile: string): MessageEventInfo[] {
+  return extractMessageEvents(bpmnXml, bpmnFile);
+}
+
+/**
+ * Extract CloudEvents flag from PayloadDefinition
+ * Defaults to true if not specified
+ */
+function extractCloudEventsFlag(eventBlock: string): boolean {
+  // Look for cloudEvents attribute in msgevt:PayloadDefinition or msgevt:payloadDefinition
+  const cloudEventsMatch = eventBlock.match(/<msgevt:(?:payloadDefinition|PayloadDefinition)[^>]*cloudEvents="([^"]+)"/i);
+  if (cloudEventsMatch) {
+    return cloudEventsMatch[1].toLowerCase() !== 'false';
+  }
+  // Default to true
+  return true;
 }
 
 /**
@@ -126,7 +153,7 @@ function extractPayloadFields(eventBlock: string): PayloadFieldDefinition[] {
 /**
  * Scan all BPMN files in workspace and extract message events
  */
-async function scanBpmnFiles(): Promise<MessageEventInfo[]> {
+export async function scanBpmnFiles(): Promise<MessageEventInfo[]> {
   const allEvents: MessageEventInfo[] = [];
 
   // Find all .bpmn files in workspace
@@ -149,7 +176,7 @@ async function scanBpmnFiles(): Promise<MessageEventInfo[]> {
 /**
  * Generate Java classes for message events
  */
-async function generateJavaClasses(
+export async function generateJavaClasses(
   events: MessageEventInfo[],
   packageName: string,
   projectRoot: string
@@ -232,7 +259,7 @@ async function generateJavaClasses(
  * Update BPMN file with itemDefinition reference to generated class
  * Also updates related itemDefinitions for dataOutputs and process variables
  */
-async function updateBpmnWithItemDefinition(
+export async function updateBpmnWithItemDefinition(
   event: MessageEventInfo,
   packageName: string
 ): Promise<void> {
