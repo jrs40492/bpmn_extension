@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:msgevt="http://bamoe.io/schema/message-event" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:itemDefinition id="_Message_Event_0m799to_Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_Event_0m799to_Item" structureRef="com.example.payload.Event0m799toPayload" />
   <bpmn:message id="Message_Event_0m799to" name="message_Event_0m799to" itemRef="_Message_Event_0m799to_Item" />
-  <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_0m799to_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.Event0m799toPayload" />
+  <bpmn:itemDefinition id="_Event_0m799to_OutputItem" structureRef="com.example.payload.Event0m799toPayload" />
+  <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.Event0m799toPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_05r7j6b_namespaceInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_05r7j6b_modelInputXItem" structureRef="java.lang.String" />
@@ -44,7 +44,7 @@
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0mlcruj</bpmn:outgoing>
-      <bpmn:dataOutput id="Event_0m799to_OutputX" itemSubjectRef="_Event_0m799to_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutput id="Event_0m799to_OutputX" itemSubjectRef="_Event_0m799to_OutputItem" name="event" drools:dtype="com.example.payload.Event0m799toPayload" />
       <bpmn:dataOutput id="Event_0m799to_userId" itemSubjectRef="_Event_0m799to_userIdItem" name="userId" drools:dtype="java.lang.String" />
       <bpmn:dataOutputAssociation id="DataOutputAssociation_0jxfvg3">
         <bpmn:sourceRef>Event_0m799to_OutputX</bpmn:sourceRef>
