@@ -27,8 +27,8 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
 
-            if ("Event_0m799to".equals(nodeId)) {
-                com.example.payload.RenewalsPayload payload = (com.example.payload.RenewalsPayload) variables.get("message_Event_0m799to");
+            if ("Event_0x2mg5v".equals(nodeId)) {
+                com.example.payload.RenewalsPayload payload = (com.example.payload.RenewalsPayload) variables.get("message_Event_0x2mg5v");
                 if (payload != null) {
                     variables.put("userId", payload.getUserId());
                 }

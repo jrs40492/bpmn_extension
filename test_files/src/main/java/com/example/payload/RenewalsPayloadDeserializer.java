@@ -15,35 +15,14 @@ public class RenewalsPayloadDeserializer extends JsonDeserializer<RenewalsPayloa
     @Override
     public RenewalsPayload deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
         JsonNode root = p.getCodec().readTree(p);
-
-        // DEBUG: Print what JSON we're actually receiving
-        System.out.println("========================================");
-        System.out.println("DESERIALIZER RECEIVED JSON:");
-        System.out.println(root.toString());
-        System.out.println("========================================");
+        String json = root.toString();
 
         RenewalsPayload payload = new RenewalsPayload();
 
-        // Try both paths and see which one works
-        JsonNode directNode = root.path("userId");
-        JsonNode nestedNode = root.path("data").path("userId");
-
-        System.out.println("Direct $.userId: " + directNode + " (missing=" + directNode.isMissingNode() + ")");
-        System.out.println("Nested $.data.userId: " + nestedNode + " (missing=" + nestedNode.isMissingNode() + ")");
-
-        // Use whichever path has the value
-        if (!directNode.isMissingNode()) {
-            payload.setUserId(directNode.asText());
-            System.out.println("Using DIRECT path, userId = " + directNode.asText());
-        } else if (!nestedNode.isMissingNode()) {
-            payload.setUserId(nestedNode.asText());
-            System.out.println("Using NESTED path, userId = " + nestedNode.asText());
-        } else {
-            System.out.println("WARNING: userId not found in either path!");
+        JsonNode userIdNode = root.path("data").path("userId");
+        if (userIdNode != null && !userIdNode.isMissingNode()) {
+            payload.setUserId(userIdNode.asText());
         }
-
-        System.out.println("Final payload.getUserId() = " + payload.getUserId());
-        System.out.println("========================================");
 
         return payload;
     }
