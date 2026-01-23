@@ -8,6 +8,8 @@
   <bpmn:itemDefinition id="_Activity_0lb2cub_userIdInputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_hasUserIdOutputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_Event_0dltrdv_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_0dltrdv" name="renewalRequest" itemRef="_Message_Event_0dltrdv_Item" />
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -81,21 +83,32 @@
     <bpmn:endEvent id="Event_0pe5dkf">
       <bpmn:incoming>Flow_0d2mn5w</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:endEvent id="Event_1djjz13">
-      <bpmn:incoming>Flow_1m5aq0p</bpmn:incoming>
-    </bpmn:endEvent>
     <bpmn:exclusiveGateway id="Gateway_0p81tid" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_05al3r1</bpmn:incoming>
-      <bpmn:outgoing>Flow_1m5aq0p</bpmn:outgoing>
       <bpmn:outgoing>Flow_0d2mn5w</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0agj6fl</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_05al3r1" sourceRef="Activity_0lb2cub" targetRef="Gateway_0p81tid" />
-    <bpmn:sequenceFlow id="Flow_1m5aq0p" sourceRef="Gateway_0p81tid" targetRef="Event_1djjz13">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0d2mn5w" sourceRef="Gateway_0p81tid" targetRef="Event_0pe5dkf">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">!hasUserId</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_0agj6fl" sourceRef="Gateway_0p81tid" targetRef="Activity_0b4jbzk">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:scriptTask id="Activity_0b4jbzk">
+      <bpmn:incoming>Flow_0agj6fl</bpmn:incoming>
+      <bpmn:outgoing>Flow_19m7wpw</bpmn:outgoing>
+    </bpmn:scriptTask>
+    <bpmn:sequenceFlow id="Flow_19m7wpw" sourceRef="Activity_0b4jbzk" targetRef="Event_0dltrdv" />
+    <bpmn:intermediateThrowEvent id="Event_0dltrdv">
+      <bpmn:incoming>Flow_19m7wpw</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wnos9k</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_1eo6b55" messageRef="Message_Event_0dltrdv" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:endEvent id="Event_0pu6xnn">
+      <bpmn:incoming>Flow_0wnos9k</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0wnos9k" sourceRef="Event_0dltrdv" targetRef="Event_0pu6xnn" />
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
@@ -111,11 +124,17 @@
       <bpmndi:BPMNShape id="Event_0pe5dkf_di" bpmnElement="Event_0pe5dkf">
         <dc:Bounds x="542" y="472" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1djjz13_di" bpmnElement="Event_1djjz13">
-        <dc:Bounds x="672" y="322" width="36" height="36" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_0p81tid_di" bpmnElement="Gateway_0p81tid" isMarkerVisible="true">
         <dc:Bounds x="535" y="315" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0m59bta_di" bpmnElement="Activity_0b4jbzk">
+        <dc:Bounds x="510" y="140" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1ewe0a7_di" bpmnElement="Event_0dltrdv">
+        <dc:Bounds x="662" y="162" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pu6xnn_di" bpmnElement="Event_0pu6xnn">
+        <dc:Bounds x="752" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
         <di:waypoint x="278" y="340" />
@@ -125,13 +144,21 @@
         <di:waypoint x="450" y="340" />
         <di:waypoint x="535" y="340" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1m5aq0p_di" bpmnElement="Flow_1m5aq0p">
-        <di:waypoint x="585" y="340" />
-        <di:waypoint x="672" y="340" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0d2mn5w_di" bpmnElement="Flow_0d2mn5w">
         <di:waypoint x="560" y="365" />
         <di:waypoint x="560" y="472" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0agj6fl_di" bpmnElement="Flow_0agj6fl">
+        <di:waypoint x="560" y="315" />
+        <di:waypoint x="560" y="220" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19m7wpw_di" bpmnElement="Flow_19m7wpw">
+        <di:waypoint x="610" y="180" />
+        <di:waypoint x="662" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wnos9k_di" bpmnElement="Flow_0wnos9k">
+        <di:waypoint x="698" y="180" />
+        <di:waypoint x="752" y="180" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
