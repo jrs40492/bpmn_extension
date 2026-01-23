@@ -99,7 +99,7 @@
     <bpmn:intermediateThrowEvent id="Event_0dltrdv">
       <bpmn:incoming>Flow_1k7fkw6</bpmn:incoming>
       <bpmn:outgoing>Flow_0wnos9k</bpmn:outgoing>
-      <bpmn:dataInput id="Event_0dltrdv_InputX" name="event" itemSubjectRef="_Event_0dltrdv_InputItem" />
+      <bpmn:dataInput id="Event_0dltrdv_InputX" itemSubjectRef="_Event_0dltrdv_InputItem" name="event" drools:dtype="java.lang.String" />
       <bpmn:dataInputAssociation id="DataInputAssociation_1o4m05y">
         <bpmn:targetRef>Event_0dltrdv_InputX</bpmn:targetRef>
         <bpmn:assignment>

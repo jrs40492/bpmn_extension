@@ -1222,6 +1222,28 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
+      // Fix message throw events (Intermediate Throw and End) that have data inputs missing drools:dtype
+      // Kogito requires drools:dtype attribute on all data inputs for proper code generation
+      if (isIntermediateThrowMessageEvent(element) || isEndMessageEvent(element)) {
+        const throwBo = element.businessObject;
+        if (throwBo) {
+          // For events, dataInputs is directly on the event (not in ioSpecification)
+          const dataInputs = (throwBo as unknown as { dataInputs?: ModdleElement[] }).dataInputs || [];
+          for (const dataInput of dataInputs) {
+            // Check if drools:dtype is missing
+            const dtype = (dataInput as unknown as { 'drools:dtype'?: string })['drools:dtype'];
+            if (!dtype) {
+              // Add the missing drools:dtype attribute
+              commandStack.execute('element.updateModdleProperties', {
+                element,
+                moddleElement: dataInput,
+                properties: { 'drools:dtype': 'java.lang.String' }
+              });
+            }
+          }
+        }
+      }
+
       // Add Message Event Configuration group for all message event types
       groups.push({
         id: 'message-event-configuration',

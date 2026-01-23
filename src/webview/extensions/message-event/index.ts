@@ -195,6 +195,8 @@ class MessageEventCreationHandler {
       name: 'event',
       itemSubjectRef: itemDef
     });
+    // Set drools:dtype attribute for Kogito compatibility (required for code generation)
+    (dataInput as unknown as { set?: (key: string, value: string) => void }).set?.('drools:dtype', 'java.lang.String');
     dataInput.$parent = bo;
 
     // Create input set referencing the data input - also directly on event
