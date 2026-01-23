@@ -1103,13 +1103,11 @@ function createAddFieldHandler(bpmnFactory: BpmnFactory, commandStack: CommandSt
     event.stopPropagation();
 
     const payloadDef = ensurePayloadDefinition(element, bpmnFactory, commandStack);
-    const cloudEventsMode = isCloudEventsEnabled(element);
 
-    // Create new field with appropriate expression based on CloudEvents mode
+    // Create new field - expression will be set when user enters field name
     const newField = bpmnFactory.create('msgevt:PayloadField', {
       name: '',
       type: 'string',
-      // In CloudEvents mode, expression will be set when user enters field name
       expression: ''
     }) as PayloadField;
     newField.$parent = payloadDef;
