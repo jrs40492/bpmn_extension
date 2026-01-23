@@ -9,7 +9,7 @@
   <bpmn:itemDefinition id="_Activity_0lb2cub_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_hasUserIdOutputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Message_Event_0kdmp29_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0kdmp29" name="renewalRequest" itemRef="_Message_Event_0kdmp29_Item" />
+  <bpmn:message id="Message_Event_0kdmp29" name="requestRenewal" itemRef="_Message_Event_0kdmp29_Item" />
   <bpmn:itemDefinition id="_Event_0kdmp29_InputItem" structureRef="java.lang.String" />
   <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:extensionElements>
