@@ -4,7 +4,6 @@
   <bpmn:message id="Message_Event_0m799to" name="message_Event_0m799to" itemRef="_Message_Event_0m799to_Item" />
   <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.Event0m799toPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_OutputItem" structureRef="com.example.payload.Event0m799toPayload" />
-  <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.Event0m799toPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_05r7j6b_namespaceInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_05r7j6b_modelInputXItem" structureRef="java.lang.String" />
@@ -13,7 +12,6 @@
   <bpmn:itemDefinition id="_Activity_05r7j6b_hasUserIdOutputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_message_Event_0tyznr4Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0tyznr4_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_0tyznr4Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Message_Event_0tyznr4_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
   <bpmn:itemDefinition id="_Event_0tyznr4_InputItem" structureRef="java.lang.String" />
@@ -21,8 +19,7 @@
   <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
   <bpmn:itemDefinition id="_message_Event_1n6xatsItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1n6xats_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_1n6xatsItem" structureRef="java.lang.Object" />
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="userId" />
@@ -30,12 +27,9 @@
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="message_Event_0m799to" itemSubjectRef="_message_Event_0m799toItem" name="message_Event_0m799to" />
-    <bpmn:property id="message_Event_0m799to" itemSubjectRef="_message_Event_0m799toItem" name="message_Event_0m799to" />
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:property id="message_Event_0tyznr4" itemSubjectRef="_message_Event_0tyznr4Item" name="message_Event_0tyznr4" />
-    <bpmn:property id="message_Event_0tyznr4" itemSubjectRef="_message_Event_0tyznr4Item" name="message_Event_0tyznr4" />
-    <bpmn:property id="message_Event_1n6xats" itemSubjectRef="_message_Event_1n6xatsItem" name="message_Event_1n6xats" />
     <bpmn:property id="message_Event_1n6xats" itemSubjectRef="_message_Event_1n6xatsItem" name="message_Event_1n6xats" />
     <bpmn:startEvent id="Event_0m799to">
       <bpmn:extensionElements>
@@ -75,11 +69,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_09guua2" sourceRef="Activity_03vtzas" targetRef="Activity_05r7j6b" />
     <bpmn:businessRuleTask id="Activity_05r7j6b" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
-      <bpmn:extensionElements>
-        <drools:metaData name="elementname">
-          <drools:metaValue>Activity_05r7j6b</drools:metaValue>
-        </drools:metaData>
-      </bpmn:extensionElements>
+      <bpmn:extensionElements />
       <bpmn:incoming>Flow_09guua2</bpmn:incoming>
       <bpmn:outgoing>Flow_0x8oimr</bpmn:outgoing>
       <bpmn:ioSpecification>
@@ -187,7 +177,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
       <bpmndi:BPMNShape id="Event_1jm45pr_di" bpmnElement="Event_0m799to">
         <dc:Bounds x="232" y="292" width="36" height="36" />
       </bpmndi:BPMNShape>
