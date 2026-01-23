@@ -96,9 +96,10 @@
     <bpmn:sequenceFlow id="Flow_0agj6fl" sourceRef="Gateway_0p81tid" targetRef="Activity_0xhu28a">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:intermediateThrowEvent id="Event_0dltrdv" ioSpecification="[object Object]">
+    <bpmn:intermediateThrowEvent id="Event_0dltrdv">
       <bpmn:incoming>Flow_1k7fkw6</bpmn:incoming>
       <bpmn:outgoing>Flow_0wnos9k</bpmn:outgoing>
+      <bpmn:dataInput id="Event_0dltrdv_InputX" name="event" itemSubjectRef="_Event_0dltrdv_InputItem" />
       <bpmn:dataInputAssociation id="DataInputAssociation_1o4m05y">
         <bpmn:targetRef>Event_0dltrdv_InputX</bpmn:targetRef>
         <bpmn:assignment>
@@ -106,6 +107,9 @@
           <bpmn:to xsi:type="bpmn:tFormalExpression">Event_0dltrdv_InputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
+      <bpmn:inputSet>
+        <bpmn:dataInputRefs>Event_0dltrdv_InputX</bpmn:dataInputRefs>
+      </bpmn:inputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1eo6b55" messageRef="Message_Event_0dltrdv" />
     </bpmn:intermediateThrowEvent>
     <bpmn:endEvent id="Event_0pu6xnn">

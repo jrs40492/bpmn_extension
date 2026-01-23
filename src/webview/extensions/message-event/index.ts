@@ -32,8 +32,9 @@ interface MessageEventDefinition extends ModdleElement {
 
 interface BusinessObject extends ModdleElement {
   eventDefinitions?: ModdleElement[];
-  ioSpecification?: ModdleElement;
+  dataInputs?: ModdleElement[];
   dataInputAssociations?: ModdleElement[];
+  inputSet?: ModdleElement;
 }
 
 interface BpmnElement {
@@ -132,8 +133,8 @@ class MessageEventCreationHandler {
       const bo = element.businessObject;
       if (!bo) return;
 
-      // Check if ioSpecification already exists
-      if (bo.ioSpecification) {
+      // Check if data inputs already exist (event already configured)
+      if (bo.dataInputs && bo.dataInputs.length > 0) {
         return;
       }
 
@@ -146,6 +147,10 @@ class MessageEventCreationHandler {
 
   /**
    * Set up required data input structures for a message throw event.
+   *
+   * BPMN Events use dataInputs, inputSet, and dataInputAssociations directly
+   * (NOT ioSpecification which is only for Activities/Tasks).
+   *
    * Creates: dataInput, inputSet, and a default dataInputAssociation
    */
   private setupThrowEventDataStructures(
@@ -183,27 +188,20 @@ class MessageEventCreationHandler {
       properties: { rootElements: newRootElements }
     });
 
-    // Create data input
+    // Create data input - for events this goes directly on the event, not in ioSpecification
     const dataInputId = `${eventId}_InputX`;
     const dataInput = bpmnFactory.create('bpmn:DataInput', {
       id: dataInputId,
       name: 'event',
       itemSubjectRef: itemDef
     });
+    dataInput.$parent = bo;
 
-    // Create input set referencing the data input
+    // Create input set referencing the data input - also directly on event
     const inputSet = bpmnFactory.create('bpmn:InputSet', {
       dataInputRefs: [dataInput]
     });
-
-    // Create ioSpecification with dataInput and inputSet
-    const ioSpec = bpmnFactory.create('bpmn:InputOutputSpecification', {
-      dataInputs: [dataInput],
-      inputSets: [inputSet]
-    });
-    dataInput.$parent = ioSpec;
-    inputSet.$parent = ioSpec;
-    ioSpec.$parent = bo;
+    inputSet.$parent = bo;
 
     // Create a default data input association
     // This maps an empty string to prevent null pointer errors
@@ -228,11 +226,13 @@ class MessageEventCreationHandler {
     dataInputAssociation.$parent = bo;
 
     // Update the business object with the new structures
+    // For events: dataInputs, inputSet, dataInputAssociations go directly on the event
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: bo,
       properties: {
-        ioSpecification: ioSpec,
+        dataInputs: [dataInput],
+        inputSet: inputSet,
         dataInputAssociations: [dataInputAssociation]
       }
     });
