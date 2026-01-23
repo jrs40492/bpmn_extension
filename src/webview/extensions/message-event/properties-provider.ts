@@ -510,6 +510,10 @@ function ensureProcessProperty(
 
 /**
  * Create or update data output for a payload field
+ *
+ * IMPORTANT: BPMN Events use dataOutputs, outputSet, and dataOutputAssociations
+ * DIRECTLY on the event element (NOT inside an ioSpecification).
+ * ioSpecification is only used for Activities/Tasks.
  */
 function ensureDataOutput(
   element: BpmnElement,
@@ -529,70 +533,63 @@ function ensureDataOutput(
   // Ensure itemDefinition exists
   const itemDef = ensureItemDefinition(definitions, itemDefId, getJavaType(fieldType), bpmnFactory, element, commandStack);
 
-  // Check if ioSpecification exists and is valid (not a corrupted string like "[object Object]")
-  let ioSpec = bo.ioSpecification as IoSpecification;
-  const isValidIoSpec = ioSpec && typeof ioSpec === 'object' && ioSpec.$type === 'bpmn:InputOutputSpecification';
-
-  if (!isValidIoSpec) {
-    // If there's a corrupted ioSpecification (string instead of object), clear it first
-    if (ioSpec && typeof ioSpec === 'string') {
-      // Remove the corrupted attribute by setting to undefined first
-      commandStack.execute('element.updateModdleProperties', {
-        element,
-        moddleElement: bo,
-        properties: { ioSpecification: undefined }
-      });
-    }
-
-    // Create outputSet first
-    const outputSet = bpmnFactory.create('bpmn:OutputSet', {});
-
-    ioSpec = bpmnFactory.create('bpmn:InputOutputSpecification', {
-      dataOutputs: [],
-      outputSets: [outputSet]
-    }) as IoSpecification;
-    outputSet.$parent = ioSpec;
-    ioSpec.$parent = bo;
-
+  // Clean up any corrupted ioSpecification attribute (events don't use ioSpecification)
+  const ioSpec = bo.ioSpecification;
+  if (ioSpec) {
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: bo,
-      properties: { ioSpecification: ioSpec }
+      properties: { ioSpecification: undefined }
     });
   }
 
-  // Check if dataOutput already exists
-  const dataOutputs = ioSpec.dataOutputs || [];
-  let dataOutput = dataOutputs.find((d: DataOutput) => d.name === fieldName) as DataOutput | undefined;
+  // For events, dataOutputs and outputSet go directly on the event element
+  // Get existing dataOutputs from the event (not from ioSpecification)
+  const existingDataOutputs = (bo as unknown as { dataOutputs?: DataOutput[] }).dataOutputs || [];
+  let dataOutput = existingDataOutputs.find((d: DataOutput) => d.name === fieldName) as DataOutput | undefined;
 
   if (!dataOutput) {
+    // Create the dataOutput
     dataOutput = bpmnFactory.create('bpmn:DataOutput', {
       id: outputId,
       name: fieldName,
       itemSubjectRef: itemDef
     }) as DataOutput;
-    dataOutput.$parent = ioSpec;
+    // Set drools:dtype for Kogito compatibility
+    (dataOutput as unknown as { set?: (key: string, value: string) => void }).set?.('drools:dtype', getJavaType(fieldType));
+    dataOutput.$parent = bo;
 
-    const newDataOutputs = [...dataOutputs, dataOutput];
+    const newDataOutputs = [...existingDataOutputs, dataOutput];
 
-    // Update ioSpecification with new dataOutput
+    // Get or create outputSet directly on the event
+    let outputSet = (bo as unknown as { outputSet?: ModdleElement }).outputSet;
+    if (!outputSet) {
+      outputSet = bpmnFactory.create('bpmn:OutputSet', {
+        dataOutputRefs: []
+      });
+      outputSet.$parent = bo;
+    }
+
+    // Add dataOutput to outputSet's dataOutputRefs
+    const existingRefs = (outputSet as unknown as { dataOutputRefs?: DataOutput[] }).dataOutputRefs || [];
+    const newRefs = [...existingRefs, dataOutput];
+
+    // Update the event with dataOutputs and outputSet directly (NOT ioSpecification)
     commandStack.execute('element.updateModdleProperties', {
       element,
-      moddleElement: ioSpec,
-      properties: { dataOutputs: newDataOutputs }
+      moddleElement: bo,
+      properties: {
+        dataOutputs: newDataOutputs,
+        outputSet: outputSet
+      }
     });
 
-    // Also update outputSet dataOutputRefs through commandStack
-    const outputSet = ioSpec.outputSets?.[0];
-    if (outputSet) {
-      const dataOutputRefs = (outputSet as unknown as { dataOutputRefs?: DataOutput[] }).dataOutputRefs || [];
-      const newDataOutputRefs = [...dataOutputRefs, dataOutput];
-      commandStack.execute('element.updateModdleProperties', {
-        element,
-        moddleElement: outputSet,
-        properties: { dataOutputRefs: newDataOutputRefs }
-      });
-    }
+    // Update outputSet dataOutputRefs
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: outputSet,
+      properties: { dataOutputRefs: newRefs }
+    });
   }
 
   return dataOutput;
@@ -1028,17 +1025,26 @@ function createRemoveFieldHandler(commandStack: CommandStack, element: BpmnEleme
         });
       }
 
-      // Remove dataOutput from ioSpecification
-      const ioSpec = bo.ioSpecification as IoSpecification;
-      if (ioSpec) {
-        const dataOutputs = ioSpec.dataOutputs || [];
-        const newDataOutputs = dataOutputs.filter((d: DataOutput) => d.name !== field.name);
+      // Remove dataOutput from the event directly (events don't use ioSpecification)
+      const dataOutputs = (bo as unknown as { dataOutputs?: DataOutput[] }).dataOutputs || [];
+      const newDataOutputs = dataOutputs.filter((d: DataOutput) => d.name !== field.name);
 
-        if (newDataOutputs.length !== dataOutputs.length) {
+      if (newDataOutputs.length !== dataOutputs.length) {
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: bo,
+          properties: { dataOutputs: newDataOutputs }
+        });
+
+        // Also update outputSet dataOutputRefs
+        const outputSet = (bo as unknown as { outputSet?: ModdleElement }).outputSet;
+        if (outputSet) {
+          const dataOutputRefs = (outputSet as unknown as { dataOutputRefs?: DataOutput[] }).dataOutputRefs || [];
+          const newRefs = dataOutputRefs.filter((d: DataOutput) => d.name !== field.name);
           commandStack.execute('element.updateModdleProperties', {
             element,
-            moddleElement: ioSpec,
-            properties: { dataOutputs: newDataOutputs }
+            moddleElement: outputSet,
+            properties: { dataOutputRefs: newRefs }
           });
         }
       }
@@ -1207,19 +1213,19 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
-      // Clean up corrupted ioSpecification (string "[object Object]" instead of proper element)
+      // Clean up ioSpecification from events (events don't use ioSpecification - that's only for Activities/Tasks)
+      // This handles both corrupted string values like "[object Object]" and actual ioSpecification objects
       const bo = element.businessObject;
       if (bo) {
         const ioSpec = bo.ioSpecification;
-        if (ioSpec && typeof ioSpec === 'string') {
-          // Remove the corrupted attribute and any orphaned associations
-          // (associations without valid dataOutputs would cause jBPM errors)
+        if (ioSpec) {
+          // Events should have dataOutputs/outputSet directly, not in ioSpecification
+          // Remove the ioSpecification attribute entirely
           commandStack.execute('element.updateModdleProperties', {
             element,
             moddleElement: bo,
             properties: {
-              ioSpecification: undefined,
-              dataOutputAssociations: undefined
+              ioSpecification: undefined
             }
           });
         }

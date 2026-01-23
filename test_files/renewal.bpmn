@@ -21,6 +21,8 @@
   <bpmn:itemDefinition id="_Event_1imz6h6_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_message_Event_1imz6h6Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1imz6h6_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_DecisionTable_1slxj73OutputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_1imz6h6_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:process id="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -45,6 +47,7 @@
         <bpmn:dataInput id="Activity_0lb2cub_userIdInputX" itemSubjectRef="_Activity_0lb2cub_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
         <bpmn:dataOutput id="Activity_0lb2cub_Decision_020986qOutputX" itemSubjectRef="_Activity_0lb2cub_Decision_020986qOutputXItem" name="Decision_020986q" drools:dtype="java.lang.Object" />
         <bpmn:dataOutput id="Activity_0lb2cub_hasUserIdOutputX" itemSubjectRef="_Activity_0lb2cub_hasUserIdOutputXItem" name="hasUserId" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_0lb2cub_DecisionTable_1slxj73OutputX" itemSubjectRef="_Activity_0lb2cub_DecisionTable_1slxj73OutputXItem" name="DecisionTable_1slxj73" drools:dtype="java.lang.Object" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_0lb2cub_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_0lb2cub_modelInputX</bpmn:dataInputRefs>
@@ -54,6 +57,7 @@
         <bpmn:outputSet>
           <bpmn:dataOutputRefs>Activity_0lb2cub_Decision_020986qOutputX</bpmn:dataOutputRefs>
           <bpmn:dataOutputRefs>Activity_0lb2cub_hasUserIdOutputX</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_0lb2cub_DecisionTable_1slxj73OutputX</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
       <bpmn:dataInputAssociation id="DataInputAssociation_11eoho4">
@@ -73,7 +77,7 @@
       <bpmn:dataInputAssociation id="DataInputAssociation_1n66neu">
         <bpmn:targetRef>Activity_0lb2cub_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_020986q</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">DecisionTable_1slxj73</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -89,8 +93,12 @@
         <bpmn:sourceRef>Activity_0lb2cub_hasUserIdOutputX</bpmn:sourceRef>
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1yo2bph">
+        <bpmn:sourceRef>Activity_0lb2cub_DecisionTable_1slxj73OutputX</bpmn:sourceRef>
+        <bpmn:targetRef>hasUserId</bpmn:targetRef>
+      </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:startEvent id="Event_1imz6h6">
+    <bpmn:startEvent id="Event_1imz6h6" ioSpecification="[object Object]">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
           <msgevt:payloadField name="userId" expression="$.data.userId" />
