@@ -156,9 +156,6 @@ ${gettersSetters}
 }
 
 /**
- * Generate a custom Jackson deserializer for nested JSONPath expressions
- */
-/**
  * Get the effective JsonPath for extraction in the deserializer.
  * Kogito unwraps CloudEvents, so $.data.userId becomes $.userId
  * since the deserializer receives just the data portion.
@@ -173,6 +170,21 @@ function getEffectiveJsonPath(expression: string): string {
     path = '$.' + path.substring(7); // Remove "$.data." prefix, keep "$."
   }
   return path;
+}
+
+/**
+ * Check if any field actually requires JsonPath library (after CloudEvent unwrapping).
+ * This is different from requiresCustomDeserializer - a deserializer may be needed
+ * but can use simple Jackson field access instead of JsonPath.
+ */
+export function requiresJsonPathLibrary(fields: PayloadFieldDefinition[]): boolean {
+  return fields.some(f => {
+    const expr = f.expression?.trim() || '';
+    const effectivePath = getEffectiveJsonPath(expr);
+    const effectiveDotCount = (effectivePath.match(/\./g) || []).length;
+    // Needs JsonPath if effective path has 2+ dots (e.g., $.nested.field)
+    return effectiveDotCount >= 2;
+  });
 }
 
 export function generateDeserializerClass(

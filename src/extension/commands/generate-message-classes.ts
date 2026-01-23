@@ -17,7 +17,8 @@ import {
   generatePayloadClass,
   generateDeserializerClass,
   generateClassName,
-  requiresCustomDeserializer
+  requiresCustomDeserializer,
+  requiresJsonPathLibrary
 } from '../utils/java-generator';
 
 /**
@@ -187,7 +188,10 @@ async function generateJavaClasses(
 
     // Generate deserializer if needed
     if (requiresCustomDeserializer(event.fields)) {
-      needsJsonPath = true;
+      // Only set needsJsonPath if deserializer actually uses JsonPath (not just simple field access)
+      if (requiresJsonPathLibrary(event.fields)) {
+        needsJsonPath = true;
+      }
       const deserializerCode = generateDeserializerClass(packageName, className, event.fields);
       const deserializerPath = getJavaClassPath(projectRoot, packageName, `${className}Deserializer`);
 
