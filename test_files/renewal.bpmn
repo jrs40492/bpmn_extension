@@ -6,8 +6,7 @@
   <bpmn:itemDefinition id="_Activity_0lb2cub_modelInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_decisionInputXItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Activity_0lb2cub_userIdInputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Activity_0lb2cub_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Activity_0lb2cub_hasUserIdOutputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_hasUserIdOutputXItem" structureRef="java.lang.Boolean" />
   <bpmn:itemDefinition id="_Message_Event_0kdmp29_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_0kdmp29" name="requestRenewal" itemRef="_Message_Event_0kdmp29_Item" />
   <bpmn:itemDefinition id="_Event_0kdmp29_InputItem" structureRef="java.lang.String" />
@@ -21,7 +20,6 @@
   <bpmn:itemDefinition id="_Event_1imz6h6_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:itemDefinition id="_message_Event_1imz6h6Item" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:itemDefinition id="_Event_1imz6h6_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0lb2cub_DecisionTable_1slxj73OutputXItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1imz6h6_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:process id="renewal" isExecutable="true">
     <bpmn:extensionElements>
@@ -45,9 +43,7 @@
         <bpmn:dataInput id="Activity_0lb2cub_modelInputX" itemSubjectRef="_Activity_0lb2cub_modelInputXItem" name="model" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_0lb2cub_decisionInputX" itemSubjectRef="_Activity_0lb2cub_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
         <bpmn:dataInput id="Activity_0lb2cub_userIdInputX" itemSubjectRef="_Activity_0lb2cub_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
-        <bpmn:dataOutput id="Activity_0lb2cub_Decision_020986qOutputX" itemSubjectRef="_Activity_0lb2cub_Decision_020986qOutputXItem" name="Decision_020986q" drools:dtype="java.lang.Object" />
-        <bpmn:dataOutput id="Activity_0lb2cub_hasUserIdOutputX" itemSubjectRef="_Activity_0lb2cub_hasUserIdOutputXItem" name="hasUserId" drools:dtype="java.lang.Object" />
-        <bpmn:dataOutput id="Activity_0lb2cub_DecisionTable_1slxj73OutputX" itemSubjectRef="_Activity_0lb2cub_DecisionTable_1slxj73OutputXItem" name="DecisionTable_1slxj73" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_0lb2cub_hasUserIdOutputX" itemSubjectRef="_Activity_0lb2cub_hasUserIdOutputXItem" name="hasUserId" drools:dtype="java.lang.Boolean" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_0lb2cub_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_0lb2cub_modelInputX</bpmn:dataInputRefs>
@@ -55,9 +51,7 @@
           <bpmn:dataInputRefs>Activity_0lb2cub_userIdInputX</bpmn:dataInputRefs>
         </bpmn:inputSet>
         <bpmn:outputSet>
-          <bpmn:dataOutputRefs>Activity_0lb2cub_Decision_020986qOutputX</bpmn:dataOutputRefs>
           <bpmn:dataOutputRefs>Activity_0lb2cub_hasUserIdOutputX</bpmn:dataOutputRefs>
-          <bpmn:dataOutputRefs>Activity_0lb2cub_DecisionTable_1slxj73OutputX</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
       <bpmn:dataInputAssociation id="DataInputAssociation_11eoho4">
@@ -85,16 +79,8 @@
         <bpmn:sourceRef>userId</bpmn:sourceRef>
         <bpmn:targetRef>Activity_0lb2cub_userIdInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_012kmwy">
-        <bpmn:sourceRef>Activity_0lb2cub_Decision_020986qOutputX</bpmn:sourceRef>
-        <bpmn:targetRef>hasUserId</bpmn:targetRef>
-      </bpmn:dataOutputAssociation>
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1o6g7w9">
         <bpmn:sourceRef>Activity_0lb2cub_hasUserIdOutputX</bpmn:sourceRef>
-        <bpmn:targetRef>hasUserId</bpmn:targetRef>
-      </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_1yo2bph">
-        <bpmn:sourceRef>Activity_0lb2cub_DecisionTable_1slxj73OutputX</bpmn:sourceRef>
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
@@ -198,6 +184,9 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
         <dc:Bounds x="350" y="300" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
+        <dc:Bounds x="72" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0pe5dkf_di" bpmnElement="Event_0pe5dkf">
         <dc:Bounds x="542" y="472" width="36" height="36" />
       </bpmndi:BPMNShape>
@@ -215,9 +204,6 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1bzmrln_di" bpmnElement="Event_0kdesbw">
         <dc:Bounds x="752" y="162" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
-        <dc:Bounds x="72" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_1ptsf7b_di" bpmnElement="Activity_0q3g9jd">
         <dc:Bounds x="180" y="300" width="100" height="80" />
