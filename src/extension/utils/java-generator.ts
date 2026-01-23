@@ -70,13 +70,20 @@ export function parseJsonPath(expression: string): string {
 }
 
 /**
- * Check if any field requires nested JSONPath extraction
+ * Check if any field requires nested JSONPath extraction.
+ * An expression requires a custom deserializer if it navigates into nested structure.
+ * For example:
+ *   $.data.userId - requires deserializer (goes into "data" object)
+ *   $.userId - does not require deserializer (direct field access)
  */
 export function requiresCustomDeserializer(fields: PayloadFieldDefinition[]): boolean {
   return fields.some(field => {
-    const path = parseJsonPath(field.expression || '');
-    // If the path contains a dot after $.data, it's nested
-    return path.includes('.');
+    if (!field.expression) return false;
+    const expr = field.expression.trim();
+    // Count dots in expression: $.data.userId has 2 dots (requires deserializer)
+    // $.userId has 1 dot (simple access, no deserializer needed)
+    const dotCount = (expr.match(/\./g) || []).length;
+    return dotCount >= 2;
   });
 }
 
@@ -161,18 +168,23 @@ export function generateDeserializerClass(
       const javaType = getJavaType(field.type);
       const fieldName = toCamelCase(field.name);
       const methodSuffix = toPascalCase(field.name);
-      const jsonPath = parseJsonPath(field.expression || '') || fieldName;
+      const expression = field.expression?.trim() || '';
 
-      // If jsonPath is simple (no dots), just use field access
-      if (!jsonPath.includes('.')) {
-        return `        if (root.has("${jsonPath}")) {
-            payload.set${methodSuffix}(root.get("${jsonPath}").${getJsonNodeMethod(javaType)});
+      // Check if this is a nested path (2+ dots means $.data.xxx or deeper)
+      const dotCount = (expression.match(/\./g) || []).length;
+      const isNestedPath = dotCount >= 2;
+
+      if (!isNestedPath) {
+        // Simple field access - use the cleaned path or field name
+        const simpleKey = parseJsonPath(expression) || fieldName;
+        return `        if (root.has("${simpleKey}")) {
+            payload.set${methodSuffix}(root.get("${simpleKey}").${getJsonNodeMethod(javaType)});
         }`;
       }
 
-      // For nested paths, use JsonPath
+      // For nested paths, use JsonPath with the full expression
       return `        try {
-            ${javaType} ${fieldName}Value = JsonPath.read(json, "$.${jsonPath}");
+            ${javaType} ${fieldName}Value = JsonPath.read(json, "${expression}");
             payload.set${methodSuffix}(${fieldName}Value);
         } catch (PathNotFoundException e) {
             // Field not found in payload, leave as null
@@ -181,8 +193,9 @@ export function generateDeserializerClass(
     .join('\n\n');
 
   const hasNestedPaths = fields.some(f => {
-    const path = parseJsonPath(f.expression || '');
-    return path.includes('.');
+    const expr = f.expression?.trim() || '';
+    const dotCount = (expr.match(/\./g) || []).length;
+    return dotCount >= 2;
   });
 
   let imports = `package ${packageName};
