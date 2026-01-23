@@ -27,8 +27,8 @@ interface EventBus {
   on(event: string, callback: (event: ShapeEvent) => void): void;
 }
 
-interface Modeling {
-  updateProperties(element: BpmnElement, properties: Record<string, unknown>): void;
+interface CommandStack {
+  execute(command: string, context: Record<string, unknown>): void;
 }
 
 // ============================================================================
@@ -41,9 +41,9 @@ interface Modeling {
  * runtime errors when processing null script values.
  */
 class ScriptTaskCreationHandler {
-  static $inject = ['eventBus', 'modeling'];
+  static $inject = ['eventBus', 'commandStack'];
 
-  constructor(eventBus: EventBus, modeling: Modeling) {
+  constructor(eventBus: EventBus, commandStack: CommandStack) {
     eventBus.on('shape.added', (event: ShapeEvent) => {
       const element = event.element;
 
@@ -68,7 +68,13 @@ class ScriptTaskCreationHandler {
       // Apply updates if needed (use setTimeout to ensure element is fully initialized)
       if (Object.keys(updates).length > 0) {
         setTimeout(() => {
-          modeling.updateProperties(element, updates);
+          // Use element.updateModdleProperties command (same as properties panel)
+          // This properly handles nested elements like <bpmn:script>
+          commandStack.execute('element.updateModdleProperties', {
+            element,
+            moddleElement: bo,
+            properties: updates
+          });
         }, 0);
       }
     });
