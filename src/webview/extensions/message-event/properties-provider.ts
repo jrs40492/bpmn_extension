@@ -1254,6 +1254,81 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
+      // Clean up orphaned messages that are not referenced by any message event
+      // Orphaned messages can cause Kogito code generation errors (duplicate topic names, missing producers)
+      // Use a guard to only run this cleanup once per session
+      if (!fixedDtypeElements.has(definitions)) {
+        fixedDtypeElements.add(definitions);
+
+        // Find all messages in definitions
+        const allMessagesInDefs = rootElements.filter((el: ModdleElement) => el.$type === 'bpmn:Message');
+
+        // Find all message references from message events in the process
+        const process = rootElements.find((el: ModdleElement) => el.$type === 'bpmn:Process');
+        const referencedMessageIds = new Set<string>();
+
+        if (process) {
+          const flowElements = (process as unknown as { flowElements?: ModdleElement[] }).flowElements || [];
+          for (const flowElement of flowElements) {
+            const eventDefs = (flowElement as unknown as { eventDefinitions?: ModdleElement[] }).eventDefinitions || [];
+            for (const ed of eventDefs) {
+              if (ed.$type === 'bpmn:MessageEventDefinition') {
+                const msgRef = (ed as unknown as { messageRef?: ModdleElement }).messageRef;
+                if (msgRef?.id) {
+                  referencedMessageIds.add(msgRef.id);
+                }
+              }
+            }
+          }
+        }
+
+        // Find orphaned messages (messages not referenced by any event)
+        const orphanedMessages = allMessagesInDefs.filter((msg: ModdleElement) =>
+          msg.id && !referencedMessageIds.has(msg.id)
+        );
+
+        if (orphanedMessages.length > 0) {
+          // Collect all elements to remove (orphaned messages and their itemDefinitions)
+          const elementsToRemove = new Set<string>();
+
+          for (const orphanedMsg of orphanedMessages) {
+            if (orphanedMsg.id) {
+              elementsToRemove.add(orphanedMsg.id);
+
+              // Also remove the message's itemRef (itemDefinition)
+              const itemRef = (orphanedMsg as unknown as { itemRef?: ModdleElement }).itemRef;
+              if (itemRef?.id) {
+                elementsToRemove.add(itemRef.id);
+              }
+
+              // Also check for event-specific itemDefinitions (pattern: _Event_xxx_InputItem)
+              // These are created for message throw events
+              const msgIdMatch = orphanedMsg.id.match(/Message_Event_(.+)/);
+              if (msgIdMatch) {
+                const eventId = `Event_${msgIdMatch[1]}`;
+                const eventItemDefId = `_${eventId}_InputItem`;
+                if (rootElements.some((el: ModdleElement) => el.id === eventItemDefId)) {
+                  elementsToRemove.add(eventItemDefId);
+                }
+              }
+            }
+          }
+
+          // Remove orphaned elements
+          const newRootElements = rootElements.filter((el: ModdleElement) =>
+            !elementsToRemove.has(el.id || '')
+          );
+
+          if (newRootElements.length < rootElements.length) {
+            commandStack.execute('element.updateModdleProperties', {
+              element,
+              moddleElement: definitions,
+              properties: { rootElements: newRootElements }
+            });
+          }
+        }
+      }
+
       // Add Message Event Configuration group for all message event types
       groups.push({
         id: 'message-event-configuration',
