@@ -374,24 +374,72 @@ class MessageEventCreationHandler {
     });
     outputSet.$parent = bo;
 
-    // Create a data output association to map received message to a process variable
-    // This maps to the default "message" variable - users should update this
-    const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
-      sourceRef: [dataOutput]
-    });
-    dataOutputAssociation.$parent = bo;
+    // Create a default process variable to store the received message data
+    // This is required by Kogito - the dataOutputAssociation must reference a valid variable
+    const process = getProcess(element);
+    const messageVarName = `message_${eventId}`;
+    const messageVarId = messageVarName;
 
-    // Update the business object with the new structures
-    // For events: dataOutputs, outputSet, dataOutputAssociations go directly on the event
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: bo,
-      properties: {
-        dataOutputs: [dataOutput],
-        outputSet: outputSet,
-        dataOutputAssociations: [dataOutputAssociation]
+    if (process) {
+      // Create itemDefinition for the process variable
+      const varItemDefId = `_${messageVarId}Item`;
+      const varItemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+        id: varItemDefId,
+        structureRef: 'java.lang.String'
+      });
+      varItemDef.$parent = definitions;
+
+      // Add itemDefinition to rootElements
+      const currentRootElements = (definitions as unknown as { rootElements?: ModdleElement[] }).rootElements || [];
+      const updatedRootElements = [...currentRootElements];
+      const procIdx = updatedRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+      if (procIdx >= 0) {
+        updatedRootElements.splice(procIdx, 0, varItemDef);
+      } else {
+        updatedRootElements.push(varItemDef);
       }
-    });
+
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: definitions,
+        properties: { rootElements: updatedRootElements }
+      });
+
+      // Create bpmn:property (process variable) for the received message
+      const processProperty = bpmnFactory.create('bpmn:Property', {
+        id: messageVarId,
+        name: messageVarName,
+        itemSubjectRef: varItemDef
+      });
+      processProperty.$parent = process;
+
+      // Add property to process
+      const existingProperties = (process as unknown as { properties?: ModdleElement[] }).properties || [];
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: process,
+        properties: { properties: [...existingProperties, processProperty] }
+      });
+
+      // Create data output association with targetRef pointing to the new variable
+      const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
+        sourceRef: [dataOutput],
+        targetRef: processProperty
+      });
+      dataOutputAssociation.$parent = bo;
+
+      // Update the business object with the new structures
+      // For events: dataOutputs, outputSet, dataOutputAssociations go directly on the event
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: bo,
+        properties: {
+          dataOutputs: [dataOutput],
+          outputSet: outputSet,
+          dataOutputAssociations: [dataOutputAssociation]
+        }
+      });
+    }
 
     // Ensure message exists for this catch event
     const msgEvtDef = getMessageEventDefinition(element);

@@ -1312,22 +1312,69 @@ export default class MessageEventPropertiesProvider {
               });
               outputSet.$parent = catchBo;
 
-              // Create data output association
-              const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
-                sourceRef: [dataOutput]
-              });
-              dataOutputAssociation.$parent = catchBo;
+              // Create a default process variable to store the received message data
+              const process = rootElements.find((el: ModdleElement) => el.$type === 'bpmn:Process');
+              const messageVarName = `message_${eventId}`;
+              const messageVarId = messageVarName;
 
-              // Update the business object
-              commandStack.execute('element.updateModdleProperties', {
-                element,
-                moddleElement: catchBo,
-                properties: {
-                  dataOutputs: [dataOutput],
-                  outputSet: outputSet,
-                  dataOutputAssociations: [dataOutputAssociation]
+              if (process) {
+                // Create itemDefinition for the process variable
+                const varItemDefId = `_${messageVarId}Item`;
+                const varItemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+                  id: varItemDefId,
+                  structureRef: 'java.lang.String'
+                });
+                varItemDef.$parent = definitions;
+
+                // Add itemDefinition to rootElements
+                const updatedRootElements = [...rootElements];
+                const procIdx = updatedRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+                if (procIdx >= 0) {
+                  updatedRootElements.splice(procIdx, 0, varItemDef);
+                } else {
+                  updatedRootElements.push(varItemDef);
                 }
-              });
+
+                commandStack.execute('element.updateModdleProperties', {
+                  element,
+                  moddleElement: definitions,
+                  properties: { rootElements: updatedRootElements }
+                });
+
+                // Create bpmn:property (process variable) for the received message
+                const processProperty = bpmnFactory.create('bpmn:Property', {
+                  id: messageVarId,
+                  name: messageVarName,
+                  itemSubjectRef: varItemDef
+                });
+                processProperty.$parent = process;
+
+                // Add property to process
+                const existingProperties = (process as unknown as { properties?: ModdleElement[] }).properties || [];
+                commandStack.execute('element.updateModdleProperties', {
+                  element,
+                  moddleElement: process,
+                  properties: { properties: [...existingProperties, processProperty] }
+                });
+
+                // Create data output association with targetRef pointing to the new variable
+                const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
+                  sourceRef: [dataOutput],
+                  targetRef: processProperty
+                });
+                dataOutputAssociation.$parent = catchBo;
+
+                // Update the business object
+                commandStack.execute('element.updateModdleProperties', {
+                  element,
+                  moddleElement: catchBo,
+                  properties: {
+                    dataOutputs: [dataOutput],
+                    outputSet: outputSet,
+                    dataOutputAssociations: [dataOutputAssociation]
+                  }
+                });
+              }
             }
           }
         }
