@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:msgevt="http://bamoe.io/schema/message-event" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:itemDefinition id="_Message_Event_0m799to_Item" structureRef="com.example.payload.Event0m799toPayload" />
-  <bpmn:message id="Message_Event_0m799to" name="message_Event_0m799to" itemRef="_Message_Event_0m799to_Item" />
+  <bpmn:message id="Message_Event_0m799to" name="renewals" itemRef="_Message_Event_0m799to_Item" />
   <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.Event0m799toPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_OutputItem" structureRef="com.example.payload.Event0m799toPayload" />
   <bpmn:itemDefinition id="_Event_0m799to_userIdItem" structureRef="java.lang.String" />
