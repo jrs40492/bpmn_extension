@@ -4,7 +4,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.kie.api.event.process.ProcessEventListener;
 import org.kie.kogito.process.ProcessEventListenerConfig;
 
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -15,7 +14,7 @@ import java.util.List;
 public class ProcessListenerConfig implements ProcessEventListenerConfig {
 
     @Override
-    public Collection<ProcessEventListener> listeners() {
+    public List<ProcessEventListener> listeners() {
         System.out.println(">>> ProcessListenerConfig: Registering MessagePayloadExtractor");
         return List.of(new MessagePayloadExtractor());
     }
