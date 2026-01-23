@@ -1,5 +1,8 @@
 import DmnJS from 'dmn-js/lib/Modeler';
 
+// Import DMN validation feature
+import { initDmnValidationPanel, type DmnValidationIssue } from './features/validation';
+
 // Import dmn-js styles
 import 'dmn-js/dist/assets/diagram-js.css';
 import 'dmn-js/dist/assets/dmn-js-shared.css';
@@ -358,6 +361,29 @@ async function init(): Promise<void> {
   if (feelRefBtn && feelController) {
     feelRefBtn.addEventListener('click', () => {
       feelController?.showQuickReference();
+    });
+  }
+
+  // Set up DMN validation panel
+  const validationPanel = initDmnValidationPanel(
+    dmnModeler as unknown as Parameters<typeof initDmnValidationPanel>[0],
+    (issues: DmnValidationIssue[]) => {
+      // Send validation issues to VS Code extension for Problems panel
+      const validationIssues = issues.map(issue => ({
+        id: issue.elementId,
+        message: issue.message,
+        category: issue.severity === 'error' ? 'error' : 'warn',
+        rule: issue.rule
+      }));
+      postMessage({ type: 'validation', issues: validationIssues });
+    }
+  );
+
+  // Set up Validate button
+  const validateBtn = document.getElementById('btn-validate');
+  if (validateBtn) {
+    validateBtn.addEventListener('click', () => {
+      validationPanel.show();
     });
   }
 

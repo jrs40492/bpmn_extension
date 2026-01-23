@@ -27,6 +27,9 @@ import 'diagram-js-minimap/assets/diagram-js-minimap.css';
 // Import token simulation styles
 import 'bpmn-js-token-simulation/assets/css/bpmn-js-token-simulation.css';
 
+// Import bpmnlint styles for visual lint overlays
+import 'bpmn-js-bpmnlint/dist/assets/css/bpmn-js-bpmnlint.css';
+
 // Import editor styles
 import './styles/editor.css';
 
@@ -110,14 +113,28 @@ async function init(): Promise<void> {
     }
   });
 
+  // Store lint issues for compliance panel
+  let storedLintIssues: Record<string, Array<{ id: string; message: string; category: 'error' | 'warn'; rule: string }>> = {};
+
   // Handle validation results
   eventBus.on('linting.completed', (event: unknown) => {
     const lintEvent = event as { issues: Record<string, unknown[]> };
     const issues: ValidationIssue[] = [];
 
+    // Reset stored issues
+    storedLintIssues = {};
+
     // Flatten issues from all elements
     for (const [elementId, elementIssues] of Object.entries(lintEvent.issues)) {
+      storedLintIssues[elementId] = [];
       for (const issue of elementIssues as Array<{ id: string; message: string; category: string; rule: string }>) {
+        const normalizedIssue = {
+          id: issue.id,
+          message: issue.message,
+          category: issue.category as 'error' | 'warn',
+          rule: issue.rule
+        };
+        storedLintIssues[elementId].push(normalizedIssue);
         issues.push({
           id: elementId,
           message: issue.message,
@@ -211,10 +228,54 @@ async function init(): Promise<void> {
     () => currentFileName
   );
 
-  // Compliance panel
+  // Get linting service for triggering lint on demand
+  const linting = modeler.get('linting') as { lint: () => void; toggle: (active: boolean) => void } | undefined;
+
+  // Compliance panel - pass lint issues provider function and linting trigger
   const compliancePanel = initCompliancePanel(
-    () => elementRegistry.getAll() as unknown[]
+    () => elementRegistry.getAll() as unknown[],
+    undefined,
+    async () => {
+      // Trigger linting before validation
+      if (linting) {
+        try {
+          const result = linting.lint();
+          // lint() returns a promise with the results
+          if (result && typeof result === 'object' && 'then' in result) {
+            const lintResults = await (result as Promise<Record<string, Array<{ id: string; message: string; category: string }>>>);
+
+            // Convert lint results to the format expected by compliance panel
+            const formattedIssues: Record<string, Array<{ id: string; message: string; category: 'error' | 'warn'; rule: string }>> = {};
+            for (const [ruleName, issues] of Object.entries(lintResults)) {
+              for (const issue of issues) {
+                const elementId = issue.id;
+                if (!formattedIssues[elementId]) {
+                  formattedIssues[elementId] = [];
+                }
+                formattedIssues[elementId].push({
+                  id: issue.id,
+                  message: issue.message,
+                  category: issue.category === 'error' ? 'error' : 'warn',
+                  rule: ruleName
+                });
+              }
+            }
+
+            // Update stored lint issues and compliance panel
+            storedLintIssues = formattedIssues;
+            compliancePanel.setLintIssues(formattedIssues);
+          }
+        } catch (err) {
+          console.error('[BAMOE Compliance] Linting error:', err);
+        }
+      }
+    }
   );
+
+  // Wire up lint issues to compliance panel when they change
+  eventBus.on('linting.completed', () => {
+    compliancePanel.setLintIssues(storedLintIssues);
+  });
 
   // Extensions panel
   const extensionsPanel = initExtensionsPanel();
@@ -285,6 +346,9 @@ async function init(): Promise<void> {
         // Update available DMN files for Business Rule Task properties
         console.log('[BAMOE Webview] Received dmnFiles:', message.files);
         setAvailableDmnFiles(message.files);
+
+        // Update compliance panel with DMN files for validation
+        compliancePanel.setDmnFiles(message.files);
 
         // Run DMN reference validation
         const dmnValidationIssues = validateBusinessRuleTasks(

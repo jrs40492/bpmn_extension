@@ -8,6 +8,32 @@ import minimapModule from 'diagram-js-minimap';
 import gridModule from 'diagram-js-grid';
 // @ts-expect-error - no type definitions available
 import tokenSimulationModule from 'bpmn-js-token-simulation';
+// @ts-expect-error - no type definitions available
+import lintModule from 'bpmn-js-bpmnlint';
+
+// Import individual bpmnlint rules for bundling
+// @ts-expect-error - no type definitions available
+import noDisconnected from 'bpmnlint/rules/no-disconnected';
+// @ts-expect-error - no type definitions available
+import noImplicitSplit from 'bpmnlint/rules/no-implicit-split';
+// @ts-expect-error - no type definitions available
+import startEventRequired from 'bpmnlint/rules/start-event-required';
+// @ts-expect-error - no type definitions available
+import endEventRequired from 'bpmnlint/rules/end-event-required';
+// @ts-expect-error - no type definitions available
+import fakeJoin from 'bpmnlint/rules/fake-join';
+// @ts-expect-error - no type definitions available
+import noComplexGateway from 'bpmnlint/rules/no-complex-gateway';
+// @ts-expect-error - no type definitions available
+import noDuplicateSequenceFlows from 'bpmnlint/rules/no-duplicate-sequence-flows';
+// @ts-expect-error - no type definitions available
+import noGatewayJoinFork from 'bpmnlint/rules/no-gateway-join-fork';
+// @ts-expect-error - no type definitions available
+import singleBlankStartEvent from 'bpmnlint/rules/single-blank-start-event';
+// @ts-expect-error - no type definitions available
+import singleEventDefinition from 'bpmnlint/rules/single-event-definition';
+// @ts-expect-error - no type definitions available
+import subProcessBlankStartEvent from 'bpmnlint/rules/sub-process-blank-start-event';
 
 // Custom REST task extension (uses standard BPMN, only drools descriptor needed)
 import restTaskModule, { droolsDescriptor } from './extensions/rest-task';
@@ -44,6 +70,53 @@ import gatewayDirectionModule from './extensions/gateway-direction';
 
 // Custom task resize extension
 import taskResizeModule from './extensions/task-resize';
+
+// Helper to unwrap default exports from bundled modules
+function unwrapRule(rule: unknown): unknown {
+  if (rule && typeof rule === 'object' && 'default' in rule) {
+    return (rule as { default: unknown }).default;
+  }
+  return rule;
+}
+
+// Bundled bpmnlint rules map
+const bundledRules: Record<string, unknown> = {
+  'no-disconnected': unwrapRule(noDisconnected),
+  'no-implicit-split': unwrapRule(noImplicitSplit),
+  'start-event-required': unwrapRule(startEventRequired),
+  'end-event-required': unwrapRule(endEventRequired),
+  'fake-join': unwrapRule(fakeJoin),
+  'no-complex-gateway': unwrapRule(noComplexGateway),
+  'no-duplicate-sequence-flows': unwrapRule(noDuplicateSequenceFlows),
+  'no-gateway-join-fork': unwrapRule(noGatewayJoinFork),
+  'single-blank-start-event': unwrapRule(singleBlankStartEvent),
+  'single-event-definition': unwrapRule(singleEventDefinition),
+  'sub-process-blank-start-event': unwrapRule(subProcessBlankStartEvent)
+};
+
+// bpmnlint rules configuration (matching .bpmnlintrc)
+const linterConfig = {
+  resolver: {
+    resolveRule: (_pkg: string, ruleName: string) => {
+      return bundledRules[ruleName] || null;
+    }
+  },
+  config: {
+    rules: {
+      'no-disconnected': 'error',
+      'no-implicit-split': 'warn',
+      'start-event-required': 'error',
+      'end-event-required': 'error',
+      'fake-join': 'warn',
+      'no-complex-gateway': 'warn',
+      'no-duplicate-sequence-flows': 'error',
+      'no-gateway-join-fork': 'warn',
+      'single-blank-start-event': 'warn',
+      'single-event-definition': 'error',
+      'sub-process-blank-start-event': 'warn'
+    }
+  }
+};
 
 // Type definitions for bpmn-js
 interface BpmnModelerInstance {
@@ -112,6 +185,7 @@ export function createModeler(
   const additionalModules = [
     minimapModule,
     gridModule,
+    lintModule,
     restTaskModule,
     kafkaTaskModule,
     scriptTaskModule,
@@ -154,6 +228,9 @@ export function createModeler(
     } : undefined,
     minimap: {
       open: false
+    },
+    linting: {
+      bpmnlint: linterConfig
     }
   }) as unknown as Modeler;
 

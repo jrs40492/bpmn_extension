@@ -227,6 +227,7 @@ export class DmnEditorProvider implements vscode.CustomTextEditorProvider {
       </div>
       <div class="toolbar-group">
         <button id="btn-feel-ref" class="toolbar-btn" title="FEEL Quick Reference">FEEL</button>
+        <button id="btn-validate" class="toolbar-btn toolbar-btn-validate" title="Validate DMN">Validate</button>
       </div>
       <div class="toolbar-group">
         <button id="btn-zoom-in" class="toolbar-btn" title="Zoom In">+</button>

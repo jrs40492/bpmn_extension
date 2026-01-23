@@ -2263,6 +2263,98 @@ html, body {
   margin-top: 4px;
 }
 
+/* Compliance panel - category grouping */
+.compliance-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.compliance-category {
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.compliance-category-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--vscode-sideBarSectionHeader-background, #37373d);
+  font-size: 12px;
+}
+
+.category-icon {
+  font-size: 14px;
+}
+
+.category-name {
+  font-weight: 600;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.category-count {
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+  font-size: 11px;
+}
+
+.compliance-category .compliance-violations {
+  padding: 8px;
+  max-height: none;
+}
+
+/* Compliance panel - violation meta info */
+.violation-meta {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.violation-rule {
+  font-size: 10px;
+  padding: 2px 6px;
+  background: var(--vscode-badge-background, #4d4d4d);
+  border-radius: 8px;
+  color: var(--vscode-badge-foreground, #cccccc);
+}
+
+/* Compliance panel - info section */
+.compliance-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--vscode-editor-background, #1e1e1e);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+}
+
+.compliance-info p {
+  margin: 0 0 8px 0;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.compliance-info ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.compliance-info li {
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Compliance panel - loading state */
+.compliance-loading {
+  padding: 20px;
+  text-align: center;
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+  font-size: 13px;
+}
+
 /* ========================================
    Extensions Panel (Phase 4)
    ======================================== */
