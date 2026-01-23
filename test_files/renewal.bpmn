@@ -35,10 +35,10 @@
     <bpmn:property id="message_Event_0vjdxlp" itemSubjectRef="_message_Event_0vjdxlpItem" name="message_Event_0vjdxlp" />
     <bpmn:property id="message_Event_0kdesbw" itemSubjectRef="_message_Event_0kdesbwItem" name="message_Event_0kdesbw" />
     <bpmn:property id="message_Event_1imz6h6" itemSubjectRef="_message_Event_1imz6h6Item" name="message_Event_1imz6h6" />
-    <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
+    <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0q3g9jd" />
     <bpmn:businessRuleTask id="Activity_0lb2cub" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
-      <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
+      <bpmn:incoming>Flow_17ywcic</bpmn:incoming>
       <bpmn:outgoing>Flow_05al3r1</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_0lb2cub_namespaceInputX" itemSubjectRef="_Activity_0lb2cub_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
@@ -176,6 +176,13 @@
       </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0a45y6k" messageRef="Message_Event_0kdesbw" />
     </bpmn:intermediateCatchEvent>
+    <bpmn:sequenceFlow id="Flow_17ywcic" sourceRef="Activity_0q3g9jd" targetRef="Activity_0lb2cub" />
+    <bpmn:scriptTask id="Activity_0q3g9jd" scriptFormat="java">
+      <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
+      <bpmn:outgoing>Flow_17ywcic</bpmn:outgoing>
+      <bpmn:script>System.out.println("testing testing testing");
+System.out.println(kcontext.getVariable("userId"));</bpmn:script>
+    </bpmn:scriptTask>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
@@ -184,9 +191,6 @@
       <bpmndi:BPMNShape id="Activity_1eza76r_di" bpmnElement="Activity_0lb2cub">
         <dc:Bounds x="350" y="300" width="100" height="80" />
         <bpmndi:BPMNLabel />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
-        <dc:Bounds x="242" y="322" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0pe5dkf_di" bpmnElement="Event_0pe5dkf">
         <dc:Bounds x="542" y="472" width="36" height="36" />
@@ -206,9 +210,15 @@
       <bpmndi:BPMNShape id="Event_1bzmrln_di" bpmnElement="Event_0kdesbw">
         <dc:Bounds x="752" y="162" width="36" height="36" />
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
+        <dc:Bounds x="72" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ptsf7b_di" bpmnElement="Activity_0q3g9jd">
+        <dc:Bounds x="180" y="300" width="100" height="80" />
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
-        <di:waypoint x="278" y="340" />
-        <di:waypoint x="350" y="340" />
+        <di:waypoint x="108" y="340" />
+        <di:waypoint x="180" y="340" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_05al3r1_di" bpmnElement="Flow_05al3r1">
         <di:waypoint x="450" y="340" />
@@ -233,6 +243,10 @@
       <bpmndi:BPMNEdge id="Flow_0lz5kn3_di" bpmnElement="Flow_0lz5kn3">
         <di:waypoint x="788" y="180" />
         <di:waypoint x="852" y="180" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17ywcic_di" bpmnElement="Flow_17ywcic">
+        <di:waypoint x="280" y="340" />
+        <di:waypoint x="350" y="340" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
