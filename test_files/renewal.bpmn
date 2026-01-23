@@ -18,8 +18,7 @@
   <bpmn:message id="Message_Event_0kdesbw" name="receiveRenewalData" itemRef="_Message_Event_0kdesbw_Item" />
   <bpmn:itemDefinition id="_message_Event_0kdesbwItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0kdesbw_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_0kdesbwItem" structureRef="java.lang.Object" />
-  <bpmn:process id="Process_1" isExecutable="true">
+  <bpmn:process id="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="userId" />
@@ -29,7 +28,6 @@
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:property id="message_Event_0vjdxlp" itemSubjectRef="_message_Event_0vjdxlpItem" name="message_Event_0vjdxlp" />
-    <bpmn:property id="message_Event_0kdesbw" itemSubjectRef="_message_Event_0kdesbwItem" name="message_Event_0kdesbw" />
     <bpmn:property id="message_Event_0kdesbw" itemSubjectRef="_message_Event_0kdesbwItem" name="message_Event_0kdesbw" />
     <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
     <bpmn:businessRuleTask id="Activity_0lb2cub" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
@@ -64,7 +62,7 @@
       <bpmn:dataInputAssociation id="DataInputAssociation_1wn5kf9">
         <bpmn:targetRef>Activity_0lb2cub_modelInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">DRD</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">hasUserId</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_modelInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -151,7 +149,7 @@
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
       <bpmndi:BPMNShape id="Activity_1eza76r_di" bpmnElement="Activity_0lb2cub">
         <dc:Bounds x="350" y="300" width="100" height="80" />
         <bpmndi:BPMNLabel />
