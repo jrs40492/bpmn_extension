@@ -180,8 +180,14 @@
     <bpmn:scriptTask id="Activity_0q3g9jd" scriptFormat="java">
       <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
       <bpmn:outgoing>Flow_17ywcic</bpmn:outgoing>
-      <bpmn:script>System.out.println("testing testing testing");
-System.out.println(kcontext.getVariable("userId"));</bpmn:script>
+      <bpmn:script>// Extract userId from the payload object
+com.example.payload.RenewalsPayload payload =
+    (com.example.payload.RenewalsPayload) kcontext.getVariable("message_Event_1imz6h6");
+String userId = payload != null ? payload.getUserId() : null;
+kcontext.setVariable("userId", userId);
+
+System.out.println("testing testing testing");
+System.out.println("userId: " + userId);</bpmn:script>
     </bpmn:scriptTask>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
