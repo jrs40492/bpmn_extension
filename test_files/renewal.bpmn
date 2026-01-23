@@ -58,13 +58,9 @@
     <bpmn:scriptTask id="Activity_03vtzas" name="Step 1" scriptFormat="java">
       <bpmn:incoming>Flow_0mlcruj</bpmn:incoming>
       <bpmn:outgoing>Flow_09guua2</bpmn:outgoing>
-      <bpmn:script>// Extract userId from the deserialized payload
-com.example.payload.RenewalsPayload payload = (com.example.payload.RenewalsPayload) kcontext.getVariable("message_Event_0m799to");
-String extractedUserId = payload != null ? payload.getUserId() : null;
-kcontext.setVariable("userId", extractedUserId);
-
+      <bpmn:script>// userId is automatically set by MessagePayloadExtractor listener
 System.out.println("testing testing testing");
-System.out.println("userId: " + extractedUserId);</bpmn:script>
+System.out.println("userId: " + kcontext.getVariable("userId"));</bpmn:script>
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_09guua2" sourceRef="Activity_03vtzas" targetRef="Activity_05r7j6b" />
     <bpmn:businessRuleTask id="Activity_05r7j6b" name="Step 2" implementation="http://www.jboss.org/drools/dmn">

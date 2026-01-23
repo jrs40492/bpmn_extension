@@ -15,35 +15,14 @@ public class RenewalsPayloadDeserializer extends JsonDeserializer<RenewalsPayloa
     @Override
     public RenewalsPayload deserialize(JsonParser p, DeserializationContext ctx) throws IOException {
         JsonNode root = p.getCodec().readTree(p);
-
-        // DEBUG: Print what JSON we're receiving
-        System.out.println("=== DESERIALIZER DEBUG ===");
-        System.out.println("Received JSON: " + root.toString());
+        String json = root.toString();
 
         RenewalsPayload payload = new RenewalsPayload();
 
-        // Try direct access first (Kogito unwraps CloudEvents)
-        JsonNode userIdNode = root.path("userId");
-        System.out.println("Direct userId node: " + userIdNode);
-        System.out.println("Is missing: " + userIdNode.isMissingNode());
-
+        JsonNode userIdNode = root.path("data").path("userId");
         if (userIdNode != null && !userIdNode.isMissingNode()) {
-            String value = userIdNode.asText();
-            System.out.println("Setting userId to: " + value);
-            payload.setUserId(value);
-        } else {
-            // Fallback: try data.userId path
-            userIdNode = root.path("data").path("userId");
-            System.out.println("Fallback data.userId node: " + userIdNode);
-            if (userIdNode != null && !userIdNode.isMissingNode()) {
-                String value = userIdNode.asText();
-                System.out.println("Setting userId from data.userId to: " + value);
-                payload.setUserId(value);
-            }
+            payload.setUserId(userIdNode.asText());
         }
-
-        System.out.println("Final payload.getUserId(): " + payload.getUserId());
-        System.out.println("=== END DESERIALIZER DEBUG ===");
 
         return payload;
     }

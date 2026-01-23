@@ -18,7 +18,9 @@ import {
   generateDeserializerClass,
   generateClassName,
   requiresCustomDeserializer,
-  requiresJsonPathLibrary
+  requiresJsonPathLibrary,
+  generatePayloadExtractorListener,
+  MessageEventConfig
 } from '../utils/java-generator';
 
 /**
@@ -201,6 +203,26 @@ async function generateJavaClasses(
       );
       generated.push(deserializerPath);
     }
+  }
+
+  // Generate the MessagePayloadExtractor listener
+  // This automatically sets process variables from payload fields
+  const eventConfigs: MessageEventConfig[] = events.map(event => ({
+    eventId: event.eventId,
+    messageName: event.messageName,
+    payloadClassName: `${packageName}.${generateClassName(event.messageName)}`,
+    fields: event.fields
+  }));
+
+  if (eventConfigs.length > 0) {
+    const listenerCode = generatePayloadExtractorListener(packageName, eventConfigs);
+    const listenerPath = getJavaClassPath(projectRoot, packageName, 'MessagePayloadExtractor');
+
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(listenerPath),
+      Buffer.from(listenerCode, 'utf-8')
+    );
+    generated.push(listenerPath);
   }
 
   return { generated, needsJsonPath };
