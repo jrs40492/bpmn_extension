@@ -39,7 +39,7 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         // Raw Map payload - extract using JSONPath expressions
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null);
+                        Object userIdValue = rawMap.get("userId");
                         if (userIdValue != null) {
                             variables.put("userId", userIdValue);
                         }

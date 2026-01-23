@@ -26,7 +26,6 @@
   <bpmn:message id="Message_Event_140n6p3" name="renewals" itemRef="_Message_Event_140n6p3_Item" />
   <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_140n6p3_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_140n6p3_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
@@ -41,7 +40,6 @@
     <bpmn:property id="message_Event_0tyznr4" itemSubjectRef="_message_Event_0tyznr4Item" name="message_Event_0tyznr4" />
     <bpmn:property id="message_Event_1n6xats" itemSubjectRef="_message_Event_1n6xatsItem" name="message_Event_1n6xats" />
     <bpmn:property id="message_Event_0x2mg5v" itemSubjectRef="_message_Event_0x2mg5vItem" name="message_Event_0x2mg5v" />
-    <bpmn:property id="message_Event_140n6p3" itemSubjectRef="_message_Event_140n6p3Item" name="message_Event_140n6p3" />
     <bpmn:property id="message_Event_140n6p3" itemSubjectRef="_message_Event_140n6p3Item" name="message_Event_140n6p3" />
     <bpmn:endEvent id="Event_0b78j8f">
       <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
@@ -160,8 +158,8 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
     <bpmn:sequenceFlow id="Flow_1g5hh8f" sourceRef="Event_1n6xats" targetRef="Event_1o1kbe7" />
     <bpmn:startEvent id="Event_140n6p3">
       <bpmn:extensionElements>
-        <msgevt:payloadDefinition>
-          <msgevt:payloadField name="userId" expression="$.data.userId" />
+        <msgevt:payloadDefinition cloudEvents="false">
+          <msgevt:payloadField name="userId" expression="$.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_188qfib</bpmn:outgoing>
