@@ -108,7 +108,7 @@
     <bpmn:scriptTask id="Activity_0xhu28a" scriptFormat="java">
       <bpmn:incoming>Flow_0agj6fl</bpmn:incoming>
       <bpmn:outgoing>Flow_1k7fkw6</bpmn:outgoing>
-      <bpmn:script></bpmn:script>
+      <bpmn:script>return true;</bpmn:script>
     </bpmn:scriptTask>
   </bpmn:process>
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
