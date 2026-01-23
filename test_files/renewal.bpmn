@@ -66,14 +66,14 @@
       <bpmn:dataInputAssociation id="DataInputAssociation_1wn5kf9">
         <bpmn:targetRef>Activity_0lb2cub_modelInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">"hasUserId"</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">RenewalDecisions</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_modelInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
       <bpmn:dataInputAssociation id="DataInputAssociation_1n66neu">
         <bpmn:targetRef>Activity_0lb2cub_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">"Decision_020986q"</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_020986q</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -90,7 +90,7 @@
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:startEvent id="Event_1imz6h6" ioSpecification="[object Object]">
+    <bpmn:startEvent id="Event_1imz6h6">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
           <msgevt:payloadField name="userId" expression="$.data.userId" />
