@@ -1,276 +1,138 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:kafka="http://bamoe.io/schema/kafka" xmlns:drools="http://www.jboss.org/drools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:msgevt="http://bamoe.io/schema/message-event" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:itemDefinition id="_Activity_0zwqyjg_namespaceInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0zwqyjg_modelInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0zwqyjg_decisionInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Event_0mwopfv_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0zwqyjg_priorAuthInputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Activity_0zwqyjg_userIdInputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Message_Event_0ay0ojp_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0ay0ojp" name="message_0ay0ojp" itemRef="_Message_Event_0ay0ojp_Item" />
-  <bpmn:itemDefinition id="_Event_0ay0ojp_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_10o58ja_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_10o58ja" name="message_10o58ja" itemRef="_Message_Event_10o58ja_Item" />
-  <bpmn:itemDefinition id="_Event_10o58ja_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_13vas7v_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_13vas7v" name="message_13vas7v" itemRef="_Message_Event_13vas7v_Item" />
-  <bpmn:itemDefinition id="_Event_13vas7v_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_05poqal_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_05poqal" name="message_05poqal" itemRef="_Message_Event_05poqal_Item" />
-  <bpmn:itemDefinition id="_Event_05poqal_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_1y20vj3_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_1y20vj3" name="startMessage" itemRef="_Message_Event_1y20vj3_Item" />
-  <bpmn:itemDefinition id="_Event_1y20vj3_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_0zldgie_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0zldgie" name="renewalRequest" itemRef="_Message_Event_0zldgie_Item" />
-  <bpmn:itemDefinition id="_Message_Event_09m90m9_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_09m90m9" name="renewalResponse" itemRef="_Message_Event_09m90m9_Item" />
-  <bpmn:itemDefinition id="_Message_Event_18q08n0_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_18q08n0" name="message_Event_18q08n0" itemRef="_Message_Event_18q08n0_Item" />
-  <bpmn:itemDefinition id="_Event_18q08n0_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_0pxm1pv_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_0pxm1pv" name="renewalRequest" itemRef="_Message_Event_0pxm1pv_Item" />
-  <bpmn:itemDefinition id="_Message_Event_06jg1y2_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_06jg1y2" name="renewalResponse" itemRef="_Message_Event_06jg1y2_Item" />
-  <bpmn:itemDefinition id="_Message_kafka1_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_kafka1" name="kafkaMessage1" itemRef="_Message_kafka1_Item" />
-  <bpmn:itemDefinition id="_Message_kafka2_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_kafka2" name="kafkaMessage2" itemRef="_Message_kafka2_Item" />
-  <bpmn:itemDefinition id="_Message_Event_01mlphv_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_01mlphv" name="message_Event_01mlphv" itemRef="_Message_Event_01mlphv_Item" />
-  <bpmn:itemDefinition id="_Event_01mlphv_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0fyfdja_namespaceInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0fyfdja_modelInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0fyfdja_decisionInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_0fyfdja_userIdInputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Activity_0fyfdja_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
-  <bpmn:process id="renewal" name="renewal" isExecutable="true">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:itemDefinition id="_Message_Event_1imz6h6_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_1imz6h6" name="message_Event_1imz6h6" itemRef="_Message_Event_1imz6h6_Item" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_namespaceInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_modelInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_decisionInputXItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_userIdInputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_Decision_020986qOutputXItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Activity_0lb2cub_hasUserIdOutputXItem" structureRef="java.lang.Object" />
+  <bpmn:process id="Process_1" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
-        <bamoe:variable name="hasUserId" type="boolean" defaultValue="false" />
-        <bamoe:variable name="renewalResponse" defaultValue="com.usp.renewal.RenewalResponse" />
-        <bamoe:variable name="renewalRequest" defaultValue="com.usp.renweal.Renwal" />
-        <bamoe:variable name="priorAuth" defaultValue="com.usp.renwal.PriorAuth" />
         <bamoe:variable name="userId" />
+        <bamoe:variable name="hasUserId" type="boolean" defaultValue="false" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
-    <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
-    <bpmn:property id="renewalResponse" itemSubjectRef="_renewalResponseItem" name="renewalResponse" />
-    <bpmn:property id="renewalRequest" itemSubjectRef="_renewalRequestItem" name="renewalRequest" />
-    <bpmn:property id="priorAuth" itemSubjectRef="_priorAuthItem" name="priorAuth" />
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
-    <bpmn:endEvent id="Event_0x0fdgz">
-      <bpmn:incoming>Flow_1ga0b7j</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:endEvent id="Event_08nx1k5" name="Step 8 end">
-      <bpmn:incoming>Flow_18xjfz6</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="Gateway_1uim89g" gatewayDirection="Diverging">
-      <bpmn:incoming>Flow_1jxqvea</bpmn:incoming>
-      <bpmn:outgoing>Flow_1s28d3i</bpmn:outgoing>
-      <bpmn:outgoing>Flow_0kcy7jb</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
-    <bpmn:scriptTask id="Activity_18cp35c" name="Skip Renewal Message">
-      <bpmn:incoming>Flow_1s28d3i</bpmn:incoming>
-      <bpmn:outgoing>Flow_1ga0b7j</bpmn:outgoing>
-    </bpmn:scriptTask>
-    <bpmn:serviceTask id="Activity_16av043" name="Step 4 Create Renewal Request Body">
-      <bpmn:incoming>Flow_0kcy7jb</bpmn:incoming>
-      <bpmn:outgoing>Flow_1nmsucy</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:serviceTask id="Activity_0ffilov" name="Step 7 Confirm Renewals API Response">
-      <bpmn:incoming>Flow_10dgd2g</bpmn:incoming>
-      <bpmn:outgoing>Flow_18xjfz6</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:receiveTask id="Activity_kafka1" name="Kafka Consume" messageRef="Message_kafka1">
-      <bpmn:extensionElements>
-        <kafka:kafkaTaskConfig topic="my-topic" operation="consume" groupId="my-consumer-group" responseVariable="kafkaMessage" />
-      </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_1mv9z6w</bpmn:outgoing>
-    </bpmn:receiveTask>
-    <bpmn:receiveTask id="Activity_kafka2" name="Kafka Consume" messageRef="Message_kafka2">
-      <bpmn:extensionElements>
-        <kafka:kafkaTaskConfig topic="my-topic" operation="consume" groupId="my-consumer-group" responseVariable="kafkaMessage" />
-      </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_0xkrgsb</bpmn:outgoing>
-    </bpmn:receiveTask>
-    <bpmn:sequenceFlow id="Flow_1mv9z6w" sourceRef="Activity_kafka1" />
-    <bpmn:sequenceFlow id="Flow_0xkrgsb" sourceRef="Activity_kafka2" />
-    <bpmn:sequenceFlow id="Flow_1s28d3i" sourceRef="Gateway_1uim89g" targetRef="Activity_18cp35c">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">!hasUserId;</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_1ga0b7j" sourceRef="Activity_18cp35c" targetRef="Event_0x0fdgz" />
-    <bpmn:sequenceFlow id="Flow_0kcy7jb" sourceRef="Gateway_1uim89g" targetRef="Activity_16av043">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId;</bpmn:conditionExpression>
-    </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_1nmsucy" sourceRef="Activity_16av043" targetRef="Event_0pxm1pv" />
-    <bpmn:sequenceFlow id="Flow_18xjfz6" sourceRef="Activity_0ffilov" targetRef="Event_08nx1k5" />
-    <bpmn:sequenceFlow id="Flow_1w25fr6" sourceRef="Event_0pxm1pv" targetRef="Event_06jg1y2" />
-    <bpmn:intermediateThrowEvent id="Event_0pxm1pv">
-      <bpmn:incoming>Flow_1nmsucy</bpmn:incoming>
-      <bpmn:outgoing>Flow_1w25fr6</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_0q81g4e" messageRef="Message_Event_0pxm1pv" />
-    </bpmn:intermediateThrowEvent>
-    <bpmn:sequenceFlow id="Flow_10dgd2g" sourceRef="Event_06jg1y2" targetRef="Activity_0ffilov" />
-    <bpmn:intermediateCatchEvent id="Event_06jg1y2">
-      <bpmn:incoming>Flow_1w25fr6</bpmn:incoming>
-      <bpmn:outgoing>Flow_10dgd2g</bpmn:outgoing>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_08jqfzj" messageRef="Message_Event_06jg1y2" />
-    </bpmn:intermediateCatchEvent>
-    <bpmn:startEvent id="Event_01mlphv" ioSpecification="[object Object]">
-      <bpmn:extensionElements>
-        <msgevt:payloadDefinition>
-          <msgevt:payloadField name="userId" expression="$.data.userId" />
-        </msgevt:payloadDefinition>
-      </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_1v4opva</bpmn:outgoing>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_0vow2ao">
-        <bpmn:targetRef>userId</bpmn:targetRef>
-      </bpmn:dataOutputAssociation>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_11bphf0" messageRef="Message_Event_01mlphv" />
-    </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_1v4opva" sourceRef="Event_01mlphv" targetRef="Activity_0fyfdja" />
-    <bpmn:businessRuleTask id="Activity_0fyfdja" name="Activity_0fyfdja" implementation="http://www.jboss.org/drools/dmn">
+    <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
+    <bpmn:sequenceFlow id="Flow_0kwe8aw" sourceRef="Event_1imz6h6" targetRef="Activity_0lb2cub" />
+    <bpmn:businessRuleTask id="Activity_0lb2cub" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
-      <bpmn:incoming>Flow_1v4opva</bpmn:incoming>
-      <bpmn:outgoing>Flow_1jxqvea</bpmn:outgoing>
+      <bpmn:incoming>Flow_0kwe8aw</bpmn:incoming>
+      <bpmn:outgoing>Flow_1h3sai2</bpmn:outgoing>
       <bpmn:ioSpecification>
-        <bpmn:dataInput id="Activity_0fyfdja_namespaceInputX" itemSubjectRef="_Activity_0fyfdja_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_0fyfdja_modelInputX" itemSubjectRef="_Activity_0fyfdja_modelInputXItem" name="model" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_0fyfdja_decisionInputX" itemSubjectRef="_Activity_0fyfdja_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_0fyfdja_userIdInputX" itemSubjectRef="_Activity_0fyfdja_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
-        <bpmn:dataOutput id="Activity_0fyfdja_Decision_020986qOutputX" itemSubjectRef="_Activity_0fyfdja_Decision_020986qOutputXItem" name="Decision_020986q" drools:dtype="java.lang.Object" />
+        <bpmn:dataInput id="Activity_0lb2cub_namespaceInputX" itemSubjectRef="_Activity_0lb2cub_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_0lb2cub_modelInputX" itemSubjectRef="_Activity_0lb2cub_modelInputXItem" name="model" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_0lb2cub_decisionInputX" itemSubjectRef="_Activity_0lb2cub_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_0lb2cub_userIdInputX" itemSubjectRef="_Activity_0lb2cub_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_0lb2cub_Decision_020986qOutputX" itemSubjectRef="_Activity_0lb2cub_Decision_020986qOutputXItem" name="Decision_020986q" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_0lb2cub_hasUserIdOutputX" itemSubjectRef="_Activity_0lb2cub_hasUserIdOutputXItem" name="hasUserId" drools:dtype="java.lang.Object" />
         <bpmn:inputSet>
-          <bpmn:dataInputRefs>Activity_0fyfdja_namespaceInputX</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0fyfdja_modelInputX</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0fyfdja_decisionInputX</bpmn:dataInputRefs>
-          <bpmn:dataInputRefs>Activity_0fyfdja_userIdInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_namespaceInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_modelInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_decisionInputX</bpmn:dataInputRefs>
+          <bpmn:dataInputRefs>Activity_0lb2cub_userIdInputX</bpmn:dataInputRefs>
         </bpmn:inputSet>
         <bpmn:outputSet>
-          <bpmn:dataOutputRefs>Activity_0fyfdja_Decision_020986qOutputX</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_0lb2cub_Decision_020986qOutputX</bpmn:dataOutputRefs>
+          <bpmn:dataOutputRefs>Activity_0lb2cub_hasUserIdOutputX</bpmn:dataOutputRefs>
         </bpmn:outputSet>
       </bpmn:ioSpecification>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1jqo4qt">
-        <bpmn:targetRef>Activity_0fyfdja_namespaceInputX</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_11eoho4">
+        <bpmn:targetRef>Activity_0lb2cub_namespaceInputX</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">http://camunda.org/schema/1.0/dmn</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0fyfdja_namespaceInputX</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_namespaceInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_0j78h12">
-        <bpmn:targetRef>Activity_0fyfdja_modelInputX</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1wn5kf9">
+        <bpmn:targetRef>Activity_0lb2cub_modelInputX</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">DRD</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0fyfdja_modelInputX</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_modelInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1aim8o4">
-        <bpmn:targetRef>Activity_0fyfdja_decisionInputX</bpmn:targetRef>
+      <bpmn:dataInputAssociation id="DataInputAssociation_1n66neu">
+        <bpmn:targetRef>Activity_0lb2cub_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
           <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_020986q</bpmn:from>
-          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0fyfdja_decisionInputX</bpmn:to>
+          <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_0lb2cub_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
-      <bpmn:dataInputAssociation id="DataInputAssociation_1yf6c3x">
+      <bpmn:dataInputAssociation id="DataInputAssociation_0wgntqv">
         <bpmn:sourceRef>userId</bpmn:sourceRef>
-        <bpmn:targetRef>Activity_0fyfdja_userIdInputX</bpmn:targetRef>
+        <bpmn:targetRef>Activity_0lb2cub_userIdInputX</bpmn:targetRef>
       </bpmn:dataInputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_1aflgsr">
-        <bpmn:sourceRef>Activity_0fyfdja_Decision_020986qOutputX</bpmn:sourceRef>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_012kmwy">
+        <bpmn:sourceRef>Activity_0lb2cub_Decision_020986qOutputX</bpmn:sourceRef>
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_006xgzi">
-        <bpmn:sourceRef>Activity_0fyfdja_Decision_020986qOutputX</bpmn:sourceRef>
-        <bpmn:targetRef>hasUserId</bpmn:targetRef>
-      </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_0qhc2l7">
-        <bpmn:sourceRef>Activity_0fyfdja_Decision_020986qOutputX</bpmn:sourceRef>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1o6g7w9">
+        <bpmn:sourceRef>Activity_0lb2cub_hasUserIdOutputX</bpmn:sourceRef>
         <bpmn:targetRef>hasUserId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:sequenceFlow id="Flow_1jxqvea" sourceRef="Activity_0fyfdja" targetRef="Gateway_1uim89g" />
+    <bpmn:startEvent id="Event_1imz6h6">
+      <bpmn:outgoing>Flow_0kwe8aw</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0ulejps" messageRef="Message_Event_1imz6h6" />
+    </bpmn:startEvent>
+    <bpmn:exclusiveGateway id="Gateway_1sz93tf">
+      <bpmn:incoming>Flow_1h3sai2</bpmn:incoming>
+      <bpmn:outgoing>Flow_0txb5rf</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11vflh1</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:endEvent id="Event_0pe5dkf">
+      <bpmn:incoming>Flow_0txb5rf</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_0txb5rf" sourceRef="Gateway_1sz93tf" targetRef="Event_0pe5dkf">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">!hasUserId</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:endEvent id="Event_1djjz13">
+      <bpmn:incoming>Flow_11vflh1</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1h3sai2" sourceRef="Activity_0lb2cub" targetRef="Gateway_1sz93tf" />
+    <bpmn:sequenceFlow id="Flow_11vflh1" sourceRef="Gateway_1sz93tf" targetRef="Event_1djjz13" />
   </bpmn:process>
-  <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
-  <bpmn:itemDefinition id="_renewalResponseItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_renewalRequestItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_priorAuthItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_1rtlkj6_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_1rtlkj6" name="renewals" itemRef="_Message_1rtlkj6_Item" />
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
-      <bpmndi:BPMNShape id="Event_0x0fdgz_di" bpmnElement="Event_0x0fdgz">
-        <dc:Bounds x="822" y="452" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_08nx1k5_di" bpmnElement="Event_08nx1k5">
-        <dc:Bounds x="1232" y="192" width="36" height="36" />
-        <bpmndi:BPMNLabel id="_C8B768FA-0D35-4885-A9A0-A5AE8807D48A">
-          <dc:Bounds x="1223" y="235" width="54" height="14" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_1uim89g_di" bpmnElement="Gateway_1uim89g" isMarkerVisible="true">
-        <dc:Bounds x="615" y="315" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0ndx16n_di" bpmnElement="Activity_18cp35c">
-        <dc:Bounds x="575" y="430" width="130" height="80" />
-        <bpmndi:BPMNLabel id="_2EBD99F3-75B0-4205-84F9-F6B4B4A7D80F" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0aa37w8_di" bpmnElement="Activity_16av043">
-        <dc:Bounds x="590" y="170" width="100" height="80" />
-        <bpmndi:BPMNLabel id="_39FA8DF9-26A0-40A5-80FF-28E2D86F6DD1" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_11iz075_di" bpmnElement="Activity_0ffilov">
-        <dc:Bounds x="1030" y="170" width="100" height="80" />
-        <bpmndi:BPMNLabel id="_73033646-03D7-48ED-8CBE-CA0ACFD69D3E" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1h3cpsh_di" bpmnElement="Event_0pxm1pv">
-        <dc:Bounds x="772" y="192" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_1c7jw17_di" bpmnElement="Event_06jg1y2">
-        <dc:Bounds x="902" y="192" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0fs7ohs_di" bpmnElement="Event_01mlphv">
-        <dc:Bounds x="302" y="322" width="36" height="36" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_155cz1j_di" bpmnElement="Activity_0fyfdja">
-        <dc:Bounds x="430" y="300" width="100" height="80" />
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="Activity_1eza76r_di" bpmnElement="Activity_0lb2cub">
+        <dc:Bounds x="350" y="300" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_1s28d3i_di" bpmnElement="Flow_1s28d3i">
-        <di:waypoint x="640" y="365" />
-        <di:waypoint x="640" y="430" />
+      <bpmndi:BPMNShape id="Event_0tf4bo0_di" bpmnElement="Event_1imz6h6">
+        <dc:Bounds x="242" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1sz93tf_di" bpmnElement="Gateway_1sz93tf" isMarkerVisible="true">
+        <dc:Bounds x="535" y="315" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0pe5dkf_di" bpmnElement="Event_0pe5dkf">
+        <dc:Bounds x="542" y="472" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1djjz13_di" bpmnElement="Event_1djjz13">
+        <dc:Bounds x="672" y="322" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0kwe8aw_di" bpmnElement="Flow_0kwe8aw">
+        <di:waypoint x="278" y="340" />
+        <di:waypoint x="350" y="340" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1ga0b7j_di" bpmnElement="Flow_1ga0b7j">
-        <di:waypoint x="705" y="470" />
-        <di:waypoint x="822" y="470" />
+      <bpmndi:BPMNEdge id="Flow_0txb5rf_di" bpmnElement="Flow_0txb5rf">
+        <di:waypoint x="560" y="365" />
+        <di:waypoint x="560" y="472" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="559" y="416" width="32" height="14" />
+        </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0kcy7jb_di" bpmnElement="Flow_0kcy7jb">
-        <di:waypoint x="640" y="315" />
-        <di:waypoint x="640" y="250" />
+      <bpmndi:BPMNEdge id="Flow_1h3sai2_di" bpmnElement="Flow_1h3sai2">
+        <di:waypoint x="450" y="340" />
+        <di:waypoint x="535" y="340" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1nmsucy_di" bpmnElement="Flow_1nmsucy">
-        <di:waypoint x="690" y="210" />
-        <di:waypoint x="772" y="210" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_18xjfz6_di" bpmnElement="Flow_18xjfz6">
-        <di:waypoint x="1130" y="210" />
-        <di:waypoint x="1232" y="210" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1w25fr6_di" bpmnElement="Flow_1w25fr6">
-        <di:waypoint x="808" y="210" />
-        <di:waypoint x="902" y="210" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_10dgd2g_di" bpmnElement="Flow_10dgd2g">
-        <di:waypoint x="938" y="210" />
-        <di:waypoint x="1030" y="210" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1v4opva_di" bpmnElement="Flow_1v4opva">
-        <di:waypoint x="338" y="340" />
-        <di:waypoint x="430" y="340" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1jxqvea_di" bpmnElement="Flow_1jxqvea">
-        <di:waypoint x="530" y="340" />
-        <di:waypoint x="615" y="340" />
+      <bpmndi:BPMNEdge id="Flow_11vflh1_di" bpmnElement="Flow_11vflh1">
+        <di:waypoint x="585" y="340" />
+        <di:waypoint x="672" y="340" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
