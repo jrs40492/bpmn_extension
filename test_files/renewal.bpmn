@@ -131,10 +131,10 @@
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_05al3r1" sourceRef="Activity_0lb2cub" targetRef="Gateway_0p81tid" />
     <bpmn:sequenceFlow id="Flow_0d2mn5w" sourceRef="Gateway_0p81tid" targetRef="Event_0pe5dkf">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId == null || hasUserId == false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return !Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_0agj6fl" sourceRef="Gateway_0p81tid" targetRef="Activity_0xhu28a">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">hasUserId == true</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:endEvent id="Event_0pu6xnn">
       <bpmn:incoming>Flow_0lz5kn3</bpmn:incoming>
