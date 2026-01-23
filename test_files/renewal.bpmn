@@ -34,7 +34,7 @@
     <bpmn:startEvent id="Event_0m799to">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
-          <msgevt:payloadField name="userId" expression="$.data.userId" />
+          <msgevt:payloadField name="userId" expression="$.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0mlcruj</bpmn:outgoing>
@@ -58,14 +58,8 @@
     <bpmn:scriptTask id="Activity_03vtzas" name="Step 1" scriptFormat="java">
       <bpmn:incoming>Flow_0mlcruj</bpmn:incoming>
       <bpmn:outgoing>Flow_09guua2</bpmn:outgoing>
-      <bpmn:script>// Extract userId from the payload object
-com.example.payload.RenewalsPayload payload =
-    (com.example.payload.RenewalsPayload) kcontext.getVariable("message_Event_1imz6h6");
-String extractedUserId = payload != null ? payload.getUserId() : null;
-kcontext.setVariable("userId", extractedUserId);
-
-System.out.println("testing testing testing");
-System.out.println("userId: " + extractedUserId);</bpmn:script>
+      <bpmn:script>System.out.println("testing testing testing");
+System.out.println("userId: " + kcontext.getVariable("userId");</bpmn:script>
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_09guua2" sourceRef="Activity_03vtzas" targetRef="Activity_05r7j6b" />
     <bpmn:businessRuleTask id="Activity_05r7j6b" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
