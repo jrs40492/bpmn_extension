@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Definitions_1" name="RenewalDecisions" namespace="http://camunda.org/schema/1.0/dmn">
-  <inputData id="InputData_0zj43q1" name="userId">
-    <variable id="InputData_0zj43q1_variable" name="userId" typeRef="string" />
+  <inputData id="InputData_0ver61k" name="userId">
+    <variable id="InputData_0ver61k_variable" name="userId" typeRef="string" />
   </inputData>
-  <decision id="Decision_020986q" name="hasUserId">
-    <variable id="Decision_020986q_variable" name="hasUserId" typeRef="boolean" />
-    <informationRequirement id="InformationRequirement_1959nq5">
-      <requiredInput href="#InputData_0zj43q1" />
+  <decision id="Decision_0lj4elf" name="hasUserId">
+    <variable id="Decision_0lj4elf_variable" name="hasUserId" typeRef="boolean" />
+    <informationRequirement id="InformationRequirement_0n6t5gs">
+      <requiredInput href="#InputData_0ver61k" />
     </informationRequirement>
-    <decisionTable id="DecisionTable_1slxj73" hitPolicy="FIRST">
-      <input id="InputClause_01dfmjc">
-        <inputExpression id="LiteralExpression_01c9u56" typeRef="boolean">
+    <decisionTable id="DecisionTable_04cwtdw">
+      <input id="InputClause_09ux4iy">
+        <inputExpression id="LiteralExpression_1i7gaer" typeRef="boolean">
           <text>userId.isEmpty</text>
         </inputExpression>
       </input>
-      <output id="OutputClause_0bq90lt" name="hasUserId" typeRef="boolean" />
-      <rule id="DecisionRule_0l91a6w">
-        <inputEntry id="UnaryTests_0x8lyfj">
+      <output id="OutputClause_07h3uap" name="hasUserId" typeRef="boolean" />
+      <rule id="DecisionRule_1481v7x">
+        <inputEntry id="UnaryTests_1muq1uo">
           <text>true</text>
         </inputEntry>
-        <outputEntry id="LiteralExpression_0t9h89h">
+        <outputEntry id="LiteralExpression_0u3lszu">
           <text>false</text>
         </outputEntry>
       </rule>
-      <rule id="DecisionRule_0bd78bk">
-        <inputEntry id="UnaryTests_0isafdy">
+      <rule id="DecisionRule_0iart8i">
+        <inputEntry id="UnaryTests_0pbc4x6">
           <text>false</text>
         </inputEntry>
-        <outputEntry id="LiteralExpression_0p8gwby">
+        <outputEntry id="LiteralExpression_0dpd6cw">
           <text>true</text>
         </outputEntry>
       </rule>
@@ -35,17 +35,17 @@
   </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
-      <dmndi:DMNShape id="DMNShape_1v81rlp" dmnElementRef="InputData_0zj43q1">
-        <dc:Bounds height="45" width="125" x="328" y="318" />
+      <dmndi:DMNShape id="DMNShape_1oqazqz" dmnElementRef="InputData_0ver61k">
+        <dc:Bounds height="45" width="125" x="208" y="318" />
       </dmndi:DMNShape>
-      <dmndi:DMNEdge id="DMNEdge_0h6em4u" dmnElementRef="InformationRequirement_1959nq5">
-        <di:waypoint x="453" y="341" />
-        <di:waypoint x="520" y="341" />
-        <di:waypoint x="540" y="341" />
+      <dmndi:DMNShape id="DMNShape_10ni3g4" dmnElementRef="Decision_0lj4elf">
+        <dc:Bounds height="80" width="180" x="440" y="301" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_0w660ew" dmnElementRef="InformationRequirement_0n6t5gs">
+        <di:waypoint x="333" y="341" />
+        <di:waypoint x="420" y="341" />
+        <di:waypoint x="440" y="341" />
       </dmndi:DMNEdge>
-      <dmndi:DMNShape id="DMNShape_1af4pk2" dmnElementRef="Decision_020986q">
-        <dc:Bounds height="80" width="180" x="540" y="301" />
-      </dmndi:DMNShape>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>
 </definitions>
