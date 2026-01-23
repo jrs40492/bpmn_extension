@@ -334,10 +334,11 @@ class MessageEventCreationHandler {
     const eventId = bo.id;
 
     // Create itemDefinition for the data output
+    // Use java.lang.Object to match the message itemDefinition type (messages can carry any data)
     const itemDefId = `_${eventId}_OutputItem`;
     const itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
       id: itemDefId,
-      structureRef: 'java.lang.String'
+      structureRef: 'java.lang.Object'
     });
     itemDef.$parent = definitions;
 
@@ -364,8 +365,8 @@ class MessageEventCreationHandler {
       name: 'event',
       itemSubjectRef: itemDef
     });
-    // Set drools:dtype attribute for Kogito compatibility (required for code generation)
-    (dataOutput as unknown as { set?: (key: string, value: string) => void }).set?.('drools:dtype', 'java.lang.String');
+    // Set drools:dtype attribute for Kogito compatibility (must match message type)
+    (dataOutput as unknown as { set?: (key: string, value: string) => void }).set?.('drools:dtype', 'java.lang.Object');
     dataOutput.$parent = bo;
 
     // Create output set referencing the data output - also directly on event
@@ -381,11 +382,11 @@ class MessageEventCreationHandler {
     const messageVarId = messageVarName;
 
     if (process) {
-      // Create itemDefinition for the process variable
+      // Create itemDefinition for the process variable (must match message type)
       const varItemDefId = `_${messageVarId}Item`;
       const varItemDef = bpmnFactory.create('bpmn:ItemDefinition', {
         id: varItemDefId,
-        structureRef: 'java.lang.String'
+        structureRef: 'java.lang.Object'
       });
       varItemDef.$parent = definitions;
 

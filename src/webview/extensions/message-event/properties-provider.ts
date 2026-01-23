@@ -1277,7 +1277,7 @@ export default class MessageEventPropertiesProvider {
               if (!itemDef) {
                 itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
                   id: itemDefId,
-                  structureRef: 'java.lang.String'
+                  structureRef: 'java.lang.Object'
                 });
                 itemDef.$parent = definitions;
 
@@ -1303,7 +1303,7 @@ export default class MessageEventPropertiesProvider {
                 name: 'event',
                 itemSubjectRef: itemDef
               });
-              dataOutput.set?.('drools:dtype', 'java.lang.String');
+              dataOutput.set?.('drools:dtype', 'java.lang.Object');
               dataOutput.$parent = catchBo;
 
               // Create output set
@@ -1322,7 +1322,7 @@ export default class MessageEventPropertiesProvider {
                 const varItemDefId = `_${messageVarId}Item`;
                 const varItemDef = bpmnFactory.create('bpmn:ItemDefinition', {
                   id: varItemDefId,
-                  structureRef: 'java.lang.String'
+                  structureRef: 'java.lang.Object'
                 });
                 varItemDef.$parent = definitions;
 
