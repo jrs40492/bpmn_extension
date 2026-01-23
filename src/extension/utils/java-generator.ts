@@ -158,6 +158,23 @@ ${gettersSetters}
 /**
  * Generate a custom Jackson deserializer for nested JSONPath expressions
  */
+/**
+ * Get the effective JsonPath for extraction in the deserializer.
+ * Kogito unwraps CloudEvents, so $.data.userId becomes $.userId
+ * since the deserializer receives just the data portion.
+ */
+function getEffectiveJsonPath(expression: string): string {
+  if (!expression) return '';
+  let path = expression.trim();
+  // Strip $.data. prefix since Kogito unwraps CloudEvents
+  // $.data.userId -> $.userId
+  // $.data.nested.field -> $.nested.field
+  if (path.startsWith('$.data.')) {
+    path = '$.' + path.substring(7); // Remove "$.data." prefix, keep "$."
+  }
+  return path;
+}
+
 export function generateDeserializerClass(
   packageName: string,
   className: string,
@@ -169,22 +186,27 @@ export function generateDeserializerClass(
       const fieldName = toCamelCase(field.name);
       const methodSuffix = toPascalCase(field.name);
       const expression = field.expression?.trim() || '';
+      // Get the effective path (with $.data. stripped for CloudEvent unwrapping)
+      const effectivePath = getEffectiveJsonPath(expression);
 
-      // Check if this is a nested path (2+ dots means $.data.xxx or deeper)
-      const dotCount = (expression.match(/\./g) || []).length;
-      const isNestedPath = dotCount >= 2;
+      // Check if effective path still has nested structure (after stripping $.data.)
+      // $.userId has 1 dot - simple field access
+      // $.nested.field has 2 dots - needs JsonPath
+      const effectiveDotCount = (effectivePath.match(/\./g) || []).length;
+      const isNestedPath = effectiveDotCount >= 2;
 
       if (!isNestedPath) {
-        // Simple field access - use the cleaned path or field name
-        const simpleKey = parseJsonPath(expression) || fieldName;
+        // Simple field access - extract the field name from effective path or use field name
+        // $.userId -> userId, or just use the field name
+        const simpleKey = effectivePath.replace(/^\$\./, '') || fieldName;
         return `        if (root.has("${simpleKey}")) {
             payload.set${methodSuffix}(root.get("${simpleKey}").${getJsonNodeMethod(javaType)});
         }`;
       }
 
-      // For nested paths, use JsonPath with the full expression
+      // For nested paths, use JsonPath with the effective expression
       return `        try {
-            ${javaType} ${fieldName}Value = JsonPath.read(json, "${expression}");
+            ${javaType} ${fieldName}Value = JsonPath.read(json, "${effectivePath}");
             payload.set${methodSuffix}(${fieldName}Value);
         } catch (PathNotFoundException e) {
             // Field not found in payload, leave as null
@@ -194,8 +216,9 @@ export function generateDeserializerClass(
 
   const hasNestedPaths = fields.some(f => {
     const expr = f.expression?.trim() || '';
-    const dotCount = (expr.match(/\./g) || []).length;
-    return dotCount >= 2;
+    const effectivePath = getEffectiveJsonPath(expr);
+    const effectiveDotCount = (effectivePath.match(/\./g) || []).length;
+    return effectiveDotCount >= 2;
   });
 
   let imports = `package ${packageName};

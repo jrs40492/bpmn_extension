@@ -5,8 +5,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.PathNotFoundException;
 
 /**
  * Custom deserializer for RenewalsPayload to handle nested JSONPath expressions.
@@ -21,11 +19,8 @@ public class RenewalsPayloadDeserializer extends JsonDeserializer<RenewalsPayloa
 
         RenewalsPayload payload = new RenewalsPayload();
 
-        try {
-            String userIdValue = JsonPath.read(json, "$.data.userId");
-            payload.setUserId(userIdValue);
-        } catch (PathNotFoundException e) {
-            // Field not found in payload, leave as null
+        if (root.has("userId")) {
+            payload.setUserId(root.get("userId").asText());
         }
 
         return payload;
