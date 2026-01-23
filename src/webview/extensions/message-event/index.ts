@@ -287,9 +287,147 @@ class MessageEventCreationHandler {
   }
 }
 
+// ============================================================================
+// Message Event Deletion Handler
+// ============================================================================
+
+/**
+ * Check if element is any type of message event
+ */
+function isAnyMessageEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+
+  const eventTypes = [
+    'bpmn:StartEvent',
+    'bpmn:IntermediateThrowEvent',
+    'bpmn:IntermediateCatchEvent',
+    'bpmn:EndEvent',
+    'bpmn:BoundaryEvent'
+  ];
+
+  if (!eventTypes.includes(bo.$type)) return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Check if a message is referenced by any element in the process
+ */
+function isMessageReferenced(definitions: ModdleElement, messageId: string): boolean {
+  const rootElements = (definitions as unknown as { rootElements?: ModdleElement[] }).rootElements || [];
+
+  // Find the process
+  const process = rootElements.find((el: ModdleElement) => el.$type === 'bpmn:Process');
+  if (!process) return false;
+
+  // Get all flow elements in the process
+  const flowElements = (process as unknown as { flowElements?: ModdleElement[] }).flowElements || [];
+
+  // Check each flow element for message references
+  for (const flowElement of flowElements) {
+    const eventDefinitions = (flowElement as unknown as { eventDefinitions?: ModdleElement[] }).eventDefinitions || [];
+    for (const ed of eventDefinitions) {
+      if (ed.$type === 'bpmn:MessageEventDefinition') {
+        const messageRef = (ed as unknown as { messageRef?: ModdleElement }).messageRef;
+        if (messageRef?.id === messageId) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Handles cleanup of orphaned messages and itemDefinitions when message events are deleted.
+ * This prevents Kogito code generation errors from orphaned message definitions.
+ */
+class MessageEventDeletionHandler {
+  static $inject = ['eventBus', 'commandStack'];
+
+  constructor(eventBus: EventBus, commandStack: CommandStack) {
+    // Listen for shape removal
+    eventBus.on('shape.remove', (event: ShapeEvent) => {
+      const element = event.element;
+
+      // Only handle message events
+      if (!isAnyMessageEvent(element)) {
+        return;
+      }
+
+      const bo = element.businessObject;
+      if (!bo) return;
+
+      // Get the message reference before the element is removed
+      const msgEvtDef = getMessageEventDefinition(element);
+      const messageRef = msgEvtDef?.messageRef;
+
+      if (!messageRef) return;
+
+      const definitions = getDefinitions(element);
+      const messageId = messageRef.id;
+      const eventId = bo.id;
+
+      // Use setTimeout to allow the deletion to complete first
+      setTimeout(() => {
+        // Check if this message is still referenced by any other element
+        if (isMessageReferenced(definitions, messageId || '')) {
+          return; // Message is still in use, don't delete
+        }
+
+        // Collect orphaned elements to remove
+        const rootElements = (definitions as unknown as { rootElements?: ModdleElement[] }).rootElements || [];
+        const elementsToRemove: string[] = [];
+
+        // Find the message
+        const message = rootElements.find((el: ModdleElement) =>
+          el.$type === 'bpmn:Message' && el.id === messageId
+        );
+        if (message) {
+          elementsToRemove.push(messageId || '');
+
+          // Find the message's itemDefinition
+          const messageItemRef = (message as unknown as { itemRef?: ModdleElement }).itemRef;
+          if (messageItemRef?.id) {
+            elementsToRemove.push(messageItemRef.id);
+          }
+        }
+
+        // Find the event's data input itemDefinition
+        const eventItemDefId = `_${eventId}_InputItem`;
+        if (rootElements.some((el: ModdleElement) =>
+          el.$type === 'bpmn:ItemDefinition' && el.id === eventItemDefId
+        )) {
+          elementsToRemove.push(eventItemDefId);
+        }
+
+        // Remove orphaned elements
+        if (elementsToRemove.length > 0) {
+          const newRootElements = rootElements.filter((el: ModdleElement) =>
+            !elementsToRemove.includes(el.id || '')
+          );
+
+          // Create a dummy element for the command (the original element is deleted)
+          // We need to use a different approach since the element is being removed
+          // We'll update definitions directly
+          commandStack.execute('element.updateModdleProperties', {
+            element: { businessObject: definitions },
+            moddleElement: definitions,
+            properties: { rootElements: newRootElements }
+          });
+        }
+      }, 100);
+    });
+  }
+}
+
 // Export the module for bpmn-js additionalModules
 export default {
-  __init__: ['messageEventPropertiesProvider', 'messageEventCreationHandler'],
+  __init__: ['messageEventPropertiesProvider', 'messageEventCreationHandler', 'messageEventDeletionHandler'],
   messageEventPropertiesProvider: ['type', MessageEventPropertiesProvider],
-  messageEventCreationHandler: ['type', MessageEventCreationHandler]
+  messageEventCreationHandler: ['type', MessageEventCreationHandler],
+  messageEventDeletionHandler: ['type', MessageEventDeletionHandler]
 };

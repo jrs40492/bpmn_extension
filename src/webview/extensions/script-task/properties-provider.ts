@@ -108,6 +108,25 @@ function ScriptFormat(props: { element: BpmnElement; id: string }) {
   });
 }
 
+/**
+ * Validate Java script for common errors that cause Kogito/jBPM compilation failures.
+ * Returns an error message if invalid, or null if valid.
+ */
+function validateJavaScript(script: string, scriptFormat: string): string | null {
+  if (!script || scriptFormat !== 'java') {
+    return null;
+  }
+
+  // Check for return statements - Java script tasks execute in a void context
+  // and cannot return values. This causes "incompatible types: unexpected return value" errors.
+  const returnPattern = /\breturn\s+[^;]+;/;
+  if (returnPattern.test(script)) {
+    return 'Java script tasks cannot use "return" statements. Use kcontext.setVariable("varName", value) instead.';
+  }
+
+  return null;
+}
+
 // Script Content TextArea component
 function ScriptContent(props: { element: BpmnElement; id: string }) {
   const { element, id } = props;
@@ -131,11 +150,23 @@ function ScriptContent(props: { element: BpmnElement; id: string }) {
     });
   };
 
+  // Validate and get description with warning if needed
+  const getDescription = () => {
+    const script = businessObject?.script || '';
+    const scriptFormat = businessObject?.scriptFormat || '';
+    const validationError = validateJavaScript(script, scriptFormat);
+
+    if (validationError) {
+      return translate('⚠️ WARNING: ') + validationError;
+    }
+    return translate('The script code to execute');
+  };
+
   return TextAreaEntry({
     id,
     element,
     label: translate('Script'),
-    description: translate('The script code to execute'),
+    description: getDescription(),
     getValue,
     setValue,
     debounce,
