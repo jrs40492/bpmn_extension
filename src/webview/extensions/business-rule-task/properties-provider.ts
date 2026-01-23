@@ -167,6 +167,17 @@ function isBusinessRuleTask(element: BpmnElement): boolean {
   return element?.businessObject?.$type === 'bpmn:BusinessRuleTask';
 }
 
+// Helper to strip quotes from an expression value for display
+function unquoteExpressionValue(value: string): string {
+  if (!value) return value;
+  // Strip surrounding quotes
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
 // Helper to get data input value from ioSpecification
 function getDataInputValue(element: BpmnElement, inputName: string): string {
   const bo = element?.businessObject;
@@ -188,7 +199,14 @@ function getDataInputValue(element: BpmnElement, inputName: string): string {
       // Get value from assignment
       const assignment = assoc.assignment?.[0];
       if (assignment?.from?.body !== undefined) {
-        return assignment.from.body;
+        // Strip quotes from DMN configuration inputs for display
+        const rawValue = assignment.from.body;
+        if (inputName === DMN_DATA_INPUTS.MODEL ||
+            inputName === DMN_DATA_INPUTS.NAMESPACE ||
+            inputName === DMN_DATA_INPUTS.DECISION) {
+          return unquoteExpressionValue(rawValue);
+        }
+        return rawValue;
       }
     }
   }
@@ -389,6 +407,19 @@ function ensureIoSpecification(element: BpmnElement, bpmnFactory: BpmnFactory, c
   return ioSpec;
 }
 
+// Helper to wrap a string value in quotes for tFormalExpression
+// This ensures Kogito treats it as a literal string, not a variable reference
+function quoteExpressionValue(value: string): string {
+  if (!value) return value;
+  // If already quoted, don't double-quote
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    return value;
+  }
+  // Quote the value to prevent variable interpolation
+  return `"${value}"`;
+}
+
 // Helper to update a data input value
 function setDataInputValue(element: BpmnElement, inputName: string, value: string, bpmnFactory: BpmnFactory, commandStack: CommandStack): void {
   const bo = element.businessObject;
@@ -396,6 +427,14 @@ function setDataInputValue(element: BpmnElement, inputName: string, value: strin
 
   // Ensure ioSpecification exists
   ensureIoSpecification(element, bpmnFactory, commandStack);
+
+  // For DMN configuration inputs (model, namespace, decision), wrap in quotes
+  // to prevent Kogito from interpreting identifiers as variable references
+  const quotedValue = (inputName === DMN_DATA_INPUTS.MODEL ||
+                       inputName === DMN_DATA_INPUTS.NAMESPACE ||
+                       inputName === DMN_DATA_INPUTS.DECISION)
+    ? quoteExpressionValue(value)
+    : value;
 
   // Find the association for this input (handles both InputX and Input suffixes)
   const associations = bo.dataInputAssociations || [];
@@ -408,7 +447,7 @@ function setDataInputValue(element: BpmnElement, inputName: string, value: strin
         commandStack.execute('element.updateModdleProperties', {
           element,
           moddleElement: assignment.from,
-          properties: { body: value }
+          properties: { body: quotedValue }
         });
         return;
       }
@@ -421,7 +460,7 @@ function setDataInputValue(element: BpmnElement, inputName: string, value: strin
     const dataInputs = ioSpec.dataInputs || [];
     const dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
     if (dataInput) {
-      const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: value });
+      const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: quotedValue });
       const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });
       const assignment = bpmnFactory.create('bpmn:Assignment', {
         from: fromExpression,
@@ -1318,18 +1357,108 @@ function requestDmnFiles(): void {
 // Properties Provider Class
 // ============================================================================
 
-export default class BusinessRuleTaskPropertiesProvider {
-  static $inject = ['propertiesPanel', 'eventBus'];
+// Track elements that have had their DMN values fixed to prevent infinite loops
+const fixedDmnValuesElements = new WeakSet<object>();
 
-  constructor(propertiesPanel: PropertiesPanel, eventBus: EventBus) {
+// Helper to check if a value needs quoting (is an identifier that could be mistaken for a variable)
+function needsQuoting(value: string): boolean {
+  if (!value) return false;
+  // Already quoted
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    return false;
+  }
+  // URLs don't need quoting (they're clearly literals)
+  if (value.includes('://') || value.includes('/')) {
+    return false;
+  }
+  // Identifiers (alphanumeric with underscores) need quoting
+  return /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(value);
+}
+
+// Helper to fix unquoted DMN configuration values for Kogito compatibility
+function fixUnquotedDmnValues(
+  element: BpmnElement,
+  _bpmnFactory: BpmnFactory,
+  commandStack: CommandStack
+): void {
+  const bo = element.businessObject;
+  if (!bo) return;
+
+  // Skip if already fixed
+  if (fixedDmnValuesElements.has(bo)) return;
+
+  const associations = bo.dataInputAssociations || [];
+  let needsFix = false;
+
+  // Check each DMN configuration input
+  for (const assoc of associations) {
+    const targetRef = (assoc as DataInputAssociation).targetRef;
+    const inputName = targetRef?.name;
+
+    if (inputName === DMN_DATA_INPUTS.MODEL ||
+        inputName === DMN_DATA_INPUTS.NAMESPACE ||
+        inputName === DMN_DATA_INPUTS.DECISION) {
+      const assignment = (assoc as DataInputAssociation).assignment?.[0];
+      if (assignment?.from?.body) {
+        const value = (assignment.from as FormalExpression).body;
+        if (value && needsQuoting(value)) {
+          needsFix = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (needsFix) {
+    // Mark as fixed BEFORE making changes to prevent re-entry
+    fixedDmnValuesElements.add(bo);
+
+    // Update each unquoted value
+    for (const assoc of associations) {
+      const targetRef = (assoc as DataInputAssociation).targetRef;
+      const inputName = targetRef?.name;
+
+      if (inputName === DMN_DATA_INPUTS.MODEL ||
+          inputName === DMN_DATA_INPUTS.NAMESPACE ||
+          inputName === DMN_DATA_INPUTS.DECISION) {
+        const assignment = (assoc as DataInputAssociation).assignment?.[0];
+        if (assignment?.from?.body) {
+          const value = (assignment.from as FormalExpression).body;
+          if (value && needsQuoting(value)) {
+            const quotedValue = `"${value}"`;
+            commandStack.execute('element.updateModdleProperties', {
+              element,
+              moddleElement: assignment.from,
+              properties: { body: quotedValue }
+            });
+          }
+        }
+      }
+    }
+  }
+}
+
+export default class BusinessRuleTaskPropertiesProvider {
+  static $inject = ['propertiesPanel', 'eventBus', 'bpmnFactory', 'commandStack'];
+
+  constructor(
+    propertiesPanel: PropertiesPanel,
+    eventBus: EventBus,
+    bpmnFactory: BpmnFactory,
+    commandStack: CommandStack
+  ) {
     // Request DMN files on initialization
     requestDmnFiles();
 
     // Re-request when selection changes to a business rule task
+    // Also fix unquoted DMN values that could cause Kogito expression evaluation errors
     eventBus.on('selection.changed', (event: SelectionChangedEvent) => {
       const selected = event.newSelection?.[0];
       if (selected && isBusinessRuleTask(selected)) {
         requestDmnFiles();
+        // Fix unquoted values to prevent expression interpolation
+        fixUnquotedDmnValues(selected, bpmnFactory, commandStack);
       }
     });
 
