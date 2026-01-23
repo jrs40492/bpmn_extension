@@ -1254,6 +1254,85 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
+      // Fix message catch events (Intermediate Catch and Boundary) that are missing data outputs
+      // Kogito requires data output structures to know where to store received message data
+      // Without this, the code generator throws a NullPointerException
+      if (isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
+        const catchBo = element.businessObject;
+        if (catchBo) {
+          // Check if data outputs are missing
+          const dataOutputs = (catchBo as unknown as { dataOutputs?: ModdleElement[] }).dataOutputs || [];
+          if (dataOutputs.length === 0 && !fixedDtypeElements.has(catchBo)) {
+            // Mark as fixed to prevent re-entry
+            fixedDtypeElements.add(catchBo);
+
+            const eventId = catchBo.id;
+            if (eventId) {
+              // Create itemDefinition for the data output
+              const itemDefId = `_${eventId}_OutputItem`;
+              let itemDef = rootElements.find((el: ModdleElement) =>
+                el.$type === 'bpmn:ItemDefinition' && el.id === itemDefId
+              );
+
+              if (!itemDef) {
+                itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+                  id: itemDefId,
+                  structureRef: 'java.lang.String'
+                });
+                itemDef.$parent = definitions;
+
+                const newRootElements = [...rootElements];
+                const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+                if (processIndex >= 0) {
+                  newRootElements.splice(processIndex, 0, itemDef);
+                } else {
+                  newRootElements.push(itemDef);
+                }
+
+                commandStack.execute('element.updateModdleProperties', {
+                  element,
+                  moddleElement: definitions,
+                  properties: { rootElements: newRootElements }
+                });
+              }
+
+              // Create data output
+              const dataOutputId = `${eventId}_OutputX`;
+              const dataOutput = bpmnFactory.create('bpmn:DataOutput', {
+                id: dataOutputId,
+                name: 'event',
+                itemSubjectRef: itemDef
+              });
+              dataOutput.set?.('drools:dtype', 'java.lang.String');
+              dataOutput.$parent = catchBo;
+
+              // Create output set
+              const outputSet = bpmnFactory.create('bpmn:OutputSet', {
+                dataOutputRefs: [dataOutput]
+              });
+              outputSet.$parent = catchBo;
+
+              // Create data output association
+              const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
+                sourceRef: [dataOutput]
+              });
+              dataOutputAssociation.$parent = catchBo;
+
+              // Update the business object
+              commandStack.execute('element.updateModdleProperties', {
+                element,
+                moddleElement: catchBo,
+                properties: {
+                  dataOutputs: [dataOutput],
+                  outputSet: outputSet,
+                  dataOutputAssociations: [dataOutputAssociation]
+                }
+              });
+            }
+          }
+        }
+      }
+
       // Clean up orphaned messages that are not referenced by any message event
       // Orphaned messages can cause Kogito code generation errors (duplicate topic names, missing producers)
       // Use a guard to only run this cleanup once per session

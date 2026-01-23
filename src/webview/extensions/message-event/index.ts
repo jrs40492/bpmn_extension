@@ -35,6 +35,9 @@ interface BusinessObject extends ModdleElement {
   dataInputs?: ModdleElement[];
   dataInputAssociations?: ModdleElement[];
   inputSet?: ModdleElement;
+  dataOutputs?: ModdleElement[];
+  dataOutputAssociations?: ModdleElement[];
+  outputSet?: ModdleElement;
 }
 
 interface BpmnElement {
@@ -70,6 +73,20 @@ function isMessageThrowEvent(element: BpmnElement): boolean {
 
   const isThrowType = bo.$type === 'bpmn:IntermediateThrowEvent' || bo.$type === 'bpmn:EndEvent';
   if (!isThrowType) return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Check if element is a message catch event (Intermediate Catch or Boundary)
+ */
+function isMessageCatchEvent(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+
+  const isCatchType = bo.$type === 'bpmn:IntermediateCatchEvent' || bo.$type === 'bpmn:BoundaryEvent';
+  if (!isCatchType) return false;
 
   const eventDefinitions = bo.eventDefinitions || [];
   return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
@@ -124,24 +141,34 @@ class MessageEventCreationHandler {
   constructor(eventBus: EventBus, bpmnFactory: BpmnFactory, commandStack: CommandStack) {
     eventBus.on('shape.added', (event: ShapeEvent) => {
       const element = event.element;
-
-      // Only handle message throw events (Intermediate Throw and End events)
-      if (!isMessageThrowEvent(element)) {
-        return;
-      }
-
-      const bo = element.businessObject;
+      const bo = element?.businessObject;
       if (!bo) return;
 
-      // Check if data inputs already exist (event already configured)
-      if (bo.dataInputs && bo.dataInputs.length > 0) {
-        return;
+      // Handle message throw events (Intermediate Throw and End events)
+      if (isMessageThrowEvent(element)) {
+        // Check if data inputs already exist (event already configured)
+        if (bo.dataInputs && bo.dataInputs.length > 0) {
+          return;
+        }
+
+        // Use setTimeout to ensure element is fully initialized
+        setTimeout(() => {
+          this.setupThrowEventDataStructures(element, bpmnFactory, commandStack);
+        }, 0);
       }
 
-      // Use setTimeout to ensure element is fully initialized
-      setTimeout(() => {
-        this.setupThrowEventDataStructures(element, bpmnFactory, commandStack);
-      }, 0);
+      // Handle message catch events (Intermediate Catch and Boundary events)
+      if (isMessageCatchEvent(element)) {
+        // Check if data outputs already exist (event already configured)
+        if (bo.dataOutputs && bo.dataOutputs.length > 0) {
+          return;
+        }
+
+        // Use setTimeout to ensure element is fully initialized
+        setTimeout(() => {
+          this.setupCatchEventDataStructures(element, bpmnFactory, commandStack);
+        }, 0);
+      }
     });
   }
 
@@ -243,6 +270,133 @@ class MessageEventCreationHandler {
     const msgEvtDef = getMessageEventDefinition(element);
     if (msgEvtDef && !msgEvtDef.messageRef) {
       // Create a message for the throw event
+      const messageId = `Message_${eventId}`;
+      const msgItemDefId = `_${messageId}_Item`;
+
+      // Create item definition for message
+      const msgItemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+        id: msgItemDefId,
+        structureRef: 'java.lang.Object'
+      });
+      msgItemDef.$parent = definitions;
+
+      // Create message
+      const message = bpmnFactory.create('bpmn:Message', {
+        id: messageId,
+        name: `message_${eventId}`,
+        itemRef: msgItemDef
+      });
+      message.$parent = definitions;
+
+      // Add to root elements
+      const currentRootElements = (definitions as unknown as { rootElements?: ModdleElement[] }).rootElements || [];
+      const updatedRootElements = [...currentRootElements];
+      const procIndex = updatedRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+      if (procIndex >= 0) {
+        updatedRootElements.splice(procIndex, 0, msgItemDef, message);
+      } else {
+        updatedRootElements.push(msgItemDef, message);
+      }
+
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: definitions,
+        properties: { rootElements: updatedRootElements }
+      });
+
+      // Set message reference on the event definition
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: msgEvtDef,
+        properties: { messageRef: message }
+      });
+    }
+  }
+
+  /**
+   * Set up required data output structures for a message catch event.
+   *
+   * BPMN Events use dataOutputs, outputSet, and dataOutputAssociations directly
+   * (NOT ioSpecification which is only for Activities/Tasks).
+   *
+   * Kogito/jBPM requires these structures to know where to store the received
+   * message data. Without this, the code generator throws a NullPointerException.
+   */
+  private setupCatchEventDataStructures(
+    element: BpmnElement,
+    bpmnFactory: BpmnFactory,
+    commandStack: CommandStack
+  ): void {
+    const bo = element.businessObject;
+    if (!bo || !bo.id) return;
+
+    const definitions = getDefinitions(element);
+    const eventId = bo.id;
+
+    // Create itemDefinition for the data output
+    const itemDefId = `_${eventId}_OutputItem`;
+    const itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
+      id: itemDefId,
+      structureRef: 'java.lang.String'
+    });
+    itemDef.$parent = definitions;
+
+    // Add itemDefinition to definitions rootElements
+    const rootElements = (definitions as unknown as { rootElements?: ModdleElement[] }).rootElements || [];
+    const newRootElements = [...rootElements];
+    const processIndex = newRootElements.findIndex((el: ModdleElement) => el.$type === 'bpmn:Process');
+    if (processIndex >= 0) {
+      newRootElements.splice(processIndex, 0, itemDef);
+    } else {
+      newRootElements.push(itemDef);
+    }
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: definitions,
+      properties: { rootElements: newRootElements }
+    });
+
+    // Create data output - for events this goes directly on the event, not in ioSpecification
+    const dataOutputId = `${eventId}_OutputX`;
+    const dataOutput = bpmnFactory.create('bpmn:DataOutput', {
+      id: dataOutputId,
+      name: 'event',
+      itemSubjectRef: itemDef
+    });
+    // Set drools:dtype attribute for Kogito compatibility (required for code generation)
+    (dataOutput as unknown as { set?: (key: string, value: string) => void }).set?.('drools:dtype', 'java.lang.String');
+    dataOutput.$parent = bo;
+
+    // Create output set referencing the data output - also directly on event
+    const outputSet = bpmnFactory.create('bpmn:OutputSet', {
+      dataOutputRefs: [dataOutput]
+    });
+    outputSet.$parent = bo;
+
+    // Create a data output association to map received message to a process variable
+    // This maps to the default "message" variable - users should update this
+    const dataOutputAssociation = bpmnFactory.create('bpmn:DataOutputAssociation', {
+      sourceRef: [dataOutput]
+    });
+    dataOutputAssociation.$parent = bo;
+
+    // Update the business object with the new structures
+    // For events: dataOutputs, outputSet, dataOutputAssociations go directly on the event
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: {
+        dataOutputs: [dataOutput],
+        outputSet: outputSet,
+        dataOutputAssociations: [dataOutputAssociation]
+      }
+    });
+
+    // Ensure message exists for this catch event
+    const msgEvtDef = getMessageEventDefinition(element);
+    if (msgEvtDef && !msgEvtDef.messageRef) {
+      // Create a message for the catch event
       const messageId = `Message_${eventId}`;
       const msgItemDefId = `_${messageId}_Item`;
 
