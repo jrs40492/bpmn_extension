@@ -2,14 +2,9 @@ package com.example.payload;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.kie.api.event.process.ProcessNodeTriggeredEvent;
-import org.kie.api.event.process.ProcessNodeLeftEvent;
-import org.kie.api.event.process.ProcessStartedEvent;
-import org.kie.api.event.process.ProcessCompletedEvent;
-import org.kie.api.event.process.ProcessVariableChangedEvent;
 import org.kie.kogito.internal.process.event.DefaultKogitoProcessEventListener;
 import org.kie.kogito.internal.process.runtime.KogitoProcessInstance;
-
-import java.util.Map;
+import org.kie.kogito.internal.process.runtime.KogitoWorkflowProcessInstance;
 
 /**
  * Auto-generated listener that extracts payload fields from message events
@@ -23,19 +18,26 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
     public void afterNodeTriggered(ProcessNodeTriggeredEvent event) {
         String nodeId = event.getNodeInstance().getNodeId().toExternalFormat();
 
-        if (event.getProcessInstance() instanceof KogitoProcessInstance) {
-            KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
-            Map<String, Object> variables = kpi.getVariables();
+        System.out.println(">>> MessagePayloadExtractor: afterNodeTriggered for nodeId=" + nodeId);
 
-            if ("Event_1imz6h6".equals(nodeId)) {
-                com.example.payload.RenewalsPayload payload = (com.example.payload.RenewalsPayload) variables.get("message_Event_1imz6h6");
-                if (payload != null) {
-                    variables.put("userId", payload.getUserId());
-                }
-            } else             if ("Event_0m799to".equals(nodeId)) {
-                com.example.payload.RenewalsPayload payload = (com.example.payload.RenewalsPayload) variables.get("message_Event_0m799to");
-                if (payload != null) {
-                    variables.put("userId", payload.getUserId());
+        if (event.getProcessInstance() instanceof KogitoWorkflowProcessInstance) {
+            KogitoWorkflowProcessInstance kpi = (KogitoWorkflowProcessInstance) event.getProcessInstance();
+
+            if ("Event_0m799to".equals(nodeId)) {
+                Object msgVar = kpi.getVariable("message_Event_0m799to");
+                System.out.println(">>> message_Event_0m799to = " + msgVar);
+
+                if (msgVar instanceof RenewalsPayload) {
+                    RenewalsPayload payload = (RenewalsPayload) msgVar;
+                    String userId = payload.getUserId();
+                    System.out.println(">>> Extracted userId from payload: " + userId);
+
+                    // Use setVariable to properly update the process variable
+                    kpi.setVariable("userId", userId);
+                    System.out.println(">>> Set process variable userId = " + userId);
+
+                    // Verify it was set
+                    System.out.println(">>> Verification - kpi.getVariable(userId) = " + kpi.getVariable("userId"));
                 }
             }
         }
