@@ -468,6 +468,145 @@ function getJavaType(type: string): string {
 }
 
 /**
+ * Convert a string to PascalCase for class names
+ */
+function toPascalCase(str: string): string {
+  return str
+    .replace(/[_-](.)/g, (_, c) => c.toUpperCase())
+    .replace(/^(.)/, c => c.toUpperCase())
+    .replace(/[^a-zA-Z0-9]/g, '');
+}
+
+/**
+ * Generate payload class name from message name
+ * Matches the logic in java-generator.ts
+ */
+function generatePayloadClassName(messageName: string): string {
+  let name = messageName
+    .replace(/^message[-_]?/i, '')
+    .replace(/[-_]?message$/i, '')
+    .replace(/[-_]?event$/i, '');
+
+  if (!name || /^[a-f0-9-]+$/i.test(name)) {
+    name = messageName;
+  }
+
+  return toPascalCase(name) + 'Payload';
+}
+
+/**
+ * Update the message's itemDefinition.structureRef to use the generated payload class.
+ * This enables Kogito's typed payload deserialization via Jackson.
+ *
+ * Also updates drools:dtype on related dataOutputs to match.
+ *
+ * @param element - The BPMN element (message event)
+ * @param packageName - Java package name (e.g., "com.example.payload")
+ * @param messageName - Message name (e.g., "renewals")
+ * @param bpmnFactory - BPMN factory for creating elements
+ * @param commandStack - Command stack for executing changes
+ */
+function updateMessageStructureRef(
+  element: BpmnElement,
+  packageName: string,
+  messageName: string,
+  bpmnFactory: BpmnFactory,
+  commandStack: CommandStack
+): void {
+  if (!packageName || !messageName) return;
+
+  const className = generatePayloadClassName(messageName);
+  const fullClassName = `${packageName}.${className}`;
+
+  const msgEvtDef = getMessageEventDefinition(element);
+  if (!msgEvtDef?.messageRef) return;
+
+  const message = msgEvtDef.messageRef;
+  const itemRef = (message as unknown as { itemRef?: ModdleElement }).itemRef;
+
+  if (itemRef) {
+    // Update the existing itemDefinition's structureRef
+    const currentStructureRef = (itemRef as unknown as { structureRef?: string }).structureRef;
+    if (currentStructureRef !== fullClassName) {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: itemRef,
+        properties: { structureRef: fullClassName }
+      });
+    }
+  }
+
+  // Update drools:dtype on the event's dataOutputs
+  const bo = element.businessObject;
+  if (bo) {
+    const dataOutputs = (bo as unknown as { dataOutputs?: DataOutput[] }).dataOutputs || [];
+    for (const dataOutput of dataOutputs) {
+      // Check if drools:dtype needs updating
+      const currentDtype = (dataOutput as unknown as { 'drools:dtype'?: string })['drools:dtype'];
+      if (currentDtype && currentDtype !== fullClassName && currentDtype !== 'java.lang.Object') {
+        // Don't update individual field outputs - only the "event" output
+        continue;
+      }
+      if (dataOutput.name === 'event' && currentDtype !== fullClassName) {
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: dataOutput,
+          properties: { 'drools:dtype': fullClassName }
+        });
+      }
+    }
+
+    // Also update the related itemDefinitions
+    const definitions = getDefinitions(element);
+    const rootElements = (definitions as unknown as { rootElements?: ModdleElement[] }).rootElements || [];
+    const eventId = bo.id;
+
+    // Update _Event_xxx_OutputItem
+    const outputItemDef = rootElements.find((el: ModdleElement) =>
+      el.$type === 'bpmn:ItemDefinition' && el.id === `_${eventId}_OutputItem`
+    );
+    if (outputItemDef) {
+      const currentRef = (outputItemDef as unknown as { structureRef?: string }).structureRef;
+      if (currentRef !== fullClassName) {
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: outputItemDef,
+          properties: { structureRef: fullClassName }
+        });
+      }
+    }
+
+    // Update _message_Event_xxxItem (process variable)
+    const msgVarItemDef = rootElements.find((el: ModdleElement) =>
+      el.$type === 'bpmn:ItemDefinition' && el.id === `_message_${eventId}Item`
+    );
+    if (msgVarItemDef) {
+      const currentRef = (msgVarItemDef as unknown as { structureRef?: string }).structureRef;
+      if (currentRef !== fullClassName) {
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: msgVarItemDef,
+          properties: { structureRef: fullClassName }
+        });
+      }
+    }
+  }
+}
+
+/**
+ * Get the configured payload package name from VS Code settings.
+ * Defaults to "com.example.payload" if not configured.
+ * Since we're in the webview, we'll use a default - the actual package name
+ * is determined by the extension when generating classes.
+ */
+function getPayloadPackageName(): string {
+  // In webview context, we use a placeholder that will be updated
+  // when the "Generate Message Classes" command is run.
+  // The actual package is determined from the project structure.
+  return 'com.example.payload';
+}
+
+/**
  * Ensure itemDefinition exists at definitions level
  */
 function ensureItemDefinition(
@@ -725,6 +864,14 @@ function setOutputMapping(
       moddleElement: bo,
       properties: { dataOutputAssociations: newAssociations }
     });
+  }
+
+  // Update the message's itemDefinition.structureRef to use the typed payload class
+  // This enables Kogito's Jackson-based deserialization to create typed payload objects
+  const msgEvtDef = getMessageEventDefinition(element);
+  if (msgEvtDef?.messageRef?.name) {
+    const packageName = getPayloadPackageName();
+    updateMessageStructureRef(element, packageName, msgEvtDef.messageRef.name, bpmnFactory, commandStack);
   }
 }
 

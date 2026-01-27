@@ -331,11 +331,36 @@ export async function updateBpmnWithItemDefinition(
     bpmnXml = bpmnXml.replace(msgVarItemPattern, `$1structureRef="${fullClassName}"`);
 
     // Update drools:dtype on the event's dataOutput
+    // First, try to update existing drools:dtype
     const dtypePattern = new RegExp(
       `(<bpmn:dataOutput[^>]*id="${escapeRegex(eventId)}_OutputX"[^>]*)drools:dtype="[^"]*"`,
       'gi'
     );
-    bpmnXml = bpmnXml.replace(dtypePattern, `$1drools:dtype="${fullClassName}"`);
+    const hasDtype = dtypePattern.test(bpmnXml);
+    if (hasDtype) {
+      // Reset the regex since test() moves the index
+      dtypePattern.lastIndex = 0;
+      bpmnXml = bpmnXml.replace(dtypePattern, `$1drools:dtype="${fullClassName}"`);
+    } else {
+      // Add drools:dtype if it doesn't exist
+      const addDtypePattern = new RegExp(
+        `(<bpmn:dataOutput[^>]*id="${escapeRegex(eventId)}_OutputX"[^>]*)(\\s*/?>)`,
+        'gi'
+      );
+      bpmnXml = bpmnXml.replace(addDtypePattern, `$1 drools:dtype="${fullClassName}"$2`);
+    }
+
+    // Also update drools:dtype on any dataOutput named "event" for this event
+    // This handles cases where the dataOutput has name="event" but different id format
+    const eventDataOutputPattern = new RegExp(
+      `(<bpmn:dataOutput[^>]*name="event"[^>]*itemSubjectRef="_${escapeRegex(eventId)}_OutputItem"[^>]*)drools:dtype="[^"]*"`,
+      'gi'
+    );
+    const hasEventDtype = eventDataOutputPattern.test(bpmnXml);
+    if (hasEventDtype) {
+      eventDataOutputPattern.lastIndex = 0;
+      bpmnXml = bpmnXml.replace(eventDataOutputPattern, `$1drools:dtype="${fullClassName}"`);
+    }
 
     // Write updated BPMN
     await vscode.workspace.fs.writeFile(

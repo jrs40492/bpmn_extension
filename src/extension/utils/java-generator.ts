@@ -113,6 +113,7 @@ export function generatePayloadClass(
 
   let imports = `package ${packageName};
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.runtime.annotations.RegisterForReflection;`;
 
   if (needsDeserializer) {
@@ -124,6 +125,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;`;
   if (needsDeserializer) {
     classAnnotations = `@JsonDeserialize(using = ${className}Deserializer.class)\n`;
   }
+  classAnnotations += '@JsonIgnoreProperties(ignoreUnknown = true)\n';
   classAnnotations += '@RegisterForReflection';
 
   const fieldDeclarations = fields

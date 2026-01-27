@@ -22,10 +22,10 @@
   <bpmn:itemDefinition id="_message_Event_0x2mg5vItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0x2mg5v_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0x2mg5v_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_140n6p3_Item" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Message_Event_140n6p3_Item" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:message id="Message_Event_140n6p3" name="renewals" itemRef="_Message_Event_140n6p3_Item" />
-  <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_140n6p3_OutputItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="com.example.payload.RenewalsPayload" />
+  <bpmn:itemDefinition id="_Event_140n6p3_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
   <bpmn:itemDefinition id="_Event_140n6p3_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
@@ -163,13 +163,13 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_188qfib</bpmn:outgoing>
-      <bpmn:dataOutput id="Event_140n6p3_OutputX" itemSubjectRef="_Event_140n6p3_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutput id="Event_140n6p3_OutputX" itemSubjectRef="_Event_140n6p3_OutputItem" name="event" drools:dtype="com.example.payload.RenewalsPayload" />
       <bpmn:dataOutput id="Event_140n6p3_userId" itemSubjectRef="_Event_140n6p3_userIdItem" name="userId" drools:dtype="java.lang.String" />
       <bpmn:dataOutputAssociation id="DataOutputAssociation_1jnr9l3">
         <bpmn:sourceRef>Event_140n6p3_OutputX</bpmn:sourceRef>
         <bpmn:targetRef>message_Event_140n6p3</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_1a6yt7l">
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_14ht78p">
         <bpmn:sourceRef>Event_140n6p3_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
