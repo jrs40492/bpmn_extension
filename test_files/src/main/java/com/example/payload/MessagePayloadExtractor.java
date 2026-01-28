@@ -28,25 +28,7 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
 
-            if ("Event_140n6p3".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_140n6p3");
-                if (messageData != null) {
-                    if (messageData instanceof com.example.payload.RenewalsPayload) {
-                        // Typed payload - BPMN has correct structureRef
-                        com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
-                        variables.put("userId", typedPayload.getUserId());
-                    } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - extract fields directly
-                        // (Kogito extracts CloudEvents data before passing to us)
-                        @SuppressWarnings("unchecked")
-                        java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = rawMap.get("userId");
-                        if (userIdValue != null) {
-                            variables.put("userId", userIdValue);
-                        }
-                    }
-                }
-            } else             if ("Event_1imz6h6".equals(nodeId)) {
+            if ("Event_1imz6h6".equals(nodeId)) {
                 Object messageData = variables.get("message_Event_1imz6h6");
                 if (messageData != null) {
                     if (messageData instanceof com.example.payload.RenewalsPayload) {
@@ -54,11 +36,27 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
                         variables.put("userId", typedPayload.getUserId());
                     } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - extract fields directly
-                        // (Kogito extracts CloudEvents data before passing to us)
+                        // Raw Map payload - navigate structure as specified in expressions
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = rawMap.get("userId");
+                        Object userIdValue = (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null);
+                        if (userIdValue != null) {
+                            variables.put("userId", userIdValue);
+                        }
+                    }
+                }
+            } else             if ("Event_140n6p3".equals(nodeId)) {
+                Object messageData = variables.get("message_Event_140n6p3");
+                if (messageData != null) {
+                    if (messageData instanceof com.example.payload.RenewalsPayload) {
+                        // Typed payload - BPMN has correct structureRef
+                        com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
+                        variables.put("userId", typedPayload.getUserId());
+                    } else if (messageData instanceof java.util.Map) {
+                        // Raw Map payload - navigate structure as specified in expressions
+                        @SuppressWarnings("unchecked")
+                        java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
+                        Object userIdValue = (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null);
                         if (userIdValue != null) {
                             variables.put("userId", userIdValue);
                         }
