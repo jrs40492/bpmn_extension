@@ -84,20 +84,44 @@ export function parseJsonPath(expression: string): string {
 }
 
 /**
+ * Extract the actual field name from a JSONPath expression.
+ * Kogito extracts the CloudEvents `data` field before passing to Jackson,
+ * so we only need the last segment (actual field name).
+ *
+ * Examples:
+ *   $.data.userId -> "userId"
+ *   $.userId -> "userId"
+ *   $.data.nested.deeply.field -> "field" (but this needs special handling)
+ */
+export function extractFieldNameFromExpression(expression: string, fallbackFieldName: string): string {
+  if (!expression) return fallbackFieldName;
+  const segments = getPathSegments(expression);
+  return segments.length > 0 ? segments[segments.length - 1] : fallbackFieldName;
+}
+
+/**
  * Check if any field requires nested JSONPath extraction.
- * An expression requires a custom deserializer if it navigates into nested structure.
- * For example:
- *   $.data.userId - requires deserializer (goes into "data" object)
- *   $.userId - does not require deserializer (direct field access)
+ *
+ * Since Kogito extracts the CloudEvents `data` field before passing to Jackson:
+ * - $.data.userId -> Jackson receives {"userId": "123"} -> simple field access, NO deserializer
+ * - $.userId -> Jackson receives {"userId": "123"} -> simple field access, NO deserializer
+ * - $.data.nested.deeply.field -> needs custom deserializer for deep nesting WITHIN data
+ *
+ * A custom deserializer is only needed for paths with 3+ segments AFTER $.data,
+ * i.e., deeply nested structures within the data payload itself.
  */
 export function requiresCustomDeserializer(fields: PayloadFieldDefinition[]): boolean {
   return fields.some(field => {
     if (!field.expression) return false;
-    const expr = field.expression.trim();
-    // Count dots in expression: $.data.userId has 2 dots (requires deserializer)
-    // $.userId has 1 dot (simple access, no deserializer needed)
-    const dotCount = (expr.match(/\./g) || []).length;
-    return dotCount >= 2;
+    const segments = getPathSegments(field.expression);
+
+    // Remove "data" prefix if present (Kogito extracts it)
+    const effectiveSegments = segments[0] === 'data' ? segments.slice(1) : segments;
+
+    // Need custom deserializer only for deeply nested paths (2+ levels within data)
+    // e.g., $.data.nested.field has effectiveSegments ["nested", "field"] -> needs deserializer
+    // e.g., $.data.userId has effectiveSegments ["userId"] -> simple access, no deserializer
+    return effectiveSegments.length >= 2;
   });
 }
 
@@ -185,14 +209,20 @@ function getPathSegments(expression: string): string[] {
 
 /**
  * Check if any field actually requires JsonPath library.
- * We use JsonPath for paths with 3+ segments (e.g., $.data.nested.field)
- * For simpler paths like $.data.userId (2 segments), we can use Jackson traversal.
+ * Since Kogito extracts the CloudEvents `data` field, we only need JsonPath
+ * for deeply nested paths WITHIN the data payload.
+ *
+ * Examples:
+ *   $.data.userId -> Jackson receives {"userId": "123"} -> no JsonPath needed
+ *   $.data.nested.deeply.field -> needs JsonPath for nested.deeply.field
  */
 export function requiresJsonPathLibrary(fields: PayloadFieldDefinition[]): boolean {
   return fields.some(f => {
     const segments = getPathSegments(f.expression || '');
-    // Needs JsonPath if path has 3+ segments (deeply nested)
-    return segments.length >= 3;
+    // Remove "data" prefix if present (Kogito extracts it)
+    const effectiveSegments = segments[0] === 'data' ? segments.slice(1) : segments;
+    // Needs JsonPath if path has 2+ effective segments (nested within data)
+    return effectiveSegments.length >= 2;
   });
 }
 
@@ -222,37 +252,41 @@ export function generateDeserializerClass(
       const expression = field.expression?.trim() || '';
       const segments = getPathSegments(expression);
 
-      // Use field name if no expression provided
-      if (segments.length === 0) {
+      // Remove "data" prefix if present - Kogito extracts CloudEvents data field
+      const effectiveSegments = segments[0] === 'data' ? segments.slice(1) : segments;
+
+      // Use field name if no expression provided or only had $.data prefix
+      if (effectiveSegments.length === 0) {
         return `        if (root.has("${fieldName}")) {
             payload.set${methodSuffix}(root.get("${fieldName}").${getJsonNodeMethod(javaType)});
         }`;
       }
 
-      // For deeply nested paths (3+ segments), use JsonPath
-      if (segments.length >= 3) {
-        return `        try {
-            ${javaType} ${fieldName}Value = JsonPath.read(json, "${expression}");
-            payload.set${methodSuffix}(${fieldName}Value);
-        } catch (PathNotFoundException e) {
-            // Field not found in payload, leave as null
+      // For simple field access (1 segment), use direct access
+      // Kogito extracts CloudEvents data, so $.data.userId becomes just checking for "userId"
+      if (effectiveSegments.length === 1) {
+        const jsonFieldName = effectiveSegments[0];
+        return `        if (root.has("${jsonFieldName}")) {
+            payload.set${methodSuffix}(root.get("${jsonFieldName}").${getJsonNodeMethod(javaType)});
         }`;
       }
 
-      // For 1-2 segment paths, use Jackson's path() method for safe traversal
-      // This handles both $.userId and $.data.userId
-      const traversal = generateJsonTraversal(segments, javaType);
-      const lastSegment = segments[segments.length - 1];
-      return `        JsonNode ${fieldName}Node = ${traversal};
-        if (${fieldName}Node != null && !${fieldName}Node.isMissingNode()) {
-            payload.set${methodSuffix}(${fieldName}Node.${getJsonNodeMethod(javaType)});
+      // For deeply nested paths (2+ effective segments), use JsonPath
+      // Build the effective JSONPath for the nested structure within data
+      const effectiveJsonPath = '$.' + effectiveSegments.join('.');
+      return `        try {
+            ${javaType} ${fieldName}Value = JsonPath.read(json, "${effectiveJsonPath}");
+            payload.set${methodSuffix}(${fieldName}Value);
+        } catch (PathNotFoundException e) {
+            // Field not found in payload, leave as null
         }`;
     })
     .join('\n\n');
 
   const hasDeepPaths = fields.some(f => {
     const segments = getPathSegments(f.expression || '');
-    return segments.length >= 3;
+    const effectiveSegments = segments[0] === 'data' ? segments.slice(1) : segments;
+    return effectiveSegments.length >= 2;
   });
 
   let imports = `package ${packageName};
@@ -273,6 +307,7 @@ import com.jayway.jsonpath.PathNotFoundException;`;
 
 /**
  * Custom deserializer for ${className} to handle nested JSONPath expressions.
+ * Kogito extracts CloudEvents data field before deserialization, so we access fields directly.
  * Generated by BAMOE - do not edit manually.
  */
 public class ${className}Deserializer extends JsonDeserializer<${className}> {
@@ -326,6 +361,9 @@ export interface MessageEventConfig {
  * Generate a ProcessEventListener that automatically extracts payload fields
  * and sets them as process variables when message events are triggered.
  * Handles both typed payload classes AND raw Map/JsonNode payloads for flexibility.
+ *
+ * Note: Kogito extracts the CloudEvents `data` field before passing to us,
+ * so we always access fields directly (not through "data" prefix).
  */
 export function generatePayloadExtractorListener(
   packageName: string,
@@ -336,33 +374,12 @@ export function generatePayloadExtractorListener(
     const fieldSetters = event.fields.map(field => {
       const fieldName = toCamelCase(field.name);
       const getterName = `get${toPascalCase(field.name)}`;
-      const expression = field.expression || '';
-
-      // Parse the JSONPath to get the path segments for Map extraction
-      const pathSegments = expression
-        .replace(/^\$\.?/, '')
-        .split('.')
-        .filter((s: string) => s);
-
-      // Build nested map extraction code
-      let mapExtraction: string;
-      if (pathSegments.length === 0) {
-        mapExtraction = `rawMap.get("${fieldName}")`;
-      } else if (pathSegments.length === 1) {
-        mapExtraction = `rawMap.get("${pathSegments[0]}")`;
-      } else {
-        // For nested paths like $.data.userId, traverse the map
-        mapExtraction = 'rawMap';
-        for (let i = 0; i < pathSegments.length - 1; i++) {
-          mapExtraction = `getNestedMap(${mapExtraction}, "${pathSegments[i]}")`;
-        }
-        mapExtraction = `${mapExtraction} != null ? ${mapExtraction}.get("${pathSegments[pathSegments.length - 1]}") : null`;
-      }
 
       return `                        variables.put("${fieldName}", typedPayload.${getterName}());`;
     }).join('\n');
 
     // Build the raw map extraction as fallback
+    // Kogito extracts CloudEvents data, so we access fields directly
     const rawMapSetters = event.fields.map(field => {
       const fieldName = toCamelCase(field.name);
       const expression = field.expression || '';
@@ -372,17 +389,24 @@ export function generatePayloadExtractorListener(
         .split('.')
         .filter((s: string) => s);
 
+      // Remove "data" prefix if present - Kogito extracts CloudEvents data field
+      const effectiveSegments = pathSegments[0] === 'data' ? pathSegments.slice(1) : pathSegments;
+
       let mapExtraction: string;
-      if (pathSegments.length === 0) {
+      if (effectiveSegments.length === 0) {
+        // No expression or only $.data - use field name directly
         mapExtraction = `rawMap.get("${fieldName}")`;
-      } else if (pathSegments.length === 1) {
-        mapExtraction = `rawMap.get("${pathSegments[0]}")`;
+      } else if (effectiveSegments.length === 1) {
+        // Simple field access like $.userId or $.data.userId
+        mapExtraction = `rawMap.get("${effectiveSegments[0]}")`;
       } else {
+        // For nested paths within data like $.data.nested.field
+        // Traverse the map starting from the first effective segment
         mapExtraction = 'rawMap';
-        for (let i = 0; i < pathSegments.length - 1; i++) {
-          mapExtraction = `getNestedMap(${mapExtraction}, "${pathSegments[i]}")`;
+        for (let i = 0; i < effectiveSegments.length - 1; i++) {
+          mapExtraction = `getNestedMap(${mapExtraction}, "${effectiveSegments[i]}")`;
         }
-        mapExtraction = `(${mapExtraction} != null ? ${mapExtraction}.get("${pathSegments[pathSegments.length - 1]}") : null)`;
+        mapExtraction = `(${mapExtraction} != null ? ${mapExtraction}.get("${effectiveSegments[effectiveSegments.length - 1]}") : null)`;
       }
 
       return `                        Object ${fieldName}Value = ${mapExtraction};
@@ -399,7 +423,8 @@ export function generatePayloadExtractorListener(
                         ${event.payloadClassName} typedPayload = (${event.payloadClassName}) messageData;
 ${fieldSetters}
                     } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - extract using JSONPath expressions
+                        // Raw Map payload - extract fields directly
+                        // (Kogito extracts CloudEvents data before passing to us)
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
 ${rawMapSetters}

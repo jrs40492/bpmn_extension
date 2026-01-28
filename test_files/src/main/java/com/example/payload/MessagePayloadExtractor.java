@@ -36,10 +36,11 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
                         variables.put("userId", typedPayload.getUserId());
                     } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - extract using JSONPath expressions
+                        // Raw Map payload - extract fields directly
+                        // (Kogito extracts CloudEvents data before passing to us)
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null);
+                        Object userIdValue = rawMap.get("userId");
                         if (userIdValue != null) {
                             variables.put("userId", userIdValue);
                         }
@@ -53,7 +54,8 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
                         variables.put("userId", typedPayload.getUserId());
                     } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - extract using JSONPath expressions
+                        // Raw Map payload - extract fields directly
+                        // (Kogito extracts CloudEvents data before passing to us)
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
                         Object userIdValue = rawMap.get("userId");
