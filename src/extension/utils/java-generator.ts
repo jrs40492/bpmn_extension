@@ -363,6 +363,25 @@ function getJsonNodeMethod(javaType: string): string {
   }
 }
 
+
+/**
+ * Generate class name from message name
+ */
+export function generateClassName(messageName: string): string {
+  // Remove common prefixes/suffixes and convert to PascalCase
+  let name = messageName
+    .replace(/^message[-_]?/i, '')
+    .replace(/[-_]?message$/i, '')
+    .replace(/[-_]?event$/i, '');
+
+  // If name is empty or just an ID, use the full message name
+  if (!name || /^[a-f0-9-]+$/i.test(name)) {
+    name = messageName;
+  }
+
+  return toPascalCase(name) + 'Payload';
+}
+
 /**
  * Message event configuration for the listener
  */
@@ -501,22 +520,4 @@ ${eventCases}
     }
 }
 `;
-}
-
-/**
- * Generate class name from message name
- */
-export function generateClassName(messageName: string): string {
-  // Remove common prefixes/suffixes and convert to PascalCase
-  let name = messageName
-    .replace(/^message[-_]?/i, '')
-    .replace(/[-_]?message$/i, '')
-    .replace(/[-_]?event$/i, '');
-
-  // If name is empty or just an ID, use the full message name
-  if (!name || /^[a-f0-9-]+$/i.test(name)) {
-    name = messageName;
-  }
-
-  return toPascalCase(name) + 'Payload';
 }

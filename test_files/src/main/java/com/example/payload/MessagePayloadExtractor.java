@@ -28,27 +28,8 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
 
-            if ("Event_1imz6h6".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_1imz6h6");
-                if (messageData != null) {
-                    if (messageData instanceof com.example.payload.RenewalsPayload) {
-                        // Typed payload - BPMN has correct structureRef
-                        com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
-                        variables.put("userId", typedPayload.getUserId());
-                    } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - navigate structure as specified in expressions
-                        @SuppressWarnings("unchecked")
-                        java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = (rawMap.containsKey("specversion") && rawMap.containsKey("data")
-                            ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null)
-                            : rawMap.get("userId"));
-                        if (userIdValue != null) {
-                            variables.put("userId", userIdValue);
-                        }
-                    }
-                }
-            } else             if ("Event_140n6p3".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_140n6p3");
+            if ("Event_08o8mab".equals(nodeId)) {
+                Object messageData = variables.get("message_Event_08o8mab");
                 if (messageData != null) {
                     if (messageData instanceof com.example.payload.RenewalsPayload) {
                         // Typed payload - BPMN has correct structureRef
