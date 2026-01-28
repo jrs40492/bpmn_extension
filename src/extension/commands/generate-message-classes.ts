@@ -24,6 +24,11 @@ import {
 } from '../utils/java-generator';
 
 /**
+ * Type of message event in the BPMN process
+ */
+export type MessageEventType = 'start' | 'intermediateCatch' | 'boundary' | 'receiveTask';
+
+/**
  * Message event info extracted from BPMN
  */
 export interface MessageEventInfo {
@@ -32,6 +37,7 @@ export interface MessageEventInfo {
   fields: PayloadFieldDefinition[];
   bpmnFile: string;
   cloudEvents?: boolean;
+  eventType: MessageEventType;
 }
 
 /**
@@ -47,11 +53,28 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
   let eventMatch;
   while ((eventMatch = eventPattern.exec(bpmnXml)) !== null) {
     const eventBlock = eventMatch[0];
+    const bpmnEventType = eventMatch[1]; // startEvent, intermediateCatchEvent, or boundaryEvent
     const eventId = eventMatch[2];
 
     // Check if this is a message event
     if (!eventBlock.includes('bpmn:messageEventDefinition')) {
       continue;
+    }
+
+    // Map BPMN element type to our event type
+    let eventType: MessageEventType;
+    switch (bpmnEventType) {
+      case 'startEvent':
+        eventType = 'start';
+        break;
+      case 'intermediateCatchEvent':
+        eventType = 'intermediateCatch';
+        break;
+      case 'boundaryEvent':
+        eventType = 'boundary';
+        break;
+      default:
+        eventType = 'intermediateCatch';
     }
 
     // Extract message reference
@@ -79,7 +102,8 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
         messageName,
         fields,
         bpmnFile,
-        cloudEvents
+        cloudEvents,
+        eventType
       });
     }
   }
@@ -125,7 +149,8 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
         messageName,
         fields,
         bpmnFile,
-        cloudEvents
+        cloudEvents,
+        eventType: 'receiveTask'
       });
     }
   }
@@ -284,7 +309,8 @@ export async function generateJavaClasses(
     eventId: event.eventId,
     messageName: event.messageName,
     payloadClassName: `${packageName}.${generateClassName(event.messageName)}`,
-    fields: event.fields
+    fields: event.fields,
+    eventType: event.eventType
   }));
 
   if (eventConfigs.length > 0) {

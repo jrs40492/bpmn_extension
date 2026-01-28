@@ -383,6 +383,11 @@ export function generateClassName(messageName: string): string {
 }
 
 /**
+ * Type of message event in the BPMN process
+ */
+export type MessageEventType = 'start' | 'intermediateCatch' | 'boundary' | 'receiveTask';
+
+/**
  * Message event configuration for the listener
  */
 export interface MessageEventConfig {
@@ -390,12 +395,77 @@ export interface MessageEventConfig {
   messageName: string;
   payloadClassName: string;
   fields: PayloadFieldDefinition[];
+  eventType: MessageEventType;
+}
+
+/**
+ * Generate extraction code for a single event's fields
+ */
+function generateFieldExtractionCode(
+  event: MessageEventConfig,
+  indent: string
+): { typedSetters: string; rawMapSetters: string } {
+  const fieldSetters = event.fields.map(field => {
+    const fieldName = toCamelCase(field.name);
+    const getterName = `get${toPascalCase(field.name)}`;
+    return `${indent}    variables.put("${fieldName}", typedPayload.${getterName}());`;
+  }).join('\n');
+
+  // Build the raw map extraction as fallback
+  // Handle both full CloudEvents envelope and extracted data
+  const rawMapSetters = event.fields.map(field => {
+    const fieldName = toCamelCase(field.name);
+    const expression = field.expression || '';
+
+    const pathSegments = expression
+      .replace(/^\$\.?/, '')
+      .split('.')
+      .filter((s: string) => s);
+
+    let mapExtraction: string;
+    if (pathSegments.length === 0) {
+      // No expression - use field name directly
+      mapExtraction = `rawMap.get("${fieldName}")`;
+    } else if (pathSegments.length === 1) {
+      // Simple field access like $.userId
+      mapExtraction = `rawMap.get("${pathSegments[0]}")`;
+    } else if (pathSegments.length === 2 && pathSegments[0] === 'data') {
+      // For $.data.X paths, handle both CloudEvents envelope and extracted data
+      const actualFieldName = pathSegments[1];
+      // Check if full CloudEvents envelope (has "specversion" and "data") or extracted data
+      mapExtraction = `(rawMap.containsKey("specversion") && rawMap.containsKey("data")
+${indent}        ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("${actualFieldName}") : null)
+${indent}        : rawMap.get("${actualFieldName}"))`;
+    } else {
+      // For other nested paths like $.nested.field
+      // Traverse the full path as specified
+      mapExtraction = 'rawMap';
+      for (let i = 0; i < pathSegments.length - 1; i++) {
+        mapExtraction = `getNestedMap(${mapExtraction}, "${pathSegments[i]}")`;
+      }
+      mapExtraction = `(${mapExtraction} != null ? ${mapExtraction}.get("${pathSegments[pathSegments.length - 1]}") : null)`;
+    }
+
+    return `${indent}    Object ${fieldName}Value = ${mapExtraction};
+${indent}    if (${fieldName}Value != null) {
+${indent}        variables.put("${fieldName}", ${fieldName}Value);
+${indent}    }`;
+  }).join('\n');
+
+  return { typedSetters: fieldSetters, rawMapSetters };
 }
 
 /**
  * Generate a ProcessEventListener that automatically extracts payload fields
  * and sets them as process variables when message events are triggered.
  * Handles both typed payload classes AND raw Map/JsonNode payloads for flexibility.
+ *
+ * IMPORTANT: Uses different event handlers based on event type:
+ * - Start events: Uses afterProcessStarted (fires AFTER message data is placed in variables)
+ * - Catch events/boundary/receive tasks: Uses afterNodeLeft (fires AFTER node completes and data outputs are processed)
+ *
+ * This timing is critical because afterNodeTriggered fires BEFORE Kogito processes
+ * dataOutputAssociations, so the message variable isn't set yet.
  *
  * Note: Kogito's behavior depends on messaging configuration - it may pass either
  * the full CloudEvents envelope or the extracted data. The generated code handles both.
@@ -404,63 +474,46 @@ export function generatePayloadExtractorListener(
   packageName: string,
   events: MessageEventConfig[]
 ): string {
-  // Generate extraction code for each event
-  const eventCases = events.map(event => {
-    const fieldSetters = event.fields.map(field => {
-      const fieldName = toCamelCase(field.name);
-      const getterName = `get${toPascalCase(field.name)}`;
+  // Separate events by type for different handlers
+  const startEvents = events.filter(e => e.eventType === 'start');
+  const catchEvents = events.filter(e => e.eventType !== 'start');
 
-      return `                        variables.put("${fieldName}", typedPayload.${getterName}());`;
-    }).join('\n');
+  // Generate extraction code for start events (used in afterProcessStarted)
+  let startEventCases = '';
+  if (startEvents.length > 0) {
+    startEventCases = startEvents.map(event => {
+      const { typedSetters, rawMapSetters } = generateFieldExtractionCode(event, '            ');
 
-    // Build the raw map extraction as fallback
-    // Handle both full CloudEvents envelope and extracted data
-    const rawMapSetters = event.fields.map(field => {
-      const fieldName = toCamelCase(field.name);
-      const expression = field.expression || '';
+      return `        // Extract fields from start event ${event.eventId}
+        Object messageData_${event.eventId.replace(/-/g, '_')} = variables.get("message_${event.eventId}");
+        if (messageData_${event.eventId.replace(/-/g, '_')} != null) {
+            if (messageData_${event.eventId.replace(/-/g, '_')} instanceof ${event.payloadClassName}) {
+                // Typed payload - BPMN has correct structureRef
+                ${event.payloadClassName} typedPayload = (${event.payloadClassName}) messageData_${event.eventId.replace(/-/g, '_')};
+${typedSetters}
+            } else if (messageData_${event.eventId.replace(/-/g, '_')} instanceof java.util.Map) {
+                // Raw Map payload - navigate structure as specified in expressions
+                @SuppressWarnings("unchecked")
+                java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData_${event.eventId.replace(/-/g, '_')};
+${rawMapSetters}
+            }
+        }`;
+    }).join('\n\n');
+  }
 
-      const pathSegments = expression
-        .replace(/^\$\.?/, '')
-        .split('.')
-        .filter((s: string) => s);
+  // Generate extraction code for catch events (used in afterNodeLeft)
+  let catchEventCases = '';
+  if (catchEvents.length > 0) {
+    catchEventCases = catchEvents.map(event => {
+      const { typedSetters, rawMapSetters } = generateFieldExtractionCode(event, '                ');
 
-      let mapExtraction: string;
-      if (pathSegments.length === 0) {
-        // No expression - use field name directly
-        mapExtraction = `rawMap.get("${fieldName}")`;
-      } else if (pathSegments.length === 1) {
-        // Simple field access like $.userId
-        mapExtraction = `rawMap.get("${pathSegments[0]}")`;
-      } else if (pathSegments.length === 2 && pathSegments[0] === 'data') {
-        // For $.data.X paths, handle both CloudEvents envelope and extracted data
-        const actualFieldName = pathSegments[1];
-        // Check if full CloudEvents envelope (has "specversion" and "data") or extracted data
-        mapExtraction = `(rawMap.containsKey("specversion") && rawMap.containsKey("data")
-                            ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("${actualFieldName}") : null)
-                            : rawMap.get("${actualFieldName}"))`;
-      } else {
-        // For other nested paths like $.nested.field
-        // Traverse the full path as specified
-        mapExtraction = 'rawMap';
-        for (let i = 0; i < pathSegments.length - 1; i++) {
-          mapExtraction = `getNestedMap(${mapExtraction}, "${pathSegments[i]}")`;
-        }
-        mapExtraction = `(${mapExtraction} != null ? ${mapExtraction}.get("${pathSegments[pathSegments.length - 1]}") : null)`;
-      }
-
-      return `                        Object ${fieldName}Value = ${mapExtraction};
-                        if (${fieldName}Value != null) {
-                            variables.put("${fieldName}", ${fieldName}Value);
-                        }`;
-    }).join('\n');
-
-    return `            if ("${event.eventId}".equals(nodeId)) {
+      return `            if ("${event.eventId}".equals(nodeId)) {
                 Object messageData = variables.get("message_${event.eventId}");
                 if (messageData != null) {
                     if (messageData instanceof ${event.payloadClassName}) {
                         // Typed payload - BPMN has correct structureRef
                         ${event.payloadClassName} typedPayload = (${event.payloadClassName}) messageData;
-${fieldSetters}
+${typedSetters}
                     } else if (messageData instanceof java.util.Map) {
                         // Raw Map payload - navigate structure as specified in expressions
                         @SuppressWarnings("unchecked")
@@ -469,16 +522,58 @@ ${rawMapSetters}
                     }
                 }
             }`;
-  }).join(' else ');
+    }).join(' else ');
+  }
+
+  // Build the afterProcessStarted method if there are start events
+  let afterProcessStartedMethod = '';
+  if (startEvents.length > 0) {
+    afterProcessStartedMethod = `
+    /**
+     * Handle MESSAGE START EVENTS.
+     * This fires AFTER the process instance is fully initialized and message data
+     * has been deserialized and placed in variables.
+     */
+    @Override
+    public void afterProcessStarted(ProcessStartedEvent event) {
+        if (event.getProcessInstance() instanceof KogitoProcessInstance) {
+            KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
+            Map<String, Object> variables = kpi.getVariables();
+
+${startEventCases}
+        }
+    }
+`;
+  }
+
+  // Build the afterNodeLeft method if there are catch events
+  let afterNodeLeftMethod = '';
+  if (catchEvents.length > 0) {
+    afterNodeLeftMethod = `
+    /**
+     * Handle INTERMEDIATE CATCH EVENTS, BOUNDARY EVENTS, and RECEIVE TASKS.
+     * This fires AFTER the node completes and dataOutputAssociations are processed,
+     * so the message variable is available.
+     */
+    @Override
+    public void afterNodeLeft(ProcessNodeLeftEvent event) {
+        String nodeId = event.getNodeInstance().getNodeId().toExternalFormat();
+
+        if (event.getProcessInstance() instanceof KogitoProcessInstance) {
+            KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
+            Map<String, Object> variables = kpi.getVariables();
+
+${catchEventCases}
+        }
+    }
+`;
+  }
 
   return `package ${packageName};
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.kie.api.event.process.ProcessNodeTriggeredEvent;
 import org.kie.api.event.process.ProcessNodeLeftEvent;
 import org.kie.api.event.process.ProcessStartedEvent;
-import org.kie.api.event.process.ProcessCompletedEvent;
-import org.kie.api.event.process.ProcessVariableChangedEvent;
 import org.kie.kogito.internal.process.event.DefaultKogitoProcessEventListener;
 import org.kie.kogito.internal.process.runtime.KogitoProcessInstance;
 
@@ -487,24 +582,17 @@ import java.util.Map;
 /**
  * Auto-generated listener that extracts payload fields from message events
  * and sets them as process variables.
+ *
+ * Uses appropriate event handlers based on event type:
+ * - Start events: afterProcessStarted (fires after process initialization when variables are available)
+ * - Catch/boundary events: afterNodeLeft (fires after node completes and data outputs are processed)
+ *
  * Handles both typed payload classes and raw Map payloads.
  * Generated by BAMOE - do not edit manually.
  */
 @ApplicationScoped
 public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
-
-    @Override
-    public void afterNodeTriggered(ProcessNodeTriggeredEvent event) {
-        String nodeId = event.getNodeInstance().getNodeId().toExternalFormat();
-
-        if (event.getProcessInstance() instanceof KogitoProcessInstance) {
-            KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
-            Map<String, Object> variables = kpi.getVariables();
-
-${eventCases}
-        }
-    }
-
+${afterProcessStartedMethod}${afterNodeLeftMethod}
     /**
      * Safely get a nested map from a parent map
      */
