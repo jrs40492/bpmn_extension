@@ -400,6 +400,7 @@ export interface MessageEventConfig {
 
 /**
  * Generate extraction code for a single event's fields
+ * Uses kpi.setVariable() instead of variables.put() to properly persist changes
  */
 function generateFieldExtractionCode(
   event: MessageEventConfig,
@@ -408,7 +409,8 @@ function generateFieldExtractionCode(
   const fieldSetters = event.fields.map(field => {
     const fieldName = toCamelCase(field.name);
     const getterName = `get${toPascalCase(field.name)}`;
-    return `${indent}    variables.put("${fieldName}", typedPayload.${getterName}());`;
+    return `${indent}    kpi.setVariable("${fieldName}", typedPayload.${getterName}());
+${indent}    LOG.info("Set process variable ${fieldName} = {} (from typed payload)", typedPayload.${getterName}());`;
   }).join('\n');
 
   // Build the raw map extraction as fallback
@@ -447,8 +449,10 @@ ${indent}        : rawMap.get("${actualFieldName}"))`;
     }
 
     return `${indent}    Object ${fieldName}Value = ${mapExtraction};
+${indent}    LOG.debug("Extracted ${fieldName}: {}", ${fieldName}Value);
 ${indent}    if (${fieldName}Value != null) {
-${indent}        variables.put("${fieldName}", ${fieldName}Value);
+${indent}        kpi.setVariable("${fieldName}", ${fieldName}Value);
+${indent}        LOG.info("Set process variable ${fieldName} = {}", ${fieldName}Value);
 ${indent}    }`;
   }).join('\n');
 
@@ -481,18 +485,27 @@ export function generatePayloadExtractorListener(
     const { typedSetters, rawMapSetters } = generateFieldExtractionCode(event, '                ');
 
     return `            if ("${event.eventId}".equals(nodeId)) {
+                LOG.info("Processing message event ${event.eventId}");
                 Object messageData = variables.get("message_${event.eventId}");
+                LOG.debug("messageData for ${event.eventId}: {} (type: {})", messageData, messageData != null ? messageData.getClass().getName() : "null");
                 if (messageData != null) {
                     if (messageData instanceof ${event.payloadClassName}) {
                         // Typed payload - BPMN has correct structureRef
+                        LOG.debug("Using typed payload extraction");
                         ${event.payloadClassName} typedPayload = (${event.payloadClassName}) messageData;
 ${typedSetters}
                     } else if (messageData instanceof java.util.Map) {
                         // Raw Map payload - navigate structure as specified in expressions
+                        LOG.debug("Using raw Map payload extraction");
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
+                        LOG.debug("rawMap contents: {}", rawMap);
 ${rawMapSetters}
+                    } else {
+                        LOG.warn("Unexpected messageData type: {}", messageData.getClass().getName());
                     }
+                } else {
+                    LOG.warn("messageData is null for event ${event.eventId}");
                 }
             }`;
   }).join(' else ');
@@ -503,6 +516,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.kie.api.event.process.ProcessNodeLeftEvent;
 import org.kie.kogito.internal.process.event.DefaultKogitoProcessEventListener;
 import org.kie.kogito.internal.process.runtime.KogitoProcessInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -520,6 +535,8 @@ import java.util.Map;
 @ApplicationScoped
 public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MessagePayloadExtractor.class);
+
     /**
      * Handle ALL message events (start events, catch events, boundary events, receive tasks).
      * This fires AFTER each node completes and dataOutputAssociations are processed,
@@ -528,10 +545,12 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
     @Override
     public void afterNodeLeft(ProcessNodeLeftEvent event) {
         String nodeId = event.getNodeInstance().getNodeId().toExternalFormat();
+        LOG.debug("afterNodeLeft fired for nodeId: {}", nodeId);
 
         if (event.getProcessInstance() instanceof KogitoProcessInstance) {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
+            LOG.debug("Process variables: {}", variables.keySet());
 
 ${eventCases}
         }

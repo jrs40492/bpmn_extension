@@ -9,13 +9,9 @@
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
   <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
-  <bpmn:itemDefinition id="_Message_Activity_09ug3ou_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Activity_09ug3ou" name="kafka_Activity_09ug3ou" itemRef="_Message_Activity_09ug3ou_Item" />
   <bpmn:itemDefinition id="_Message_Event_1nyzw2y_Item" structureRef="java.lang.Object" />
   <bpmn:message id="Message_Event_1nyzw2y" name="renewals" itemRef="_Message_Event_1nyzw2y_Item" />
-  <bpmn:itemDefinition id="_message_Event_1nyzw2yItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1nyzw2y_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_1nyzw2yItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1nyzw2y_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
@@ -26,9 +22,8 @@
     </bpmn:extensionElements>
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
-    <bpmn:property id="message_Event_0tyznr4" itemSubjectRef="_message_Event_0tyznr4Item" name="message_Event_0tyznr4" />
-    <bpmn:property id="message_Event_1n6xats" itemSubjectRef="_message_Event_1n6xatsItem" name="message_Event_1n6xats" />
-    <bpmn:property id="message_Event_1nyzw2y" itemSubjectRef="_message_Event_1nyzw2yItem" name="message_Event_1nyzw2y" />
+    <bpmn:property id="message_Event_0tyznr4" name="message_Event_0tyznr4" />
+    <bpmn:property id="message_Event_1n6xats" name="message_Event_1n6xats" />
     <bpmn:property id="message_Event_1nyzw2y" itemSubjectRef="_message_Event_1nyzw2yItem" name="message_Event_1nyzw2y" />
     <bpmn:endEvent id="Event_0b78j8f">
       <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
@@ -51,11 +46,11 @@
       <bpmn:incoming>Flow_0h4q4ut</bpmn:incoming>
       <bpmn:outgoing>Flow_0x8oimr</bpmn:outgoing>
       <bpmn:ioSpecification>
-        <bpmn:dataInput id="Activity_05r7j6b_namespaceInputX" itemSubjectRef="_Activity_05r7j6b_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_05r7j6b_modelInputX" itemSubjectRef="_Activity_05r7j6b_modelInputXItem" name="model" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_05r7j6b_decisionInputX" itemSubjectRef="_Activity_05r7j6b_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
-        <bpmn:dataInput id="Activity_05r7j6b_userIdInputX" itemSubjectRef="_Activity_05r7j6b_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
-        <bpmn:dataOutput id="Activity_05r7j6b_hasUserIdOutputX" itemSubjectRef="_Activity_05r7j6b_hasUserIdOutputXItem" name="hasUserId" drools:dtype="java.lang.Object" />
+        <bpmn:dataInput id="Activity_05r7j6b_namespaceInputX" name="namespace" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05r7j6b_modelInputX" name="model" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05r7j6b_decisionInputX" name="decision" drools:dtype="java.lang.String" />
+        <bpmn:dataInput id="Activity_05r7j6b_userIdInputX" name="userId" drools:dtype="java.lang.Object" />
+        <bpmn:dataOutput id="Activity_05r7j6b_hasUserIdOutputX" name="hasUserId" drools:dtype="java.lang.Object" />
         <bpmn:inputSet>
           <bpmn:dataInputRefs>Activity_05r7j6b_namespaceInputX</bpmn:dataInputRefs>
           <bpmn:dataInputRefs>Activity_05r7j6b_modelInputX</bpmn:dataInputRefs>

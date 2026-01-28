@@ -4,6 +4,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.kie.api.event.process.ProcessNodeLeftEvent;
 import org.kie.kogito.internal.process.event.DefaultKogitoProcessEventListener;
 import org.kie.kogito.internal.process.runtime.KogitoProcessInstance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -21,6 +23,8 @@ import java.util.Map;
 @ApplicationScoped
 public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
 
+    private static final Logger LOG = LoggerFactory.getLogger(MessagePayloadExtractor.class);
+
     /**
      * Handle ALL message events (start events, catch events, boundary events, receive tasks).
      * This fires AFTER each node completes and dataOutputAssociations are processed,
@@ -29,48 +33,43 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
     @Override
     public void afterNodeLeft(ProcessNodeLeftEvent event) {
         String nodeId = event.getNodeInstance().getNodeId().toExternalFormat();
+        LOG.debug("afterNodeLeft fired for nodeId: {}", nodeId);
 
         if (event.getProcessInstance() instanceof KogitoProcessInstance) {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
+            LOG.debug("Process variables: {}", variables.keySet());
 
-            if ("Event_1imz6h6".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_1imz6h6");
-                if (messageData != null) {
-                    if (messageData instanceof com.example.payload.RenewalsPayload) {
-                        // Typed payload - BPMN has correct structureRef
-                        com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
-                    variables.put("userId", typedPayload.getUserId());
-                    } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - navigate structure as specified in expressions
-                        @SuppressWarnings("unchecked")
-                        java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                    Object userIdValue = (rawMap.containsKey("specversion") && rawMap.containsKey("data")
-                        ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null)
-                        : rawMap.get("userId"));
-                    if (userIdValue != null) {
-                        variables.put("userId", userIdValue);
-                    }
-                    }
-                }
-            } else             if ("Event_1nyzw2y".equals(nodeId)) {
+            if ("Event_1nyzw2y".equals(nodeId)) {
+                LOG.info("Processing message event Event_1nyzw2y");
                 Object messageData = variables.get("message_Event_1nyzw2y");
+                LOG.debug("messageData for Event_1nyzw2y: {} (type: {})", messageData, messageData != null ? messageData.getClass().getName() : "null");
                 if (messageData != null) {
                     if (messageData instanceof com.example.payload.RenewalsPayload) {
                         // Typed payload - BPMN has correct structureRef
+                        LOG.debug("Using typed payload extraction");
                         com.example.payload.RenewalsPayload typedPayload = (com.example.payload.RenewalsPayload) messageData;
-                    variables.put("userId", typedPayload.getUserId());
+                    kpi.setVariable("userId", typedPayload.getUserId());
+                    LOG.info("Set process variable userId = {} (from typed payload)", typedPayload.getUserId());
                     } else if (messageData instanceof java.util.Map) {
                         // Raw Map payload - navigate structure as specified in expressions
+                        LOG.debug("Using raw Map payload extraction");
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
+                        LOG.debug("rawMap contents: {}", rawMap);
                     Object userIdValue = (rawMap.containsKey("specversion") && rawMap.containsKey("data")
                         ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null)
                         : rawMap.get("userId"));
+                    LOG.debug("Extracted userId: {}", userIdValue);
                     if (userIdValue != null) {
-                        variables.put("userId", userIdValue);
+                        kpi.setVariable("userId", userIdValue);
+                        LOG.info("Set process variable userId = {}", userIdValue);
                     }
+                    } else {
+                        LOG.warn("Unexpected messageData type: {}", messageData.getClass().getName());
                     }
+                } else {
+                    LOG.warn("messageData is null for event Event_1nyzw2y");
                 }
             }
         }
