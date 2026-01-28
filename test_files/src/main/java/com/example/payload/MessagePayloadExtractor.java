@@ -39,7 +39,9 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         // Raw Map payload - navigate structure as specified in expressions
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null);
+                        Object userIdValue = (rawMap.containsKey("specversion") && rawMap.containsKey("data")
+                            ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null)
+                            : rawMap.get("userId"));
                         if (userIdValue != null) {
                             variables.put("userId", userIdValue);
                         }
@@ -56,7 +58,9 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         // Raw Map payload - navigate structure as specified in expressions
                         @SuppressWarnings("unchecked")
                         java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-                        Object userIdValue = (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null);
+                        Object userIdValue = (rawMap.containsKey("specversion") && rawMap.containsKey("data")
+                            ? (getNestedMap(rawMap, "data") != null ? getNestedMap(rawMap, "data").get("userId") : null)
+                            : rawMap.get("userId"));
                         if (userIdValue != null) {
                             variables.put("userId", userIdValue);
                         }
