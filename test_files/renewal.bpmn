@@ -158,8 +158,8 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
     <bpmn:sequenceFlow id="Flow_1g5hh8f" sourceRef="Event_1n6xats" targetRef="Event_1o1kbe7" />
     <bpmn:startEvent id="Event_140n6p3">
       <bpmn:extensionElements>
-        <msgevt:payloadDefinition cloudEvents="false">
-          <msgevt:payloadField name="userId" expression="$.userId" />
+        <msgevt:payloadDefinition>
+          <msgevt:payloadField name="userId" expression="$.data.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_188qfib</bpmn:outgoing>

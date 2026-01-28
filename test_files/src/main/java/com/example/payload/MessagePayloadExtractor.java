@@ -28,8 +28,8 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
             KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
             Map<String, Object> variables = kpi.getVariables();
 
-            if ("Event_1imz6h6".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_1imz6h6");
+            if ("Event_140n6p3".equals(nodeId)) {
+                Object messageData = variables.get("message_Event_140n6p3");
                 if (messageData != null) {
                     if (messageData instanceof com.example.payload.RenewalsPayload) {
                         // Typed payload - BPMN has correct structureRef
@@ -46,8 +46,8 @@ public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
                         }
                     }
                 }
-            } else             if ("Event_140n6p3".equals(nodeId)) {
-                Object messageData = variables.get("message_Event_140n6p3");
+            } else             if ("Event_1imz6h6".equals(nodeId)) {
+                Object messageData = variables.get("message_Event_1imz6h6");
                 if (messageData != null) {
                     if (messageData instanceof com.example.payload.RenewalsPayload) {
                         // Typed payload - BPMN has correct structureRef
