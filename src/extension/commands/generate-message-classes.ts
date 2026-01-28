@@ -35,7 +35,7 @@ export interface MessageEventInfo {
 }
 
 /**
- * Parse BPMN XML to extract message events with payload definitions
+ * Parse BPMN XML to extract message events and receive tasks with payload definitions
  */
 function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventInfo[] {
   const events: MessageEventInfo[] = [];
@@ -76,6 +76,52 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
     if (fields.length > 0) {
       events.push({
         eventId,
+        messageName,
+        fields,
+        bpmnFile,
+        cloudEvents
+      });
+    }
+  }
+
+  // Also scan for receive tasks (which can consume Kafka messages)
+  const receiveTaskPattern = /<bpmn:receiveTask[^>]*id="([^"]+)"[^>]*>[\s\S]*?<\/bpmn:receiveTask>/gi;
+
+  let taskMatch;
+  while ((taskMatch = receiveTaskPattern.exec(bpmnXml)) !== null) {
+    const taskBlock = taskMatch[0];
+    const taskId = taskMatch[1];
+
+    // Extract message reference (if any)
+    const msgRefMatch = taskBlock.match(/messageRef="([^"]+)"/);
+    let messageName = `message_${taskId}`; // Default name based on task ID
+
+    if (msgRefMatch) {
+      const messageRef = msgRefMatch[1];
+      // Find message name from definitions
+      const messagePattern = new RegExp(`<bpmn:message[^>]*id="${messageRef}"[^>]*name="([^"]+)"`, 'i');
+      const messageMatch = bpmnXml.match(messagePattern);
+      if (messageMatch) {
+        messageName = messageMatch[1];
+      }
+    }
+
+    // Also check for Kafka topic in extension elements
+    const kafkaTopicMatch = taskBlock.match(/topic="([^"]+)"/);
+    if (kafkaTopicMatch) {
+      messageName = kafkaTopicMatch[1];
+    }
+
+    // Extract CloudEvents flag from PayloadDefinition (default true)
+    const cloudEvents = extractCloudEventsFlag(taskBlock);
+
+    // Extract payload fields from extension elements
+    const fields = extractPayloadFields(taskBlock);
+
+    // Only include tasks that have payload fields defined
+    if (fields.length > 0) {
+      events.push({
+        eventId: taskId,
         messageName,
         fields,
         bpmnFile,
@@ -257,126 +303,24 @@ export async function generateJavaClasses(
 
 /**
  * Update BPMN file with itemDefinition reference to generated class
- * Also updates related itemDefinitions for dataOutputs and process variables
+ *
+ * NOTE: This function no longer updates structureRef values to specific payload classes.
+ * All itemDefinitions are kept as java.lang.Object to avoid type mismatch errors in Kogito.
+ * Kogito validates that source and target types match in dataOutputAssociation, and using
+ * java.lang.Object everywhere ensures compatibility while still allowing proper deserialization
+ * at runtime via the MessagePayloadExtractor listener.
  */
 export async function updateBpmnWithItemDefinition(
-  event: MessageEventInfo,
-  packageName: string
+  _event: MessageEventInfo,
+  _packageName: string
 ): Promise<void> {
-  const className = generateClassName(event.messageName);
-  const fullClassName = `${packageName}.${className}`;
-
-  try {
-    const content = await vscode.workspace.fs.readFile(vscode.Uri.file(event.bpmnFile));
-    let bpmnXml = Buffer.from(content).toString('utf-8');
-
-    // Find the message element
-    const messagePattern = new RegExp(
-      `(<bpmn:message[^>]*id="[^"]*"[^>]*name="${escapeRegex(event.messageName)}"[^>]*)(\\/?>)`,
-      'i'
-    );
-
-    const messageMatch = bpmnXml.match(messagePattern);
-    if (!messageMatch) {
-      return; // Message not found
-    }
-
-    // Check if itemRef already exists
-    if (messageMatch[1].includes('itemRef=')) {
-      // Update existing itemRef's structureRef
-      const itemRefMatch = messageMatch[1].match(/itemRef="([^"]+)"/);
-      if (itemRefMatch) {
-        const itemDefId = itemRefMatch[1];
-        // Find and update the itemDefinition
-        const itemDefPattern = new RegExp(
-          `(<bpmn:itemDefinition[^>]*id="${escapeRegex(itemDefId)}"[^>]*)structureRef="[^"]*"`,
-          'i'
-        );
-        bpmnXml = bpmnXml.replace(itemDefPattern, `$1structureRef="${fullClassName}"`);
-      }
-    } else {
-      // Create new itemDefinition and add itemRef
-      const itemDefId = `_${event.messageName.replace(/[^a-zA-Z0-9]/g, '_')}_PayloadItem`;
-
-      // Create itemDefinition element
-      const itemDef = `  <bpmn:itemDefinition id="${itemDefId}" structureRef="${fullClassName}" />\n`;
-
-      // Add itemDefinition before the first message or process
-      const insertPoint = bpmnXml.match(/<bpmn:(message|process)/i);
-      if (insertPoint && insertPoint.index !== undefined) {
-        bpmnXml = bpmnXml.slice(0, insertPoint.index) + itemDef + bpmnXml.slice(insertPoint.index);
-      }
-
-      // Add itemRef to the message
-      const updatedMessage = messageMatch[1] + ` itemRef="${itemDefId}"` + messageMatch[2];
-      bpmnXml = bpmnXml.replace(messagePattern, updatedMessage);
-    }
-
-    // Update related itemDefinitions for the event's dataOutputs and process variables
-    // These are auto-generated by BAMOE and need to have consistent types
-    const eventId = event.eventId;
-
-    // Update _Event_xxx_OutputItem (dataOutput for the whole event)
-    const outputItemPattern = new RegExp(
-      `(<bpmn:itemDefinition[^>]*id="_${escapeRegex(eventId)}_OutputItem"[^>]*)structureRef="[^"]*"`,
-      'gi'
-    );
-    bpmnXml = bpmnXml.replace(outputItemPattern, `$1structureRef="${fullClassName}"`);
-
-    // Update _message_Event_xxxItem (process variable for message data)
-    const msgVarItemPattern = new RegExp(
-      `(<bpmn:itemDefinition[^>]*id="_message_${escapeRegex(eventId)}Item"[^>]*)structureRef="[^"]*"`,
-      'gi'
-    );
-    bpmnXml = bpmnXml.replace(msgVarItemPattern, `$1structureRef="${fullClassName}"`);
-
-    // Update drools:dtype on the event's dataOutput
-    // First, try to update existing drools:dtype
-    const dtypePattern = new RegExp(
-      `(<bpmn:dataOutput[^>]*id="${escapeRegex(eventId)}_OutputX"[^>]*)drools:dtype="[^"]*"`,
-      'gi'
-    );
-    const hasDtype = dtypePattern.test(bpmnXml);
-    if (hasDtype) {
-      // Reset the regex since test() moves the index
-      dtypePattern.lastIndex = 0;
-      bpmnXml = bpmnXml.replace(dtypePattern, `$1drools:dtype="${fullClassName}"`);
-    } else {
-      // Add drools:dtype if it doesn't exist
-      const addDtypePattern = new RegExp(
-        `(<bpmn:dataOutput[^>]*id="${escapeRegex(eventId)}_OutputX"[^>]*)(\\s*/?>)`,
-        'gi'
-      );
-      bpmnXml = bpmnXml.replace(addDtypePattern, `$1 drools:dtype="${fullClassName}"$2`);
-    }
-
-    // Also update drools:dtype on any dataOutput named "event" for this event
-    // This handles cases where the dataOutput has name="event" but different id format
-    const eventDataOutputPattern = new RegExp(
-      `(<bpmn:dataOutput[^>]*name="event"[^>]*itemSubjectRef="_${escapeRegex(eventId)}_OutputItem"[^>]*)drools:dtype="[^"]*"`,
-      'gi'
-    );
-    const hasEventDtype = eventDataOutputPattern.test(bpmnXml);
-    if (hasEventDtype) {
-      eventDataOutputPattern.lastIndex = 0;
-      bpmnXml = bpmnXml.replace(eventDataOutputPattern, `$1drools:dtype="${fullClassName}"`);
-    }
-
-    // Write updated BPMN
-    await vscode.workspace.fs.writeFile(
-      vscode.Uri.file(event.bpmnFile),
-      Buffer.from(bpmnXml, 'utf-8')
-    );
-  } catch (error) {
-    console.error(`Error updating BPMN file ${event.bpmnFile}:`, error);
-  }
-}
-
-/**
- * Escape special characters for use in regex
- */
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // No-op: We no longer update structureRef values to specific payload classes.
+  // This prevents type mismatch errors like:
+  // "Target variable 'message_Event_xxx':'java.lang.String' has different data type
+  //  from 'event':'com.example.payload.PayloadClass' in data output assignment"
+  //
+  // The MessagePayloadExtractor listener handles proper deserialization of payload
+  // fields at runtime, so typed structureRefs are not necessary.
 }
 
 /**

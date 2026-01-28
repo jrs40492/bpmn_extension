@@ -1,36 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:msgevt="http://bamoe.io/schema/message-event" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
-  <bpmn:itemDefinition id="_message_Event_0m799toItem" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:itemDefinition id="_Event_0m799to_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:itemDefinition id="_Event_0m799to_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_05r7j6b_namespaceInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_05r7j6b_modelInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_05r7j6b_decisionInputXItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Activity_05r7j6b_userIdInputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Activity_05r7j6b_hasUserIdOutputXItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_0tyznr4Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0tyznr4_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Message_Event_0tyznr4_Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0tyznr4_InputItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_1n6xats_Item" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_1n6xatsItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1n6xats_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
   <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
-  <bpmn:itemDefinition id="_message_Event_0x2mg5vItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_0x2mg5v_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_0x2mg5v_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_message_Event_140n6p3Item" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:itemDefinition id="_Event_140n6p3_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:itemDefinition id="_Event_140n6p3_userIdItem" structureRef="java.lang.String" />
-  <bpmn:itemDefinition id="_Message_Event_08o8mab_Item" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:message id="Message_Event_08o8mab" name="renewals" itemRef="_Message_Event_08o8mab_Item" />
-  <bpmn:itemDefinition id="_message_Event_08o8mabItem" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:itemDefinition id="_Event_08o8mab_OutputItem" structureRef="com.example.payload.RenewalsPayload" />
-  <bpmn:itemDefinition id="_message_Event_08o8mabItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_08o8mab_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Message_Activity_09ug3ou_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Activity_09ug3ou" name="kafka_Activity_09ug3ou" itemRef="_Message_Activity_09ug3ou_Item" />
+  <bpmn:itemDefinition id="_Message_Event_1nyzw2y_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_1nyzw2y" name="renewals" itemRef="_Message_Event_1nyzw2y_Item" />
+  <bpmn:itemDefinition id="_message_Event_1nyzw2yItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_1nyzw2y_OutputItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_message_Event_1nyzw2yItem" structureRef="java.lang.Object" />
+  <bpmn:itemDefinition id="_Event_1nyzw2y_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -38,15 +24,12 @@
         <bamoe:variable name="hasUserId" type="boolean" required="true" defaultValue="false" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
-    <bpmn:property id="message_Event_0m799to" itemSubjectRef="_message_Event_0m799toItem" name="message_Event_0m799to" />
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:property id="message_Event_0tyznr4" itemSubjectRef="_message_Event_0tyznr4Item" name="message_Event_0tyznr4" />
     <bpmn:property id="message_Event_1n6xats" itemSubjectRef="_message_Event_1n6xatsItem" name="message_Event_1n6xats" />
-    <bpmn:property id="message_Event_0x2mg5v" itemSubjectRef="_message_Event_0x2mg5vItem" name="message_Event_0x2mg5v" />
-    <bpmn:property id="message_Event_140n6p3" itemSubjectRef="_message_Event_140n6p3Item" name="message_Event_140n6p3" />
-    <bpmn:property id="message_Event_08o8mab" itemSubjectRef="_message_Event_08o8mabItem" name="message_Event_08o8mab" />
-    <bpmn:property id="message_Event_08o8mab" itemSubjectRef="_message_Event_08o8mabItem" name="message_Event_08o8mab" />
+    <bpmn:property id="message_Event_1nyzw2y" itemSubjectRef="_message_Event_1nyzw2yItem" name="message_Event_1nyzw2y" />
+    <bpmn:property id="message_Event_1nyzw2y" itemSubjectRef="_message_Event_1nyzw2yItem" name="message_Event_1nyzw2y" />
     <bpmn:endEvent id="Event_0b78j8f">
       <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
     </bpmn:endEvent>
@@ -59,7 +42,7 @@
       <bpmn:outgoing>Flow_14t4myq</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:scriptTask id="Activity_03vtzas" name="Step 1" scriptFormat="java">
-      <bpmn:incoming>Flow_1r64gm3</bpmn:incoming>
+      <bpmn:incoming>Flow_0h4q4ut</bpmn:incoming>
       <bpmn:outgoing>Flow_09guua2</bpmn:outgoing>
       <bpmn:script>// userId is now automatically extracted by MessagePayloadExtractor
 String extractedUserId = (String) kcontext.getVariable("userId");
@@ -162,30 +145,30 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
     <bpmn:sequenceFlow id="Flow_0qmkn3d" sourceRef="Activity_10h9hba" targetRef="Event_0tyznr4" />
     <bpmn:sequenceFlow id="Flow_00etiw2" sourceRef="Event_0tyznr4" targetRef="Event_1n6xats" />
     <bpmn:sequenceFlow id="Flow_1g5hh8f" sourceRef="Event_1n6xats" targetRef="Event_1o1kbe7" />
-    <bpmn:startEvent id="Event_08o8mab">
+    <bpmn:startEvent id="Event_1nyzw2y">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
           <msgevt:payloadField name="userId" expression="$.data.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
-      <bpmn:outgoing>Flow_1r64gm3</bpmn:outgoing>
-      <bpmn:dataOutput id="Event_08o8mab_OutputX" itemSubjectRef="_Event_08o8mab_OutputItem" name="event" drools:dtype="com.example.payload.RenewalsPayload" />
-      <bpmn:dataOutput id="Event_08o8mab_userId" itemSubjectRef="_Event_08o8mab_userIdItem" name="userId" drools:dtype="java.lang.String" />
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_08gbew4">
-        <bpmn:sourceRef>Event_08o8mab_OutputX</bpmn:sourceRef>
-        <bpmn:targetRef>message_Event_08o8mab</bpmn:targetRef>
+      <bpmn:outgoing>Flow_0h4q4ut</bpmn:outgoing>
+      <bpmn:dataOutput id="Event_1nyzw2y_OutputX" itemSubjectRef="_Event_1nyzw2y_OutputItem" name="event" drools:dtype="java.lang.Object" />
+      <bpmn:dataOutput id="Event_1nyzw2y_userId" itemSubjectRef="_Event_1nyzw2y_userIdItem" name="userId" drools:dtype="java.lang.String" />
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_1wte9gv">
+        <bpmn:sourceRef>Event_1nyzw2y_OutputX</bpmn:sourceRef>
+        <bpmn:targetRef>message_Event_1nyzw2y</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
-      <bpmn:dataOutputAssociation id="DataOutputAssociation_0hcq4sv">
-        <bpmn:sourceRef>Event_08o8mab_userId</bpmn:sourceRef>
+      <bpmn:dataOutputAssociation id="DataOutputAssociation_18dqj1y">
+        <bpmn:sourceRef>Event_1nyzw2y_userId</bpmn:sourceRef>
         <bpmn:targetRef>userId</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
       <bpmn:outputSet>
-        <bpmn:dataOutputRefs>Event_08o8mab_OutputX</bpmn:dataOutputRefs>
-        <bpmn:dataOutputRefs>Event_08o8mab_userId</bpmn:dataOutputRefs>
+        <bpmn:dataOutputRefs>Event_1nyzw2y_OutputX</bpmn:dataOutputRefs>
+        <bpmn:dataOutputRefs>Event_1nyzw2y_userId</bpmn:dataOutputRefs>
       </bpmn:outputSet>
-      <bpmn:messageEventDefinition id="MessageEventDefinition_00zmigu" messageRef="Message_Event_08o8mab" />
+      <bpmn:messageEventDefinition id="MessageEventDefinition_0xfdhrg" messageRef="Message_Event_1nyzw2y" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_1r64gm3" sourceRef="Event_08o8mab" targetRef="Activity_03vtzas" />
+    <bpmn:sequenceFlow id="Flow_0h4q4ut" sourceRef="Event_1nyzw2y" targetRef="Activity_03vtzas" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
@@ -225,7 +208,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
           <dc:Bounds x="1014" y="175" width="32" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_00s7zyv_di" bpmnElement="Event_08o8mab">
+      <bpmndi:BPMNShape id="Event_1wv5hyi_di" bpmnElement="Event_1nyzw2y">
         <dc:Bounds x="212" y="292" width="36" height="36" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_09guua2_di" bpmnElement="Flow_09guua2">
@@ -256,7 +239,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
         <di:waypoint x="1048" y="150" />
         <di:waypoint x="1122" y="150" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1r64gm3_di" bpmnElement="Flow_1r64gm3">
+      <bpmndi:BPMNEdge id="Flow_0h4q4ut_di" bpmnElement="Flow_0h4q4ut">
         <di:waypoint x="248" y="310" />
         <di:waypoint x="360" y="310" />
       </bpmndi:BPMNEdge>
