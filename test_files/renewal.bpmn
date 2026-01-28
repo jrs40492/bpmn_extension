@@ -36,20 +36,11 @@
     <bpmn:endEvent id="Event_1o1kbe7">
       <bpmn:incoming>Flow_1g5hh8f</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:exclusiveGateway id="Gateway_14o5swb" name="Ste p3" gatewayDirection="Diverging">
+    <bpmn:exclusiveGateway id="Gateway_14o5swb" name="Step 3" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_0x8oimr</bpmn:incoming>
       <bpmn:outgoing>Flow_18b53td</bpmn:outgoing>
       <bpmn:outgoing>Flow_14t4myq</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:scriptTask id="Activity_03vtzas" name="Step 1" scriptFormat="java">
-      <bpmn:incoming>Flow_0h4q4ut</bpmn:incoming>
-      <bpmn:outgoing>Flow_09guua2</bpmn:outgoing>
-      <bpmn:script>// userId is now automatically extracted by MessagePayloadExtractor
-String extractedUserId = (String) kcontext.getVariable("userId");
-
-System.out.println("testing testing testing");
-System.out.println("userId: " + extractedUserId);</bpmn:script>
-    </bpmn:scriptTask>
     <bpmn:scriptTask id="Activity_10h9hba" name="Step 4" scriptFormat="java">
       <bpmn:incoming>Flow_18b53td</bpmn:incoming>
       <bpmn:outgoing>Flow_0qmkn3d</bpmn:outgoing>
@@ -57,7 +48,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
     </bpmn:scriptTask>
     <bpmn:businessRuleTask id="Activity_05r7j6b" name="Step 2" implementation="http://www.jboss.org/drools/dmn">
       <bpmn:extensionElements />
-      <bpmn:incoming>Flow_09guua2</bpmn:incoming>
+      <bpmn:incoming>Flow_0h4q4ut</bpmn:incoming>
       <bpmn:outgoing>Flow_0x8oimr</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_05r7j6b_namespaceInputX" itemSubjectRef="_Activity_05r7j6b_namespaceInputXItem" name="namespace" drools:dtype="java.lang.String" />
@@ -134,7 +125,6 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
       </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_1tw1uj9" messageRef="Message_Event_1n6xats" />
     </bpmn:intermediateCatchEvent>
-    <bpmn:sequenceFlow id="Flow_09guua2" sourceRef="Activity_03vtzas" targetRef="Activity_05r7j6b" />
     <bpmn:sequenceFlow id="Flow_0x8oimr" sourceRef="Activity_05r7j6b" targetRef="Gateway_14o5swb" />
     <bpmn:sequenceFlow id="Flow_18b53td" sourceRef="Gateway_14o5swb" targetRef="Activity_10h9hba">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">return Boolean.TRUE.equals(hasUserId);</bpmn:conditionExpression>
@@ -168,7 +158,7 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
       </bpmn:outputSet>
       <bpmn:messageEventDefinition id="MessageEventDefinition_0xfdhrg" messageRef="Message_Event_1nyzw2y" />
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_0h4q4ut" sourceRef="Event_1nyzw2y" targetRef="Activity_03vtzas" />
+    <bpmn:sequenceFlow id="Flow_0h4q4ut" sourceRef="Event_1nyzw2y" targetRef="Activity_05r7j6b" />
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
@@ -181,12 +171,8 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
       <bpmndi:BPMNShape id="Gateway_14o5swb_di" bpmnElement="Gateway_14o5swb" isMarkerVisible="true">
         <dc:Bounds x="755" y="285" width="50" height="50" />
         <bpmndi:BPMNLabel id="_29BF88AC-20CA-4A8C-B683-E627A901C8CF">
-          <dc:Bounds x="844" y="300" width="32" height="14" />
+          <dc:Bounds x="824" y="283" width="32" height="14" />
         </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_0thapl2_di" bpmnElement="Activity_03vtzas">
-        <dc:Bounds x="360" y="270" width="100" height="80" />
-        <bpmndi:BPMNLabel id="_10703F5D-6E61-4E52-842E-1486A270E52F" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_18xu45g_di" bpmnElement="Activity_10h9hba">
         <dc:Bounds x="730" y="110" width="100" height="80" />
@@ -209,12 +195,8 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1wv5hyi_di" bpmnElement="Event_1nyzw2y">
-        <dc:Bounds x="212" y="292" width="36" height="36" />
+        <dc:Bounds x="382" y="292" width="36" height="36" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNEdge id="Flow_09guua2_di" bpmnElement="Flow_09guua2">
-        <di:waypoint x="460" y="310" />
-        <di:waypoint x="560" y="310" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0x8oimr_di" bpmnElement="Flow_0x8oimr">
         <di:waypoint x="660" y="310" />
         <di:waypoint x="755" y="310" />
@@ -240,8 +222,8 @@ System.out.println("userId: " + extractedUserId);</bpmn:script>
         <di:waypoint x="1122" y="150" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0h4q4ut_di" bpmnElement="Flow_0h4q4ut">
-        <di:waypoint x="248" y="310" />
-        <di:waypoint x="360" y="310" />
+        <di:waypoint x="418" y="310" />
+        <di:waypoint x="560" y="310" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
