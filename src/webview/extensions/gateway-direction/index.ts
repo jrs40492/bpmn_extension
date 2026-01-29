@@ -6,10 +6,28 @@
  */
 
 import { is } from 'bpmn-js/lib/util/ModelUtil';
+
+// Type definitions for properties panel components
+// @ts-expect-error - no type definitions available
+import type { SelectEntry as SelectEntryFn } from '@bpmn-io/properties-panel';
+// @ts-expect-error - no type definitions available
+import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
+
 // @ts-expect-error - no type definitions available
 import { SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
+
+// Extended types for properties panel entries that include runtime-supported properties
+interface ExtendedSelectEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  getOptions: () => Array<{ value: string; label: string }>;
+}
 
 // ============================================================================
 // BPMN-JS Type Definitions (no official types available)
@@ -96,7 +114,7 @@ function GatewayDirectionSelect(props: { element: BpmnElement; id: string }) {
     getValue,
     setValue,
     getOptions
-  });
+  } as ExtendedSelectEntryProps);
 }
 
 // Create entries for gateway

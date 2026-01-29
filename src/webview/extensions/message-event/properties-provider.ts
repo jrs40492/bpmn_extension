@@ -8,10 +8,46 @@
  * - Output mappings (creates bpmn:dataOutput and bpmn:dataOutputAssociation)
  */
 
+// Type definitions for properties panel components
+// @ts-expect-error - no type definitions available
+import type { ListGroup as ListGroupFn, TextFieldEntry as TextFieldEntryFn, SelectEntry as SelectEntryFn, CheckboxEntry as CheckboxEntryFn } from '@bpmn-io/properties-panel';
+// @ts-expect-error - no type definitions available
+import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
+
 // @ts-expect-error - no type definitions available
 import { ListGroup, TextFieldEntry, SelectEntry, CheckboxEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
+
+// Extended types for properties panel entries that include runtime-supported properties
+interface ExtendedTextFieldEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  debounce?: unknown;
+}
+
+interface ExtendedSelectEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  getOptions: () => Array<{ value: string; label: string }>;
+}
+
+interface ExtendedCheckboxEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => boolean;
+  setValue: (value: boolean) => void;
+}
 
 // ============================================================================
 // Type Definitions
@@ -106,9 +142,11 @@ interface PropertyEntry {
 
 interface PropertiesGroup {
   id: string;
-  label: string;
-  entries: PropertyEntry[];
+  label?: string;
+  entries?: PropertyEntry[];
   component?: unknown;
+  items?: unknown[];
+  add?: (event: Event) => void;
 }
 
 // ============================================================================
@@ -803,9 +841,8 @@ function MessageName(props: { element: BpmnElement; id: string }) {
     label: translate('Message Name'),
     description: translate('Name of the message that triggers this start event'),
     getValue,
-    setValue,
-    debounce
-  });
+    setValue
+  } as ExtendedTextFieldEntryProps);
 }
 
 /**
@@ -959,9 +996,8 @@ function PayloadFieldExpression(props: { id: string; field: PayloadField; elemen
     label,
     description,
     getValue,
-    setValue,
-    debounce
-  });
+    setValue
+  } as ExtendedTextFieldEntryProps);
 }
 
 /**
@@ -1047,7 +1083,7 @@ function createOutputMappingComponent(field: PayloadField) {
       getValue,
       setValue,
       getOptions
-    });
+    } as ExtendedSelectEntryProps);
   };
 }
 
@@ -1631,7 +1667,7 @@ export default class MessageEventPropertiesProvider {
             id: 'message-payload-fields',
             component: ListGroup,
             ...payloadGroup
-          } as PropertiesGroup);
+          });
         }
       }
 
