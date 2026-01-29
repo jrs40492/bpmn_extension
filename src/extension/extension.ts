@@ -159,39 +159,35 @@ function getDefaultBpmnContent(): string {
 }
 
 /**
- * Returns the default DMN 1.3 XML template for new decisions
+ * Returns the default DMN 1.6 XML template for new decisions
  */
 function getDefaultDmnContent(): string {
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
-             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
-             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
-             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
-             id="Definitions_1"
-             name="Decision"
-             namespace="http://camunda.org/schema/1.0/dmn">
-  <decision id="Decision_1" name="Decision 1">
-    <decisionTable id="DecisionTable_1" hitPolicy="UNIQUE">
-      <input id="Input_1" label="Input">
-        <inputExpression id="InputExpression_1" typeRef="string">
+  return `<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<definitions xmlns=\"https://www.omg.org/spec/DMN/20230324/MODEL/\"
+             xmlns:dmndi=\"https://www.omg.org/spec/DMN/20230324/DMNDI/\"
+             xmlns:dc=\"http://www.omg.org/spec/DMN/20180521/DC/\"
+             xmlns:di=\"http://www.omg.org/spec/DMN/20180521/DI/\"
+             id=\"Definitions_1\"
+             name=\"Decision\"
+             namespace=\"http://camunda.org/schema/1.0/dmn\">
+  <decision id=\"Decision_1\" name=\"Decision 1\">
+    <decisionTable id=\"DecisionTable_1\" hitPolicy=\"UNIQUE\">
+      <input id=\"Input_1\" label=\"Input\">
+        <inputExpression id=\"InputExpression_1\" typeRef=\"string\">
           <text></text>
         </inputExpression>
       </input>
-      <output id="Output_1" label="Output" typeRef="string" />
-      <rule id="Rule_1">
-        <inputEntry id="InputEntry_1">
-          <text></text>
-        </inputEntry>
-        <outputEntry id="OutputEntry_1">
-          <text></text>
-        </outputEntry>
+      <output id=\"Output_1\" label=\"Output\" typeRef=\"string\" />
+      <rule id=\"Rule_1\">
+        <inputEntry id=\"InputEntry_1\">\n          <text></text>\n        </inputEntry>
+        <outputEntry id=\"OutputEntry_1\">\n          <text></text>\n        </outputEntry>
       </rule>
     </decisionTable>
   </decision>
   <dmndi:DMNDI>
-    <dmndi:DMNDiagram id="DMNDiagram_1">
-      <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
-        <dc:Bounds x="160" y="80" width="180" height="80" />
+    <dmndi:DMNDiagram id=\"DMNDiagram_1\">
+      <dmndi:DMNShape id=\"DMNShape_Decision_1\" dmnElementRef=\"Decision_1\">
+        <dc:Bounds x=\"160\" y=\"80\" width=\"180\" height=\"80\" />
       </dmndi:DMNShape>
     </dmndi:DMNDiagram>
   </dmndi:DMNDI>

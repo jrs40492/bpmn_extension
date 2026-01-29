@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20180521/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20180521/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+             id="Definitions_1"
+             name="Test Decision 1.2"
+             namespace="http://test.org/dmn">
+  <decision id="Decision_1" name="Test Decision">
+    <decisionTable id="DecisionTable_1" hitPolicy="UNIQUE">
+      <input id="Input_1" label="Input">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>input</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Output" typeRef="string" />
+      <rule id="Rule_1">
+        <inputEntry id="InputEntry_1">
+          <text>"test"</text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_1">
+          <text>"result"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
+        <dc:Bounds x="160" y="80" width="180" height="80" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

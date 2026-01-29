@@ -81,8 +81,8 @@ function debounce<T extends (...args: unknown[]) => void>(
  */
 function getEmptyDmnDiagram(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
-             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+<definitions xmlns="https://www.omg.org/spec/DMN/20230324/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20230324/DMNDI/"
              xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
              xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
              id="Definitions_1"
@@ -111,6 +111,66 @@ function normalizeEmptyCells(xml: string): string {
   );
 
   return xml;
+}
+
+// DMN namespace helpers for DMN 1.2/1.3/1.6 interop
+// DMN 1.2 can use both HTTP and HTTPS variants
+const DMN12_MODEL_HTTP = 'http://www.omg.org/spec/DMN/20180521/MODEL/';
+const DMN12_DMNDI_HTTP = 'http://www.omg.org/spec/DMN/20180521/DMNDI/';
+const DMN12_MODEL_HTTPS = 'https://www.omg.org/spec/DMN/20180521/MODEL/';
+const DMN12_DMNDI_HTTPS = 'https://www.omg.org/spec/DMN/20180521/DMNDI/';
+const DMN13_MODEL = 'https://www.omg.org/spec/DMN/20191111/MODEL/';
+const DMN13_DMNDI = 'https://www.omg.org/spec/DMN/20191111/DMNDI/';
+const DMN16_MODEL = 'https://www.omg.org/spec/DMN/20230324/MODEL/';
+const DMN16_DMNDI = 'https://www.omg.org/spec/DMN/20230324/DMNDI/';
+
+function detectDmnSpec(xml: string): '1.6' | '1.3' | '1.2' | 'unknown' {
+  if (!xml) return 'unknown';
+  
+  // Check for DMN 1.6 (both default xmlns="..." and prefixed xmlns:dmn="..." declarations)
+  if (xml.includes(DMN16_MODEL) || xml.includes(DMN16_DMNDI)) return '1.6';
+  
+  // Check for DMN 1.3 (both default xmlns="..." and prefixed xmlns:dmn="..." declarations)
+  if (xml.includes(DMN13_MODEL) || xml.includes(DMN13_DMNDI)) return '1.3';
+  
+  // Check for DMN 1.2 - both HTTP and HTTPS variants
+  if (xml.includes(DMN12_MODEL_HTTP) || xml.includes(DMN12_DMNDI_HTTP) ||
+      xml.includes(DMN12_MODEL_HTTPS) || xml.includes(DMN12_DMNDI_HTTPS)) {
+    return '1.2';
+  }
+  
+  // Additional check for prefixed DMN 1.2 declarations (both HTTP and HTTPS)
+  if (xml.includes('xmlns:dmn="http://www.omg.org/spec/DMN/20180521/MODEL/"') || 
+      xml.includes('xmlns:dmndi="http://www.omg.org/spec/DMN/20180521/DMNDI/"') ||
+      xml.includes('xmlns:dmn="https://www.omg.org/spec/DMN/20180521/MODEL/"') || 
+      xml.includes('xmlns:dmndi="https://www.omg.org/spec/DMN/20180521/DMNDI/"')) {
+    return '1.2';
+  }
+  
+  return 'unknown';
+}
+
+function convertNamespaces(xml: string, fromModel: string, fromDmndi: string, toModel: string, toDmndi: string): string {
+  const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let result = xml;
+  
+  // Convert default namespace declarations: xmlns="..."
+  result = result.replace(new RegExp(esc(fromModel), 'g'), toModel);
+  result = result.replace(new RegExp(esc(fromDmndi), 'g'), toDmndi);
+  
+  // Convert prefixed namespace declarations: xmlns:dmn="...", xmlns:dmndi="..."
+  result = result.replace(new RegExp(`xmlns:dmn="${esc(fromModel)}"`, 'g'), `xmlns:dmn="${toModel}"`);
+  result = result.replace(new RegExp(`xmlns:dmndi="${esc(fromDmndi)}"`, 'g'), `xmlns:dmndi="${toDmndi}"`);
+  
+  return result;
+}
+
+function toDmn13(xml: string): string {
+  // Convert DMN 1.2 to DMN 1.3 (dmn-js doesn't support 1.6)
+  // Try HTTP variant first, then HTTPS if no matches
+  let result = convertNamespaces(xml, DMN12_MODEL_HTTP, DMN12_DMNDI_HTTP, DMN13_MODEL, DMN13_DMNDI);
+  result = convertNamespaces(result, DMN12_MODEL_HTTPS, DMN12_DMNDI_HTTPS, DMN13_MODEL, DMN13_DMNDI);
+  return result;
 }
 
 // Initialize the editor
@@ -399,6 +459,14 @@ async function init(): Promise<void> {
           if (!xmlToImport || xmlToImport.trim() === '') {
             xmlToImport = getEmptyDmnDiagram();
           }
+          // Convert older DMN 1.2 documents to 1.3 for compatibility
+          const webviewSpec = detectDmnSpec(xmlToImport);
+          console.log(`[DMN Webview Debug] Received XML with spec: ${webviewSpec}, length: ${xmlToImport.length}`);
+          if (webviewSpec === '1.2') {
+            console.log(`[DMN Webview Debug] Converting ${webviewSpec} to 1.3 in webview`);
+            xmlToImport = toDmn13(xmlToImport);
+            console.log(`[DMN Webview Debug] After webview conversion, spec: ${detectDmnSpec(xmlToImport)}`);
+          }
           await dmnModeler.importXML(xmlToImport);
 
           // Attach change listener to the active viewer (decision table, etc.)
@@ -434,6 +502,10 @@ async function init(): Promise<void> {
           // Save current view
           const currentActiveView = activeView;
 
+          // Convert older DMN 1.2 documents to 1.3 on update as well
+          if (detectDmnSpec(xmlToUpdate) === '1.2') {
+            xmlToUpdate = toDmn13(xmlToUpdate);
+          }
           await dmnModeler.importXML(xmlToUpdate);
 
           // Attach change listener to the active viewer
