@@ -780,6 +780,152 @@ html, body {
 }
 
 /* ========================================
+   Create DMN Form Styling
+   ======================================== */
+
+.bio-properties-panel .create-dmn-button {
+  background: var(--vscode-button-background, #0e639c) !important;
+  color: var(--vscode-button-foreground, #ffffff) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  padding: 6px 12px !important;
+  font-weight: 400 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+}
+
+.bio-properties-panel .create-dmn-button:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb) !important;
+}
+
+/* Create DMN Form Container */
+.bio-properties-panel .create-dmn-form {
+  background: var(--vscode-editor-background, #1e1e1e) !important;
+  border: 1px solid var(--vscode-widget-border, #454545) !important;
+  border-radius: 4px !important;
+  padding: 12px !important;
+  margin-top: 8px !important;
+}
+
+.bio-properties-panel .create-dmn-form-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 12px !important;
+  padding-bottom: 8px !important;
+  border-bottom: 1px solid var(--vscode-widget-border, #454545) !important;
+}
+
+.bio-properties-panel .create-dmn-form-title {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--vscode-foreground, #cccccc) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+}
+
+.bio-properties-panel .cancel-dmn-button {
+  background: transparent !important;
+  color: var(--vscode-descriptionForeground, #8b8b8b) !important;
+  border: none !important;
+  padding: 2px 6px !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+}
+
+.bio-properties-panel .cancel-dmn-button:hover {
+  color: var(--vscode-foreground, #cccccc) !important;
+  background: transparent !important;
+}
+
+.bio-properties-panel .create-dmn-form-label {
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: var(--vscode-foreground, #cccccc) !important;
+  margin-bottom: 4px !important;
+  display: block !important;
+}
+
+.bio-properties-panel .create-dmn-form-input {
+  width: 100% !important;
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+  background: var(--vscode-input-background, #3c3c3c) !important;
+  color: var(--vscode-input-foreground, #cccccc) !important;
+  border: 1px solid var(--vscode-input-border, #3c3c3c) !important;
+  border-radius: 2px !important;
+  box-sizing: border-box !important;
+}
+
+.bio-properties-panel .create-dmn-form-input:focus {
+  outline: none !important;
+  border-color: var(--vscode-focusBorder, #007fd4) !important;
+}
+
+.bio-properties-panel .create-dmn-form-select {
+  padding: 5px 8px !important;
+  font-size: 12px !important;
+  background: var(--vscode-input-background, #3c3c3c) !important;
+  color: var(--vscode-input-foreground, #cccccc) !important;
+  border: 1px solid var(--vscode-input-border, #3c3c3c) !important;
+  border-radius: 2px !important;
+  min-width: 80px !important;
+}
+
+.bio-properties-panel .add-input-button {
+  background: transparent !important;
+  color: var(--vscode-textLink-foreground, #3794ff) !important;
+  border: none !important;
+  padding: 4px 0 !important;
+  font-size: 11px !important;
+  cursor: pointer !important;
+  text-align: left !important;
+}
+
+.bio-properties-panel .add-input-button:hover {
+  color: var(--vscode-textLink-activeForeground, #3794ff) !important;
+  text-decoration: underline !important;
+  background: transparent !important;
+}
+
+.bio-properties-panel .submit-dmn-button {
+  background: var(--vscode-button-background, #0e639c) !important;
+  color: var(--vscode-button-foreground, #ffffff) !important;
+  border: none !important;
+  border-radius: 2px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+}
+
+.bio-properties-panel .submit-dmn-button:hover {
+  background: var(--vscode-button-hoverBackground, #1177bb) !important;
+}
+
+.bio-properties-panel .remove-input-button {
+  background: transparent !important;
+  color: var(--vscode-descriptionForeground, #8b8b8b) !important;
+  border: none !important;
+  padding: 2px 6px !important;
+  font-size: 14px !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+.bio-properties-panel .remove-input-button:hover {
+  color: var(--vscode-errorForeground, #f48771) !important;
+  background: transparent !important;
+}
+
+.bio-properties-panel .create-dmn-form-error {
+  color: var(--vscode-errorForeground, #f48771) !important;
+  font-size: 11px !important;
+  margin-top: 8px !important;
+}
+
+/* ========================================
    Minimap Theming
    ======================================== */
 

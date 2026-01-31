@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getNonce } from './util/nonce';
 import { Disposable, disposeAll } from './util/dispose';
-import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo } from '../shared/message-types';
+import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo, DmnInputDefinition } from '../shared/message-types';
 import {
   extractMessageEventsFromContent,
   generateJavaClasses,
@@ -129,6 +129,33 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
               console.error('[BAMOE] Message class generation failed:', error);
               this.postMessage(webviewPanel.webview, {
                 type: 'generateMessageClassesResult',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+            }
+            break;
+
+          case 'createDmnFile':
+            // Create a new DMN file with the specified inputs
+            console.log('[BAMOE] Received createDmnFile message:', message);
+            try {
+              const createResult = await this.createDmnFile(
+                document,
+                message.fileName,
+                message.modelName,
+                message.inputs
+              );
+              this.postMessage(webviewPanel.webview, {
+                type: 'createDmnFileResult',
+                ...createResult
+              });
+              // Also refresh DMN files list
+              const updatedFiles = await this.findDmnFiles();
+              this.postMessage(webviewPanel.webview, { type: 'dmnFiles', files: updatedFiles });
+            } catch (error) {
+              console.error('[BAMOE] DMN file creation failed:', error);
+              this.postMessage(webviewPanel.webview, {
+                type: 'createDmnFileResult',
                 success: false,
                 error: error instanceof Error ? error.message : 'Unknown error'
               });
@@ -372,6 +399,209 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     return dmnFiles;
+  }
+
+  /**
+   * Create a new DMN file with the specified inputs
+   * Saves the file in the same directory as the current BPMN file
+   */
+  private async createDmnFile(
+    bpmnDocument: vscode.TextDocument,
+    fileName: string,
+    modelName: string,
+    inputs: DmnInputDefinition[]
+  ): Promise<{ success: boolean; file?: DmnFileInfo; error?: string }> {
+    try {
+      // Validate inputs
+      if (!fileName || !fileName.trim()) {
+        return { success: false, error: 'File name is required' };
+      }
+      if (!modelName || !modelName.trim()) {
+        return { success: false, error: 'Model name is required' };
+      }
+
+      // Clean up file name (remove extension if provided)
+      const cleanFileName = fileName.trim().replace(/\.dmn$/i, '');
+
+      // Determine the directory to save the file
+      // Use the same directory as the current BPMN file
+      const bpmnDir = vscode.Uri.joinPath(bpmnDocument.uri, '..');
+      const dmnUri = vscode.Uri.joinPath(bpmnDir, `${cleanFileName}.dmn`);
+
+      // Check if file already exists
+      try {
+        await vscode.workspace.fs.stat(dmnUri);
+        return { success: false, error: `File "${cleanFileName}.dmn" already exists` };
+      } catch {
+        // File doesn't exist, we can proceed
+      }
+
+      // Generate DMN XML content
+      const dmnContent = this.generateDmnContent(cleanFileName, modelName, inputs);
+
+      // Write the file
+      await vscode.workspace.fs.writeFile(dmnUri, Buffer.from(dmnContent, 'utf-8'));
+
+      // Parse the newly created file to return its info
+      const document = await vscode.workspace.openTextDocument(dmnUri);
+      const content = document.getText();
+      const decisions = this.parseDecisionsFromDmn(content);
+      const namespace = this.parseNamespaceFromDmn(content);
+      const parsedModelName = this.parseModelNameFromDmn(content);
+      const inputData = this.parseInputDataFromDmn(content);
+      const outputData = this.parseOutputDataFromDmn(content, decisions);
+
+      // Get relative path for display
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(dmnUri);
+      const relativePath = workspaceFolder
+        ? vscode.workspace.asRelativePath(dmnUri, false)
+        : dmnUri.fsPath;
+
+      const fileInfo: DmnFileInfo = {
+        path: dmnUri.fsPath,
+        name: relativePath,
+        modelName: parsedModelName,
+        namespace,
+        decisions,
+        inputData,
+        outputData
+      };
+
+      // Show success message
+      vscode.window.showInformationMessage(`Created DMN file: ${relativePath}`);
+
+      return { success: true, file: fileInfo };
+    } catch (error) {
+      console.error('[BAMOE] Error creating DMN file:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error creating DMN file'
+      };
+    }
+  }
+
+  /**
+   * Generate DMN XML content with the specified inputs
+   */
+  private generateDmnContent(
+    fileName: string,
+    modelName: string,
+    inputs: DmnInputDefinition[]
+  ): string {
+    const uniqueId = `Definitions_${Date.now()}`;
+    const namespace = 'http://camunda.org/schema/1.0/dmn';
+
+    // Generate input data elements
+    const inputDataElements = inputs.map((input, _index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      return `  <inputData id="${inputId}" name="${this.escapeXml(input.name)}">
+    <variable id="Variable_${this.sanitizeId(input.name)}" name="${this.escapeXml(input.name)}" typeRef="${input.typeRef}" />
+  </inputData>`;
+    }).join('\n');
+
+    // Generate information requirements for the decision
+    const informationRequirements = inputs.map((input, _index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      return `    <informationRequirement id="IR_${this.sanitizeId(input.name)}">
+      <requiredInput href="#${inputId}" />
+    </informationRequirement>`;
+    }).join('\n');
+
+    // Generate decision table inputs
+    const decisionTableInputs = inputs.map((input, index) => {
+      return `      <input id="Input_${index + 1}" label="${this.escapeXml(input.name)}">
+        <inputExpression id="InputExpression_${index + 1}" typeRef="${input.typeRef}">
+          <text>${this.escapeXml(input.name)}</text>
+        </inputExpression>
+      </input>`;
+    }).join('\n');
+
+    // Generate empty input entries for the default rule
+    const inputEntries = inputs.map((_, index) => {
+      return `        <inputEntry id="InputEntry_${index + 1}">
+          <text></text>
+        </inputEntry>`;
+    }).join('\n');
+
+    // Generate DMN shapes for the diagram
+    const inputShapes = inputs.map((input, index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      // Position inputs in a row above the decision
+      const x = 80 + (index * 200);
+      const y = 200;
+      return `      <dmndi:DMNShape id="DMNShape_${inputId}" dmnElementRef="${inputId}">
+        <dc:Bounds x="${x}" y="${y}" width="160" height="50" />
+      </dmndi:DMNShape>`;
+    }).join('\n');
+
+    // Generate edges from inputs to decision
+    const inputEdges = inputs.map((input, index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      const irId = `IR_${this.sanitizeId(input.name)}`;
+      // Draw edge from input data to decision
+      const inputX = 80 + (index * 200) + 80; // center of input
+      const decisionX = 160 + 90; // center of decision
+      return `      <dmndi:DMNEdge id="DMNEdge_${irId}" dmnElementRef="${irId}">
+        <di:waypoint x="${inputX}" y="${200}" />
+        <di:waypoint x="${decisionX}" y="${80 + 80}" />
+      </dmndi:DMNEdge>`;
+    }).join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+             id="${uniqueId}"
+             name="${this.escapeXml(modelName)}"
+             namespace="${namespace}">
+
+${inputDataElements}
+
+  <decision id="Decision_1" name="${this.escapeXml(modelName)}">
+    <variable id="DecisionVariable_1" name="${this.escapeXml(modelName)}" typeRef="string" />
+${informationRequirements}
+    <decisionTable id="DecisionTable_1" hitPolicy="UNIQUE">
+${decisionTableInputs}
+      <output id="Output_1" label="Output" typeRef="string" />
+      <rule id="Rule_1">
+${inputEntries}
+        <outputEntry id="OutputEntry_1">
+          <text></text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
+        <dc:Bounds x="160" y="80" width="180" height="80" />
+      </dmndi:DMNShape>
+${inputShapes}
+${inputEdges}
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>`;
+  }
+
+  /**
+   * Sanitize a string to be used as an XML ID
+   */
+  private sanitizeId(name: string): string {
+    return name.replace(/[^a-zA-Z0-9_]/g, '_');
+  }
+
+  /**
+   * Escape special XML characters
+   */
+  private escapeXml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
   /**

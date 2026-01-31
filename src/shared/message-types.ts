@@ -42,7 +42,7 @@ export interface DmnFilesMessage {
   files: DmnFileInfo[];
 }
 
-export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage;
+export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage | CreateDmnFileResultMessage;
 
 // Webview -> Extension messages
 export interface ReadyMessage {
@@ -74,7 +74,29 @@ export interface GenerateMessageClassesResultMessage {
   error?: string;
 }
 
-export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage;
+// DMN input definition for creating new DMN files
+export interface DmnInputDefinition {
+  name: string;       // e.g., "customerAge"
+  typeRef: string;    // e.g., "number", "string", "boolean"
+}
+
+// Webview -> Extension: Request to create a new DMN file
+export interface CreateDmnFileMessage {
+  type: 'createDmnFile';
+  fileName: string;        // e.g., "my-decision" (without .dmn extension)
+  modelName: string;       // e.g., "MyDecision" (for <definitions name="...">)
+  inputs: DmnInputDefinition[];
+}
+
+// Extension -> Webview: Result of DMN file creation
+export interface CreateDmnFileResultMessage {
+  type: 'createDmnFileResult';
+  success: boolean;
+  file?: DmnFileInfo;      // The newly created file info
+  error?: string;
+}
+
+export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage | CreateDmnFileMessage;
 
 // Validation types
 export interface ValidationIssue {

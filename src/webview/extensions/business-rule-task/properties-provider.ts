@@ -12,6 +12,10 @@
 import { TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
+// @ts-expect-error - no type definitions available
+import { html } from 'htm/preact';
+// @ts-expect-error - no type definitions available
+import { useState } from '@bpmn-io/properties-panel/preact/hooks';
 
 import { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
 
@@ -109,8 +113,13 @@ interface PropertiesGroup {
   entries: PropertyEntry[];
 }
 
+interface DmnInputDefinition {
+  name: string;
+  typeRef: string;
+}
+
 interface VscodeApi {
-  postMessage(message: { type: string }): void;
+  postMessage(message: { type: string; fileName?: string; modelName?: string; inputs?: DmnInputDefinition[] }): void;
 }
 
 declare global {
@@ -925,6 +934,47 @@ function migrateLegacyConfig(element: BpmnElement, bpmnFactory: BpmnFactory, com
 }
 
 // ============================================================================
+// Create DMN State Management
+// ============================================================================
+
+// State for create DMN mode (stored globally to persist across re-renders)
+let createDmnState = {
+  isCreating: false,
+  modelName: '',
+  inputs: [] as DmnInputDefinition[],
+  pendingAutoSelect: null as string | null  // Model name to auto-select after creation
+};
+
+// Callback for when DMN creation result is received
+let onCreateDmnResult: ((result: { success: boolean; file?: DmnFileInfo; error?: string }) => void) | null = null;
+
+// Function to handle DMN creation result (called from webview message handler)
+export function handleCreateDmnFileResult(result: { success: boolean; file?: DmnFileInfo; error?: string }): void {
+  console.log('[Business Rule Task] Received createDmnFileResult:', result);
+  if (onCreateDmnResult) {
+    onCreateDmnResult(result);
+  }
+  // Reset state after handling
+  createDmnState.isCreating = false;
+  createDmnState.modelName = '';
+  createDmnState.inputs = [];
+}
+
+// Request DMN file creation
+function requestCreateDmnFile(fileName: string, modelName: string, inputs: DmnInputDefinition[]): void {
+  const vscode = window.vscodeApi;
+  if (vscode) {
+    createDmnState.pendingAutoSelect = modelName;
+    vscode.postMessage({
+      type: 'createDmnFile',
+      fileName,
+      modelName,
+      inputs
+    });
+  }
+}
+
+// ============================================================================
 // Property Panel Components
 // ============================================================================
 
@@ -1099,6 +1149,265 @@ function DmnNamespace(props: { element: BpmnElement; id: string }) {
   });
 }
 
+// Available type options for DMN inputs
+const DMN_TYPE_OPTIONS = [
+  { value: 'string', label: 'String' },
+  { value: 'number', label: 'Number' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'date', label: 'Date' }
+];
+
+// Create DMN Form Component
+function CreateDmnForm(props: { element: BpmnElement; id: string; onCreated: (modelName: string) => void }) {
+  const { element, id, onCreated } = props;
+  const translate = useService('translate') as (text: string) => string;
+  const commandStack = useService('commandStack') as CommandStack;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+
+  const [modelName, setModelName] = useState('');
+  const [inputs, setInputs] = useState<DmnInputDefinition[]>([{ name: '', typeRef: 'string' }]);
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleAddInput = () => {
+    setInputs([...inputs, { name: '', typeRef: 'string' }]);
+  };
+
+  const handleRemoveInput = (index: number) => {
+    if (inputs.length > 1) {
+      setInputs(inputs.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleInputChange = (index: number, field: 'name' | 'typeRef', value: string) => {
+    const newInputs = [...inputs];
+    newInputs[index] = { ...newInputs[index], [field]: value };
+    setInputs(newInputs);
+  };
+
+  const handleSubmit = () => {
+    // Validate
+    if (!modelName.trim()) {
+      setError(translate('Model name is required'));
+      return;
+    }
+
+    const validInputs = inputs.filter(i => i.name.trim());
+    if (validInputs.length === 0) {
+      setError(translate('At least one input with a name is required'));
+      return;
+    }
+
+    // Check for duplicate input names
+    const names = validInputs.map(i => i.name.trim());
+    const uniqueNames = new Set(names);
+    if (uniqueNames.size !== names.length) {
+      setError(translate('Input names must be unique'));
+      return;
+    }
+
+    setError(null);
+    setIsSubmitting(true);
+
+    // Set up callback to handle result
+    onCreateDmnResult = (result) => {
+      setIsSubmitting(false);
+      if (result.success && result.file) {
+        // Reset form
+        setModelName('');
+        setInputs([{ name: '', typeRef: 'string' }]);
+
+        // Notify parent to select the new DMN
+        if (result.file.modelName) {
+          onCreated(result.file.modelName);
+        }
+      } else if (result.error) {
+        setError(result.error);
+      }
+    };
+
+    // Generate file name from model name (convert to kebab-case)
+    const fileName = modelName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+    // Request creation
+    requestCreateDmnFile(fileName, modelName.trim(), validInputs.map(i => ({
+      name: i.name.trim(),
+      typeRef: i.typeRef
+    })));
+  };
+
+  const inputRowStyle = {
+    display: 'flex',
+    gap: '6px',
+    alignItems: 'center',
+    marginBottom: '6px'
+  };
+
+  const sectionStyle = {
+    marginBottom: '12px'
+  };
+
+  const actionsStyle = {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center',
+    marginTop: '12px',
+    paddingTop: '12px',
+    borderTop: '1px solid var(--vscode-widget-border, #454545)'
+  };
+
+  return html`
+    <div class="create-dmn-form">
+      <div class="create-dmn-form-header">
+        <span class="create-dmn-form-title">${translate('New DMN File')}</span>
+        <button
+          type="button"
+          class="cancel-dmn-button"
+          onClick=${() => onCreated('')}
+          title=${translate('Close')}
+        >
+          ×
+        </button>
+      </div>
+
+      <div style=${sectionStyle}>
+        <label class="create-dmn-form-label">${translate('Model Name')}</label>
+        <input
+          type="text"
+          class="create-dmn-form-input"
+          value=${modelName}
+          placeholder=${translate('e.g., CustomerEligibility')}
+          onInput=${(e: Event) => setModelName((e.target as HTMLInputElement).value)}
+          disabled=${isSubmitting}
+        />
+      </div>
+
+      <div style=${sectionStyle}>
+        <label class="create-dmn-form-label">${translate('Inputs')}</label>
+        ${inputs.map((input, index) => html`
+          <div style=${inputRowStyle} key=${index}>
+            <input
+              type="text"
+              class="create-dmn-form-input"
+              style=${{ flex: 1 }}
+              value=${input.name}
+              placeholder=${translate('Input name')}
+              onInput=${(e: Event) => handleInputChange(index, 'name', (e.target as HTMLInputElement).value)}
+              disabled=${isSubmitting}
+            />
+            <select
+              class="create-dmn-form-select"
+              value=${input.typeRef}
+              onChange=${(e: Event) => handleInputChange(index, 'typeRef', (e.target as HTMLSelectElement).value)}
+              disabled=${isSubmitting}
+            >
+              ${DMN_TYPE_OPTIONS.map(opt => html`
+                <option value=${opt.value}>${opt.label}</option>
+              `)}
+            </select>
+            ${inputs.length > 1 && html`
+              <button
+                type="button"
+                class="remove-input-button"
+                onClick=${() => handleRemoveInput(index)}
+                disabled=${isSubmitting}
+                title=${translate('Remove')}
+              >
+                ×
+              </button>
+            `}
+          </div>
+        `)}
+        <button
+          type="button"
+          class="add-input-button"
+          onClick=${handleAddInput}
+          disabled=${isSubmitting}
+        >
+          + ${translate('Add input')}
+        </button>
+      </div>
+
+      ${error && html`<div class="create-dmn-form-error">${error}</div>`}
+
+      <div style=${actionsStyle}>
+        <button
+          type="button"
+          class="submit-dmn-button"
+          onClick=${handleSubmit}
+          disabled=${isSubmitting}
+        >
+          ${isSubmitting ? translate('Creating...') : translate('Create')}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// Create DMN Toggle component - shows a link to expand/collapse the create form
+function CreateDmnToggle(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const translate = useService('translate') as (text: string) => string;
+  const commandStack = useService('commandStack') as CommandStack;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+
+  const [showForm, setShowForm] = useState(false);
+
+  const handleCreated = (modelName: string) => {
+    // Hide the form
+    setShowForm(false);
+
+    // Auto-select the new DMN in the dropdown
+    // This will be handled by setting the model value
+    if (modelName) {
+      // Migrate legacy config if present
+      migrateLegacyConfig(element, bpmnFactory, commandStack);
+
+      // Ensure ioSpecification exists
+      ensureIoSpecification(element, bpmnFactory, commandStack);
+
+      // Find the newly created file to get its namespace
+      const newFile = availableDmnFiles.find(f => f.modelName === modelName);
+
+      // Set the model value
+      setDataInputValue(element, DMN_DATA_INPUTS.MODEL, modelName, bpmnFactory, commandStack);
+
+      // Set the namespace if available
+      if (newFile?.namespace) {
+        setDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE, newFile.namespace, bpmnFactory, commandStack);
+      }
+
+      // Clear decision (user will select after opening the DMN)
+      setDataInputValue(element, DMN_DATA_INPUTS.DECISION, '', bpmnFactory, commandStack);
+    }
+  };
+
+  const containerStyle = {
+    padding: '0 10px 8px 10px'
+  };
+
+  return html`
+    <div style=${containerStyle}>
+      ${!showForm && html`
+        <button
+          type="button"
+          class="create-dmn-button"
+          onClick=${() => setShowForm(true)}
+        >
+          + ${translate('Create New DMN')}
+        </button>
+      `}
+      ${showForm && html`
+        <${CreateDmnForm}
+          element=${element}
+          id="${id}_form"
+          onCreated=${handleCreated}
+        />
+      `}
+    </div>
+  `;
+}
+
 // Modeling interface for triggering changes
 interface Modeling {
   updateProperties: (element: BpmnElement, properties: Record<string, unknown>) => void;
@@ -1180,6 +1489,11 @@ function BusinessRuleTaskEntries(props: { element: BpmnElement }): PropertyEntry
       id: 'dmnFile',
       component: DmnFileSelect,
       isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.MODEL)
+    },
+    {
+      id: 'createDmn',
+      component: CreateDmnToggle,
+      isEdited: () => false
     },
     {
       id: 'dmnDecision',

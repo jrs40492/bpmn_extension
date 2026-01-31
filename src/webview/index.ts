@@ -1,7 +1,7 @@
 import { createModeler, importDiagram, exportDiagram } from './bpmn-modeler';
 import { setupMessageHandler, postMessage } from './message-handler';
 import { initKafkaPanel } from './extensions/kafka-task/kafka-panel';
-import { setAvailableDmnFiles, getAvailableDmnFiles, validateBusinessRuleTasks } from './extensions/business-rule-task';
+import { setAvailableDmnFiles, getAvailableDmnFiles, validateBusinessRuleTasks, handleCreateDmnFileResult } from './extensions/business-rule-task';
 import { initTemplatesPanel } from './features/templates';
 import { initSearchPanel } from './features/search';
 import { initCommentsPanel } from './features/comments';
@@ -354,6 +354,16 @@ async function init(): Promise<void> {
           console.log('[BAMOE Webview] DMN validation issues:', dmnValidationIssues);
           postMessage(vscode, { type: 'validation', issues: dmnValidationIssues });
         }
+        break;
+
+      case 'createDmnFileResult':
+        // Handle DMN file creation result
+        console.log('[BAMOE Webview] Received createDmnFileResult:', message);
+        handleCreateDmnFileResult({
+          success: message.success,
+          file: message.file,
+          error: message.error
+        });
         break;
     }
   });
