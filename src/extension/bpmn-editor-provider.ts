@@ -874,6 +874,10 @@ ${inputEdges}
           <button id="zoom-fit" title="Fit to Viewport">Fit</button>
           <button id="zoom-reset" title="Reset Zoom (100%)">1:1</button>
         </div>
+        <div id="validation-status-bar" class="validation-status-bar" title="Click to open Compliance panel">
+          <span class="validation-icon">✓</span>
+          <span class="validation-text">Validating...</span>
+        </div>
       </div>
       <div id="properties-panel-wrapper" class="properties-panel-wrapper">
         <div id="properties-resize-handle" class="properties-resize-handle"></div>

@@ -119,9 +119,135 @@ html, body {
   font-weight: normal;
 }
 
+/* Validation Status Bar */
+.validation-status-bar {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+  background: var(--vscode-editorWidget-background, #252526);
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--vscode-widget-border, #3c3c3c);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.validation-status-bar:hover {
+  background: var(--vscode-editorWidget-background, #2d2d2d);
+  border-color: var(--vscode-focusBorder, #007acc);
+}
+
+.validation-status-bar .validation-icon {
+  font-size: 14px;
+}
+
+.validation-status-bar .validation-text {
+  color: var(--vscode-foreground, #cccccc);
+}
+
+/* Success state - no issues */
+.validation-status-bar.success {
+  background: #2e7d32;
+  border-color: #388e3c;
+}
+
+.validation-status-bar.success .validation-text {
+  color: white;
+}
+
+/* Warning state - has warnings */
+.validation-status-bar.warning {
+  background: #f57c00;
+  border-color: #fb8c00;
+}
+
+.validation-status-bar.warning .validation-text {
+  color: white;
+}
+
+/* Error state - has errors */
+.validation-status-bar.error {
+  background: #c62828;
+  border-color: #d32f2f;
+}
+
+.validation-status-bar.error .validation-text {
+  color: white;
+}
+
+/* Loading state */
+.validation-status-bar.loading {
+  background: var(--vscode-editorWidget-background, #252526);
+}
+
+.validation-status-bar.loading .validation-icon {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* Hide bpmn.io branding */
 .bjs-powered-by {
   display: none !important;
+}
+
+/* Hide default bpmnlint button - we have our own validation status bar */
+.bjsl-button {
+  display: none !important;
+}
+
+/* Validation overlay badges on elements */
+.validation-overlay {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.validation-overlay .validation-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: bold;
+  color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  animation: badge-pop 0.2s ease-out;
+}
+
+.validation-overlay.error .validation-badge {
+  background: #c62828;
+}
+
+.validation-overlay.warning .validation-badge {
+  background: #f57c00;
+}
+
+@keyframes badge-pop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* Style adjustments for VS Code themes */

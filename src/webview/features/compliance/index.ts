@@ -240,6 +240,23 @@ export function initCompliancePanel(
 }
 
 /**
+ * Run full validation and return violations
+ * This can be called externally to run validation without the panel
+ */
+export function validateAll(
+  elements: unknown[],
+  lintIssues: Record<string, LintIssue[]>,
+  dmnFiles: DmnFileInfo[],
+  level: ComplianceLevel = 'full'
+): ComplianceViolation[] {
+  // Update stored values for internal use
+  storedLintIssues = lintIssues;
+  storedDmnFiles = dmnFiles;
+
+  return runFullValidation(elements, level);
+}
+
+/**
  * Run full validation including all validation types
  */
 function runFullValidation(elements: unknown[], level: ComplianceLevel): ComplianceViolation[] {
@@ -259,6 +276,164 @@ function runFullValidation(elements: unknown[], level: ComplianceLevel): Complia
 
   // 5. Task-specific validation
   violations.push(...validateTasks(elements));
+
+  // 6. Flow connectivity validation (detects broken flows)
+  violations.push(...validateFlowConnectivity(elements));
+
+  return violations;
+}
+
+/**
+ * Validate flow connectivity - detect broken flows where elements
+ * are not properly connected in the process flow.
+ *
+ * This goes beyond the bpmnlint "no-disconnected" rule which only
+ * detects completely isolated elements. This checks for:
+ * - Tasks/Gateways without outgoing flows (dead ends)
+ * - Tasks/Gateways without incoming flows (orphan starts)
+ */
+function validateFlowConnectivity(elements: unknown[]): ComplianceViolation[] {
+  const violations: ComplianceViolation[] = [];
+
+  // Element types that should have both incoming and outgoing flows
+  const flowElementTypes = [
+    'bpmn:Task',
+    'bpmn:UserTask',
+    'bpmn:ServiceTask',
+    'bpmn:ScriptTask',
+    'bpmn:BusinessRuleTask',
+    'bpmn:SendTask',
+    'bpmn:ReceiveTask',
+    'bpmn:ManualTask',
+    'bpmn:SubProcess',
+    'bpmn:CallActivity',
+    'bpmn:ExclusiveGateway',
+    'bpmn:ParallelGateway',
+    'bpmn:InclusiveGateway',
+    'bpmn:EventBasedGateway',
+    'bpmn:ComplexGateway'
+  ];
+
+  // Event types that only need outgoing (start events) or incoming (end events)
+  const startEventTypes = ['bpmn:StartEvent'];
+  const endEventTypes = ['bpmn:EndEvent'];
+
+  // Intermediate events need both incoming and outgoing
+  const intermediateEventTypes = [
+    'bpmn:IntermediateCatchEvent',
+    'bpmn:IntermediateThrowEvent'
+  ];
+
+  for (const element of elements) {
+    const el = element as {
+      id: string;
+      type: string;
+      businessObject?: {
+        $type: string;
+        name?: string;
+        incoming?: unknown[];
+        outgoing?: unknown[];
+        isForCompensation?: boolean;
+        attachedToRef?: unknown;
+        eventDefinitions?: Array<{ $type: string }>;
+      };
+    };
+
+    if (!el.businessObject) continue;
+    const bo = el.businessObject;
+    const elementType = bo.$type;
+    const elementName = bo.name || el.id;
+
+    // Skip compensation activities (they're linked via associations, not sequence flows)
+    if (bo.isForCompensation) continue;
+
+    // Skip boundary events (they're attached to activities)
+    if (elementType === 'bpmn:BoundaryEvent') continue;
+
+    // Skip elements that have compensation event definitions (compensation boundary events)
+    if (bo.eventDefinitions?.some(ed => ed.$type === 'bpmn:CompensateEventDefinition')) continue;
+
+    const incoming = bo.incoming || [];
+    const outgoing = bo.outgoing || [];
+
+    // Check flow elements (tasks, gateways, subprocesses)
+    if (flowElementTypes.includes(elementType)) {
+      if (incoming.length === 0) {
+        violations.push({
+          elementId: el.id,
+          elementType: elementType,
+          rule: 'flow-no-incoming',
+          message: `${formatElementName(elementType)} "${elementName}" has no incoming sequence flow - it cannot be reached in the process`,
+          severity: 'error',
+          category: 'lint'
+        });
+      }
+
+      if (outgoing.length === 0) {
+        violations.push({
+          elementId: el.id,
+          elementType: elementType,
+          rule: 'flow-no-outgoing',
+          message: `${formatElementName(elementType)} "${elementName}" has no outgoing sequence flow - the process will stop here`,
+          severity: 'error',
+          category: 'lint'
+        });
+      }
+    }
+
+    // Check start events (should have outgoing)
+    if (startEventTypes.includes(elementType)) {
+      if (outgoing.length === 0) {
+        violations.push({
+          elementId: el.id,
+          elementType: elementType,
+          rule: 'start-event-no-outgoing',
+          message: `Start Event "${elementName}" has no outgoing sequence flow`,
+          severity: 'error',
+          category: 'lint'
+        });
+      }
+    }
+
+    // Check end events (should have incoming)
+    if (endEventTypes.includes(elementType)) {
+      if (incoming.length === 0) {
+        violations.push({
+          elementId: el.id,
+          elementType: elementType,
+          rule: 'end-event-no-incoming',
+          message: `End Event "${elementName}" has no incoming sequence flow`,
+          severity: 'error',
+          category: 'lint'
+        });
+      }
+    }
+
+    // Check intermediate events (should have both)
+    if (intermediateEventTypes.includes(elementType)) {
+      if (incoming.length === 0) {
+        violations.push({
+          elementId: el.id,
+          elementType: elementType,
+          rule: 'intermediate-event-no-incoming',
+          message: `Intermediate Event "${elementName}" has no incoming sequence flow`,
+          severity: 'error',
+          category: 'lint'
+        });
+      }
+
+      if (outgoing.length === 0) {
+        violations.push({
+          elementId: el.id,
+          elementType: elementType,
+          rule: 'intermediate-event-no-outgoing',
+          message: `Intermediate Event "${elementName}" has no outgoing sequence flow`,
+          severity: 'error',
+          category: 'lint'
+        });
+      }
+    }
+  }
 
   return violations;
 }
