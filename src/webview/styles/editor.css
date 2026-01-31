@@ -136,9 +136,97 @@ html, body {
   color: var(--vscode-foreground, #cccccc) !important;
 }
 
-/* All popup menu entry icons should be visible */
+/* ========================================
+   Colorful Popup Menu Icons
+   ======================================== */
+
+/* Start Events - Green */
+.djs-popup [class*="bpmn-icon-start-event"]::before {
+  color: #52c41a !important;
+}
+
+/* End Events - Red */
+.djs-popup [class*="bpmn-icon-end-event"]::before {
+  color: #ff4d4f !important;
+}
+
+/* Intermediate Catch Events - Orange/Amber */
+.djs-popup [class*="bpmn-icon-intermediate-event-catch"]::before {
+  color: #fa8c16 !important;
+}
+
+/* Intermediate Throw Events - Blue */
+.djs-popup [class*="bpmn-icon-intermediate-event-throw"]::before,
+.djs-popup .bpmn-icon-intermediate-event-none::before {
+  color: #1890ff !important;
+}
+
+/* Boundary Events - Orange (catch) */
+.djs-popup [class*="bpmn-icon-intermediate-event-catch"]::before {
+  color: #fa8c16 !important;
+}
+
+/* Tasks - Blue */
+.djs-popup .bpmn-icon-task::before,
+.djs-popup .bpmn-icon-service-task::before,
+.djs-popup .bpmn-icon-user-task::before,
+.djs-popup .bpmn-icon-script-task::before,
+.djs-popup .bpmn-icon-business-rule-task::before,
+.djs-popup .bpmn-icon-send-task::before,
+.djs-popup .bpmn-icon-receive-task::before,
+.djs-popup .bpmn-icon-manual-task::before,
+.djs-popup .bpmn-icon-call-activity::before {
+  color: #1890ff !important;
+}
+
+/* Gateways - Gold/Yellow */
+.djs-popup [class*="bpmn-icon-gateway"]::before {
+  color: #faad14 !important;
+}
+
+/* Subprocess - Indigo/Purple */
+.djs-popup .bpmn-icon-subprocess-expanded::before,
+.djs-popup .bpmn-icon-subprocess-collapsed::before,
+.djs-popup .bpmn-icon-ad-hoc-marker::before {
+  color: #722ed1 !important;
+}
+
+/* Data Objects/Stores - Cyan */
+.djs-popup .bpmn-icon-data-object::before,
+.djs-popup .bpmn-icon-data-store::before {
+  color: #13c2c2 !important;
+}
+
+/* Participants/Pools - Teal */
+.djs-popup .bpmn-icon-participant::before,
+.djs-popup .bpmn-icon-lane::before {
+  color: #08979c !important;
+}
+
+/* Connections/Flows - Gray */
+.djs-popup .bpmn-icon-connection::before,
+.djs-popup .bpmn-icon-connection-multi::before {
+  color: #8c8c8c !important;
+}
+
+/* Text Annotation - Light Purple */
+.djs-popup .bpmn-icon-text-annotation::before {
+  color: #b37feb !important;
+}
+
+/* Group - Pink */
+.djs-popup .bpmn-icon-group::before {
+  color: #eb2f96 !important;
+}
+
+/* Compensation marker - Orange */
+.djs-popup .bpmn-icon-compensation-marker::before {
+  color: #fa8c16 !important;
+}
+
+/* Default fallback for any uncolored icons */
 .djs-popup .entry [class*="bpmn-icon"]::before {
-  color: var(--vscode-foreground, #cccccc) !important;
+  color: var(--vscode-foreground, #cccccc);
 }
 
 /* Popup header styling (contains toggle buttons for loop/multi-instance) */
