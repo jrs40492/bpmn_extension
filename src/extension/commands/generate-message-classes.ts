@@ -8,20 +8,15 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import {
   getProjectInfo,
-  getJavaClassPath,
-  hasJsonPathDependency,
-  getJsonPathDependencySnippet
+  getJavaClassPath
 } from '../utils/project-utils';
+import { PayloadFieldDefinition } from '../utils/java-generator';
 import {
-  PayloadFieldDefinition,
-  generatePayloadClass,
-  generateDeserializerClass,
-  generateClassName,
-  requiresCustomDeserializer,
-  requiresJsonPathLibrary,
-  generatePayloadExtractorListener,
-  MessageEventConfig
-} from '../utils/java-generator';
+  generateKafkaConsumerClass,
+  generateKafkaConfigSnippet,
+  getConsumerClassName,
+  KafkaConsumerConfig
+} from '../utils/kafka-consumer-generator';
 
 /**
  * Type of message event in the BPMN process
@@ -38,6 +33,7 @@ export interface MessageEventInfo {
   bpmnFile: string;
   cloudEvents?: boolean;
   eventType: MessageEventType;
+  processId?: string;
 }
 
 /**
@@ -45,6 +41,10 @@ export interface MessageEventInfo {
  */
 function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventInfo[] {
   const events: MessageEventInfo[] = [];
+
+  // Extract process ID from BPMN
+  const processMatch = bpmnXml.match(/<bpmn:process[^>]*id="([^"]+)"/i);
+  const processId = processMatch ? processMatch[1] : 'process';
 
   // Find all message event definitions
   // Pattern matches Start/Intermediate Catch events with MessageEventDefinition
@@ -103,7 +103,8 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
         fields,
         bpmnFile,
         cloudEvents,
-        eventType
+        eventType,
+        processId
       });
     }
   }
@@ -150,7 +151,8 @@ function extractMessageEvents(bpmnXml: string, bpmnFile: string): MessageEventIn
         fields,
         bpmnFile,
         cloudEvents,
-        eventType: 'receiveTask'
+        eventType: 'receiveTask',
+        processId
       });
     }
   }
@@ -251,9 +253,8 @@ export async function generateJavaClasses(
   events: MessageEventInfo[],
   packageName: string,
   projectRoot: string
-): Promise<{ generated: string[]; needsJsonPath: boolean }> {
+): Promise<{ generated: string[] }> {
   const generated: string[] = [];
-  let needsJsonPath = false;
 
   // Group events by message name (multiple events might share same message)
   const messageMap = new Map<string, MessageEventInfo>();
@@ -264,67 +265,60 @@ export async function generateJavaClasses(
     }
   }
 
+  // Generate Kafka consumer classes
+  // These intercept messages and start processes with extracted variables
+  const consumerPackage = packageName + '.consumer';
+  const consumerConfigs: KafkaConsumerConfig[] = [];
+
   for (const [messageName, event] of messageMap) {
-    const className = generateClassName(messageName);
+    const config: KafkaConsumerConfig = {
+      messageName,
+      processId: event.processId || 'process',
+      fields: event.fields,
+      cloudEvents: event.cloudEvents !== false
+    };
+    consumerConfigs.push(config);
 
-    // Generate payload class
-    const payloadCode = generatePayloadClass(packageName, className, event.fields);
-    const payloadPath = getJavaClassPath(projectRoot, packageName, className);
+    const consumerCode = generateKafkaConsumerClass(consumerPackage, config);
+    const consumerClassName = getConsumerClassName(messageName);
+    const consumerPath = getJavaClassPath(projectRoot, consumerPackage, consumerClassName);
 
-    // Ensure directory exists
-    const dir = vscode.Uri.file(path.dirname(payloadPath));
+    // Ensure consumer directory exists
+    const consumerDir = vscode.Uri.file(path.dirname(consumerPath));
     try {
-      await vscode.workspace.fs.createDirectory(dir);
+      await vscode.workspace.fs.createDirectory(consumerDir);
     } catch {
       // Directory might already exist
     }
 
-    // Write payload class
     await vscode.workspace.fs.writeFile(
-      vscode.Uri.file(payloadPath),
-      Buffer.from(payloadCode, 'utf-8')
+      vscode.Uri.file(consumerPath),
+      Buffer.from(consumerCode, 'utf-8')
     );
-    generated.push(payloadPath);
+    generated.push(consumerPath);
+  }
 
-    // Generate deserializer if needed
-    if (requiresCustomDeserializer(event.fields)) {
-      // Only set needsJsonPath if deserializer actually uses JsonPath (not just simple field access)
-      if (requiresJsonPathLibrary(event.fields)) {
-        needsJsonPath = true;
-      }
-      const deserializerCode = generateDeserializerClass(packageName, className, event.fields);
-      const deserializerPath = getJavaClassPath(projectRoot, packageName, `${className}Deserializer`);
+  // Generate Kafka config snippet
+  if (consumerConfigs.length > 0) {
+    const configSnippet = generateKafkaConfigSnippet(consumerConfigs);
+    const configPath = path.join(projectRoot, 'src', 'main', 'resources', 'kafka-config.properties.snippet');
 
-      await vscode.workspace.fs.writeFile(
-        vscode.Uri.file(deserializerPath),
-        Buffer.from(deserializerCode, 'utf-8')
-      );
-      generated.push(deserializerPath);
+    // Ensure resources directory exists
+    const resourcesDir = vscode.Uri.file(path.dirname(configPath));
+    try {
+      await vscode.workspace.fs.createDirectory(resourcesDir);
+    } catch {
+      // Directory might already exist
     }
-  }
-
-  // Generate the MessagePayloadExtractor listener
-  // This automatically sets process variables from payload fields
-  const eventConfigs: MessageEventConfig[] = events.map(event => ({
-    eventId: event.eventId,
-    messageName: event.messageName,
-    payloadClassName: `${packageName}.${generateClassName(event.messageName)}`,
-    fields: event.fields,
-    eventType: event.eventType
-  }));
-
-  if (eventConfigs.length > 0) {
-    const listenerCode = generatePayloadExtractorListener(packageName, eventConfigs);
-    const listenerPath = getJavaClassPath(projectRoot, packageName, 'MessagePayloadExtractor');
 
     await vscode.workspace.fs.writeFile(
-      vscode.Uri.file(listenerPath),
-      Buffer.from(listenerCode, 'utf-8')
+      vscode.Uri.file(configPath),
+      Buffer.from(configSnippet, 'utf-8')
     );
-    generated.push(listenerPath);
+    generated.push(configPath);
   }
 
-  return { generated, needsJsonPath };
+  return { generated };
 }
 
 /**
@@ -386,38 +380,11 @@ export async function generateMessageClasses(): Promise<void> {
       progress.report({ message: 'Generating Java classes...' });
 
       // Generate classes
-      const { generated, needsJsonPath } = await generateJavaClasses(
+      const { generated } = await generateJavaClasses(
         events,
         projectInfo.basePackage,
         projectInfo.projectRoot
       );
-
-      // Update BPMN files with itemDefinition references
-      progress.report({ message: 'Updating BPMN files...' });
-
-      for (const event of events) {
-        await updateBpmnWithItemDefinition(event, projectInfo.basePackage);
-      }
-
-      // Check if json-path dependency is needed
-      if (needsJsonPath) {
-        const hasJsonPath = await hasJsonPathDependency();
-        if (!hasJsonPath) {
-          const action = await vscode.window.showWarningMessage(
-            'Some payload fields use nested JSONPath expressions. Add json-path dependency to pom.xml?',
-            'Show Snippet',
-            'Dismiss'
-          );
-
-          if (action === 'Show Snippet') {
-            const doc = await vscode.workspace.openTextDocument({
-              content: getJsonPathDependencySnippet(),
-              language: 'xml'
-            });
-            await vscode.window.showTextDocument(doc);
-          }
-        }
-      }
 
       // Show success message
       const relativePaths = generated.map(p =>

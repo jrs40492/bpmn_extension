@@ -1,0 +1,11 @@
+# Kafka Configuration for BAMOE Message Consumers
+# Copy these properties to your application.properties file
+
+# Kafka broker connection
+kafka.bootstrap.servers=localhost:9092
+
+# Channel configuration for renewals
+mp.messaging.incoming.renewals.connector=smallrye-kafka
+mp.messaging.incoming.renewals.topic=renewals
+mp.messaging.incoming.renewals.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
+mp.messaging.incoming.renewals.auto.offset.reset=earliest
