@@ -1,6 +1,5 @@
 import { createModeler, importDiagram, exportDiagram } from './bpmn-modeler';
 import { setupMessageHandler, postMessage } from './message-handler';
-import { initRestPanel } from './extensions/rest-task/rest-panel';
 import { initKafkaPanel } from './extensions/kafka-task/kafka-panel';
 import { setAvailableDmnFiles, getAvailableDmnFiles, validateBusinessRuleTasks } from './extensions/business-rule-task';
 import { initTemplatesPanel } from './features/templates';
@@ -150,12 +149,8 @@ async function init(): Promise<void> {
   // Set up zoom controls
   setupZoomControls(modeler);
 
-  // Initialize REST configuration panel
-  const modeling = modeler.get('modeling');
-  const bpmnFactory = modeler.get('bpmnFactory');
-  initRestPanel(eventBus, modeling, bpmnFactory);
-
   // Initialize Kafka configuration panel
+  const modeling = modeler.get('modeling');
   initKafkaPanel(eventBus, modeling);
 
   // Initialize Phase 3 features
