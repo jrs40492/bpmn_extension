@@ -209,6 +209,7 @@ html, body {
 
 /* Validation overlay badges on elements */
 .validation-overlay {
+  position: relative;
   pointer-events: auto;
   cursor: pointer;
 }
@@ -234,6 +235,60 @@ html, body {
 
 .validation-overlay.warning .validation-badge {
   background: #f57c00;
+}
+
+/* Validation tooltip on hover */
+.validation-tooltip {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 200px;
+  max-width: 350px;
+  background: var(--vscode-editorWidget-background, #252526);
+  border: 1px solid var(--vscode-widget-border, #454545);
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  padding: 8px 0;
+  z-index: 1000;
+  font-size: 12px;
+  text-align: left;
+}
+
+.validation-overlay:hover .validation-tooltip {
+  display: block;
+}
+
+.validation-tooltip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 12px;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.validation-tooltip-item + .validation-tooltip-item {
+  border-top: 1px solid var(--vscode-widget-border, #3c3c3c);
+}
+
+.validation-tooltip-icon {
+  flex-shrink: 0;
+  font-weight: bold;
+}
+
+.validation-tooltip-item.error .validation-tooltip-icon {
+  color: #f44336;
+}
+
+.validation-tooltip-item.warning .validation-tooltip-icon {
+  color: #ff9800;
+}
+
+.validation-tooltip-message {
+  flex: 1;
+  line-height: 1.4;
+  word-wrap: break-word;
 }
 
 @keyframes badge-pop {

@@ -42,7 +42,7 @@
         </bamoe:comments>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_12vdxhy</bpmn:incoming>
-      <bpmn:outgoing>Flow_0mftpue</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0ip9sit</bpmn:outgoing>
       <bpmn:script>kcontext.setVariable("count", 100);
 </bpmn:script>
     </bpmn:scriptTask>
@@ -125,7 +125,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
     <bpmn:task id="Activity_1qduwyy" name="REST API Call" drools:taskName="Rest">
-      <bpmn:incoming>Flow_0mftpue</bpmn:incoming>
+      <bpmn:incoming>Flow_0ip9sit</bpmn:incoming>
       <bpmn:outgoing>Flow_17xfgg2</bpmn:outgoing>
       <bpmn:ioSpecification>
         <bpmn:dataInput id="Activity_1qduwyy_UrlInput" name="Url" drools:dtype="java.lang.String" />
@@ -232,7 +232,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       </bpmn:dataOutputAssociation>
     </bpmn:task>
     <bpmn:sequenceFlow id="Flow_17xfgg2" sourceRef="Activity_1qduwyy" targetRef="Activity_1im8ao1" />
-    <bpmn:sequenceFlow id="Flow_0mftpue" sourceRef="Activity_0as8h27" targetRef="Activity_1qduwyy" />
+    <bpmn:sequenceFlow id="Flow_0ip9sit" sourceRef="Activity_0as8h27" targetRef="Activity_1qduwyy" />
     <bpmn:association id="Association_0scc7df" associationDirection="One" sourceRef="Event_0pll7s0" targetRef="Activity_02jwcaw" />
   </bpmn:process>
   <bpmn:itemDefinition id="_restResultItem" structureRef="java.util.Map" />
@@ -301,13 +301,13 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <di:waypoint x="540" y="210" />
         <di:waypoint x="600" y="210" />
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0mftpue_di" bpmnElement="Flow_0mftpue">
-        <di:waypoint x="390" y="210" />
-        <di:waypoint x="440" y="210" />
-      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
         <di:waypoint x="340" y="268" />
         <di:waypoint x="340" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0ip9sit_di" bpmnElement="Flow_0ip9sit">
+        <di:waypoint x="390" y="210" />
+        <di:waypoint x="440" y="210" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

@@ -178,35 +178,26 @@ async function init(): Promise<void> {
       const severityClass = hasError ? 'error' : 'warning';
       const count = elementViolations.length;
 
-      // Create tooltip content
-      const tooltipLines = elementViolations.map(v =>
-        `${v.severity === 'error' ? '✕' : '⚠'} ${v.message}`
-      ).join('\n');
+      // Create tooltip content as HTML list
+      const tooltipItems = elementViolations.map(v =>
+        `<div class="validation-tooltip-item ${v.severity}">
+          <span class="validation-tooltip-icon">${v.severity === 'error' ? '✕' : '⚠'}</span>
+          <span class="validation-tooltip-message">${v.message}</span>
+        </div>`
+      ).join('');
 
-      // Create overlay HTML
+      // Create overlay HTML with hover tooltip
       const overlayHtml = document.createElement('div');
       overlayHtml.className = `validation-overlay ${severityClass}`;
-      overlayHtml.innerHTML = `<span class="validation-badge">${count}</span>`;
-      overlayHtml.title = tooltipLines;
+      overlayHtml.innerHTML = `
+        <span class="validation-badge">${count}</span>
+        <div class="validation-tooltip">${tooltipItems}</div>
+      `;
 
-      // Add click handler to select element and open compliance panel
-      overlayHtml.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // Select the element
-        const el = elementRegistry.get(elementId);
-        if (el) {
-          selection.select(el);
-        }
-        // Open compliance panel
-        if (compliancePanelRef) {
-          compliancePanelRef.show();
-        }
-      });
-
-      // Add overlay to top-right corner of element
+      // Add overlay to top-right corner of element (matching comment bubble positioning)
       try {
         overlays.add(elementId, VALIDATION_OVERLAY_TYPE, {
-          position: { top: -8, right: -8 },
+          position: { top: -10, right: 8 },
           html: overlayHtml
         });
       } catch (_e) {
