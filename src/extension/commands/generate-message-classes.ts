@@ -13,7 +13,6 @@ import {
 import { PayloadFieldDefinition } from '../utils/java-generator';
 import {
   generateKafkaConsumerClass,
-  generateKafkaConfigSnippet,
   getConsumerClassName,
   KafkaConsumerConfig
 } from '../utils/kafka-consumer-generator';
@@ -268,7 +267,6 @@ export async function generateJavaClasses(
   // Generate Kafka consumer classes
   // These intercept messages and start processes with extracted variables
   const consumerPackage = packageName + '.consumer';
-  const consumerConfigs: KafkaConsumerConfig[] = [];
 
   for (const [messageName, event] of messageMap) {
     const config: KafkaConsumerConfig = {
@@ -277,7 +275,6 @@ export async function generateJavaClasses(
       fields: event.fields,
       cloudEvents: event.cloudEvents !== false
     };
-    consumerConfigs.push(config);
 
     const consumerCode = generateKafkaConsumerClass(consumerPackage, config);
     const consumerClassName = getConsumerClassName(messageName);
@@ -296,26 +293,6 @@ export async function generateJavaClasses(
       Buffer.from(consumerCode, 'utf-8')
     );
     generated.push(consumerPath);
-  }
-
-  // Generate Kafka config snippet
-  if (consumerConfigs.length > 0) {
-    const configSnippet = generateKafkaConfigSnippet(consumerConfigs);
-    const configPath = path.join(projectRoot, 'src', 'main', 'resources', 'kafka-config.properties.snippet');
-
-    // Ensure resources directory exists
-    const resourcesDir = vscode.Uri.file(path.dirname(configPath));
-    try {
-      await vscode.workspace.fs.createDirectory(resourcesDir);
-    } catch {
-      // Directory might already exist
-    }
-
-    await vscode.workspace.fs.writeFile(
-      vscode.Uri.file(configPath),
-      Buffer.from(configSnippet, 'utf-8')
-    );
-    generated.push(configPath);
   }
 
   return { generated };

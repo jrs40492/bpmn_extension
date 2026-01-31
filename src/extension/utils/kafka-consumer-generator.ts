@@ -24,10 +24,10 @@ export function getConsumerClassName(messageName: string): string {
 }
 
 /**
- * Generate the channel name from the message name (lowercase, kebab-case friendly)
+ * Get the channel name from the message name (preserves original case)
  */
 export function getChannelName(messageName: string): string {
-  return messageName.toLowerCase().replace(/[_\s]+/g, '-');
+  return messageName;
 }
 
 /**
@@ -132,6 +132,7 @@ export function generateKafkaConsumerClass(
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import io.smallrye.common.annotation.Blocking;
 import org.eclipse.microprofile.reactive.messaging.Incoming;
 import org.eclipse.microprofile.reactive.messaging.Message;
 import org.slf4j.Logger;
@@ -159,6 +160,7 @@ public class ${className} {
     org.kie.kogito.process.Processes processes;
 
     @Incoming("${channelName}")
+    @Blocking
     public CompletionStage<Void> consume(Message<String> message) {
         try {
             String payload = message.getPayload();
@@ -170,7 +172,11 @@ public class ${className} {
 ${fieldExtractions}
 
             LOG.info("Starting process ${config.processId} with variables: {}", variables.keySet());
-            processes.processById("${config.processId}").createInstance(variables).start();
+            @SuppressWarnings("rawtypes")
+            org.kie.kogito.process.Process process = processes.processById("${config.processId}");
+            org.kie.kogito.Model model = (org.kie.kogito.Model) process.createModel();
+            model.fromMap(variables);
+            ((org.kie.kogito.process.ProcessInstance<?>) process.createInstance(model)).start("${channelName}", null);
 
             return message.ack();
         } catch (Exception e) {
@@ -182,25 +188,3 @@ ${fieldExtractions}
 `;
 }
 
-/**
- * Generate application.properties snippet for Kafka configuration
- */
-export function generateKafkaConfigSnippet(configs: KafkaConsumerConfig[]): string {
-  const channelConfigs = configs.map(config => {
-    const channelName = getChannelName(config.messageName);
-    return `# Channel configuration for ${config.messageName}
-mp.messaging.incoming.${channelName}.connector=smallrye-kafka
-mp.messaging.incoming.${channelName}.topic=${channelName}
-mp.messaging.incoming.${channelName}.value.deserializer=org.apache.kafka.common.serialization.StringDeserializer
-mp.messaging.incoming.${channelName}.auto.offset.reset=earliest`;
-  }).join('\n\n');
-
-  return `# Kafka Configuration for BAMOE Message Consumers
-# Copy these properties to your application.properties file
-
-# Kafka broker connection
-kafka.bootstrap.servers=localhost:9092
-
-${channelConfigs}
-`;
-}

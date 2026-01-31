@@ -9,13 +9,9 @@
   <bpmn:itemDefinition id="_hasUserIdItem" structureRef="java.lang.Boolean" />
   <bpmn:message id="Message_Event_0tyznr4" name="requestRenewal" itemRef="_Message_Event_0tyznr4_Item" />
   <bpmn:message id="Message_Event_1n6xats" name="receiveRenewalData" itemRef="_Message_Event_1n6xats_Item" />
-  <bpmn:itemDefinition id="_Event_1nyzw2y_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_Event_1nyzw2y_userIdItem" structureRef="java.lang.String" />
   <bpmn:itemDefinition id="_Message_Event_1pq2x0u_Item" structureRef="java.lang.Object" />
-  <bpmn:message id="Message_Event_1pq2x0u" name="renewals" itemRef="_Message_Event_1pq2x0u_Item" />
-  <bpmn:itemDefinition id="_message_Event_1pq2x0uItem" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_1pq2x0u" name="priorAuthTopic" itemRef="_Message_Event_1pq2x0u_Item" />
   <bpmn:itemDefinition id="_Event_1pq2x0u_OutputItem" structureRef="java.lang.Object" />
-  <bpmn:itemDefinition id="_message_Event_1pq2x0uItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1pq2x0u_userIdItem" structureRef="java.lang.String" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
@@ -28,9 +24,7 @@
     <bpmn:property id="hasUserId" itemSubjectRef="_hasUserIdItem" name="hasUserId" />
     <bpmn:property id="message_Event_0tyznr4" name="message_Event_0tyznr4" />
     <bpmn:property id="message_Event_1n6xats" name="message_Event_1n6xats" />
-    <bpmn:property id="message_Event_1nyzw2y" name="message_Event_1nyzw2y" />
-    <bpmn:property id="message_Event_1pq2x0u" itemSubjectRef="_message_Event_1pq2x0uItem" name="message_Event_1pq2x0u" />
-    <bpmn:property id="message_Event_1pq2x0u" itemSubjectRef="_message_Event_1pq2x0uItem" name="message_Event_1pq2x0u" />
+    <bpmn:property id="message_Event_1pq2x0u" name="message_Event_1pq2x0u" />
     <bpmn:endEvent id="Event_0b78j8f">
       <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
     </bpmn:endEvent>
@@ -139,7 +133,7 @@
     <bpmn:startEvent id="Event_1pq2x0u">
       <bpmn:extensionElements>
         <msgevt:payloadDefinition>
-          <msgevt:payloadField name="userId" expression="$.data.$.data.userId" />
+          <msgevt:payloadField name="userId" expression="$.data.userId" />
         </msgevt:payloadDefinition>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_099pxwt</bpmn:outgoing>
