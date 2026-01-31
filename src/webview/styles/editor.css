@@ -121,6 +121,75 @@ html, body {
   background: var(--vscode-list-hoverBackground, #2a2d2e) !important;
 }
 
+/* Popup menu icons - ensure visibility in dark mode */
+.djs-popup .entry .djs-popup-label {
+  color: var(--vscode-foreground, #cccccc) !important;
+}
+
+/* Multi-instance and loop marker icons in popup (top right of replace menu) */
+.djs-popup .bpmn-icon-parallel-mi-marker::before,
+.djs-popup .bpmn-icon-sequential-mi-marker::before,
+.djs-popup .bpmn-icon-loop-marker::before,
+.djs-popup [class*="bpmn-icon-loop"]::before,
+.djs-popup [class*="bpmn-icon-parallel"]::before,
+.djs-popup [class*="bpmn-icon-sequential"]::before {
+  color: var(--vscode-foreground, #cccccc) !important;
+}
+
+/* All popup menu entry icons should be visible */
+.djs-popup .entry [class*="bpmn-icon"]::before {
+  color: var(--vscode-foreground, #cccccc) !important;
+}
+
+/* Popup header styling (contains toggle buttons for loop/multi-instance) */
+.djs-popup-header {
+  background: var(--vscode-sideBarSectionHeader-background, #37373d) !important;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c) !important;
+}
+
+/* Popup header title text */
+.djs-popup-header .djs-popup-title {
+  color: var(--vscode-foreground, #cccccc) !important;
+}
+
+/* Toggle buttons in popup header (loop, parallel-mi, sequential-mi) */
+.djs-popup-header .entry,
+.djs-popup-header button,
+.djs-popup-header .action {
+  color: var(--vscode-foreground, #cccccc) !important;
+  background: transparent !important;
+}
+
+.djs-popup-header .entry:hover,
+.djs-popup-header button:hover,
+.djs-popup-header .action:hover {
+  background: var(--vscode-list-hoverBackground, #2a2d2e) !important;
+}
+
+/* Icons in popup header buttons */
+.djs-popup-header [class*="bpmn-icon"]::before {
+  color: var(--vscode-foreground, #cccccc) !important;
+}
+
+/* Active/selected toggle buttons in popup header */
+.djs-popup-header .entry.active,
+.djs-popup-header button.active,
+.djs-popup-header .action.active {
+  background: var(--vscode-button-background, #0e639c) !important;
+  color: var(--vscode-button-foreground, #ffffff) !important;
+}
+
+.djs-popup-header .entry.active [class*="bpmn-icon"]::before,
+.djs-popup-header button.active [class*="bpmn-icon"]::before,
+.djs-popup-header .action.active [class*="bpmn-icon"]::before {
+  color: var(--vscode-button-foreground, #ffffff) !important;
+}
+
+/* Popup body (list of entries) */
+.djs-popup-body {
+  background: var(--vscode-editorWidget-background, #252526) !important;
+}
+
 /* Properties panel styling */
 .bpp-properties-panel {
   background: var(--vscode-sideBar-background, #252526) !important;
