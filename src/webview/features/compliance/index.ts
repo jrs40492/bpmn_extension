@@ -125,6 +125,9 @@ const LEVEL_DESCRIPTIONS: Record<ComplianceLevel, string> = {
 let currentLevel: ComplianceLevel = 'full';
 let storedLintIssues: Record<string, LintIssue[]> = {};
 let storedDmnFiles: DmnFileInfo[] = [];
+// Track whether we've received DMN files list at least once
+// This prevents false validation errors on initial load before DMN files are fetched
+let dmnFilesReceived = false;
 
 /**
  * Store lint issues for later use in validation
@@ -138,6 +141,7 @@ export function setLintIssues(issues: Record<string, LintIssue[]>): void {
  */
 export function setDmnFilesForCompliance(files: DmnFileInfo[]): void {
   storedDmnFiles = files;
+  dmnFilesReceived = true;
 }
 
 export function initCompliancePanel(
@@ -235,6 +239,7 @@ export function initCompliancePanel(
     },
     setDmnFiles: (files: DmnFileInfo[]) => {
       storedDmnFiles = files;
+      dmnFilesReceived = true;
     }
   };
 }
@@ -521,6 +526,12 @@ function convertLintIssuesToViolations(lintIssues: Record<string, LintIssue[]>):
  */
 function validateDmnReferences(elements: unknown[], dmnFiles: DmnFileInfo[]): ComplianceViolation[] {
   const violations: ComplianceViolation[] = [];
+
+  // Skip DMN validation if we haven't received the DMN files list yet
+  // This prevents false errors on initial load before the extension sends DMN files
+  if (!dmnFilesReceived) {
+    return violations;
+  }
 
   for (const element of elements) {
     const el = element as {

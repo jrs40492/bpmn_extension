@@ -532,6 +532,10 @@ async function init(): Promise<void> {
         // Update compliance panel with DMN files for validation
         compliancePanel.setDmnFiles(message.files);
 
+        // Re-run full validation now that DMN files are available
+        // This updates the status bar and element overlays
+        runValidationDebounced();
+
         // Run DMN reference validation
         const dmnValidationIssues = validateBusinessRuleTasks(
           elementRegistry as Parameters<typeof validateBusinessRuleTasks>[0],
