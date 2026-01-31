@@ -1,6 +1,6 @@
 /**
  * Event Colors Extension Module
- * Colors BPMN events (start, end, intermediate) to match palette icons
+ * Colors BPMN events (start, end, intermediate, boundary) to match palette icons
  */
 
 // Color constants matching the palette icons
@@ -40,6 +40,7 @@ function getEventColor(element: Element): string | null {
   if (type === 'bpmn:EndEvent') return COLORS.endEvent;
   if (type === 'bpmn:IntermediateThrowEvent') return COLORS.intermediateThrowEvent;
   if (type === 'bpmn:IntermediateCatchEvent') return COLORS.intermediateCatchEvent;
+  if (type === 'bpmn:BoundaryEvent') return COLORS.intermediateCatchEvent; // Boundary events are catch events
 
   return null;
 }
