@@ -42,7 +42,7 @@ export interface DmnFilesMessage {
   files: DmnFileInfo[];
 }
 
-export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage;
+export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage;
 
 // Webview -> Extension messages
 export interface ReadyMessage {
@@ -63,7 +63,18 @@ export interface RequestDmnFilesMessage {
   type: 'requestDmnFiles';
 }
 
-export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage;
+export interface GenerateMessageClassesMessage {
+  type: 'generateMessageClasses';
+}
+
+export interface GenerateMessageClassesResultMessage {
+  type: 'generateMessageClassesResult';
+  success: boolean;
+  generatedFiles?: string[];
+  error?: string;
+}
+
+export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage;
 
 // Validation types
 export interface ValidationIssue {

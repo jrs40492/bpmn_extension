@@ -114,6 +114,26 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
               files: dmnFiles
             });
             break;
+
+          case 'generateMessageClasses':
+            // Generate message classes for the current BPMN file
+            console.log('[BAMOE] Received generateMessageClasses message');
+            try {
+              const result = await this.generateMessageClassesForDocument(document);
+              this.postMessage(webviewPanel.webview, {
+                type: 'generateMessageClassesResult',
+                success: true,
+                generatedFiles: result.generated
+              });
+            } catch (error) {
+              console.error('[BAMOE] Message class generation failed:', error);
+              this.postMessage(webviewPanel.webview, {
+                type: 'generateMessageClassesResult',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+            }
+            break;
         }
       }
     );
@@ -184,6 +204,56 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
       documentSaveHandler.dispose();
       this.diagnosticCollection.delete(document.uri);
     });
+  }
+
+  /**
+   * Generate Java message classes for a specific document (triggered from webview)
+   * Shows VS Code notification with results
+   */
+  private async generateMessageClassesForDocument(document: vscode.TextDocument): Promise<{ generated: string[] }> {
+    // Extract message events from the BPMN
+    const bpmnXml = document.getText();
+    const events = extractMessageEventsFromContent(bpmnXml, document.uri.fsPath);
+
+    if (events.length === 0) {
+      vscode.window.showInformationMessage(
+        'No message events with payload definitions found. Define payload fields on Message Events first.'
+      );
+      return { generated: [] };
+    }
+
+    // Get project info
+    const projectInfo = await getProjectInfo();
+
+    if (!projectInfo.projectRoot) {
+      throw new Error('No workspace folder found. Please open a folder first.');
+    }
+
+    // Generate classes
+    const { generated } = await generateJavaClasses(
+      events,
+      projectInfo.basePackage,
+      projectInfo.projectRoot
+    );
+
+    if (generated.length > 0) {
+      const relativePaths = generated.map(p =>
+        vscode.workspace.asRelativePath(p, false)
+      );
+      vscode.window.showInformationMessage(
+        `Generated ${generated.length} Java class(es): ${relativePaths.join(', ')}`,
+        'Open Folder'
+      ).then(action => {
+        if (action === 'Open Folder' && generated.length > 0) {
+          const folderPath = require('path').dirname(generated[0]);
+          vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(folderPath));
+        }
+      });
+    } else {
+      vscode.window.showInformationMessage('No message classes needed to be generated.');
+    }
+
+    return { generated };
   }
 
   /**

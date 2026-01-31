@@ -22,13 +22,6 @@
     "diagram",
     "modeler"
   ],
-  "activationEvents": [
-    "onCommand:bamoe.newBpmnFile",
-    "onCommand:bamoe.newDmnFile",
-    "onCommand:bamoe.generateMessageClasses",
-    "onCustomEditor:bamoe.bpmnEditor",
-    "onCustomEditor:bamoe.dmnEditor"
-  ],
   "main": "./dist/extension/extension.js",
   "contributes": {
     "customEditors": [
@@ -67,11 +60,6 @@
       {
         "command": "bamoe.showKeyboardShortcuts",
         "title": "Show Keyboard Shortcuts",
-        "category": "BPMN"
-      },
-      {
-        "command": "bamoe.generateMessageClasses",
-        "title": "Generate Message Classes",
         "category": "BPMN"
       }
     ],

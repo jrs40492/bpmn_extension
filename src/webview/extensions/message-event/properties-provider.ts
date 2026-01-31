@@ -1290,6 +1290,7 @@ function MessageEventEntries(props: { element: BpmnElement }): PropertyEntry[] {
         return payloadDef?.cloudEvents === false;
       }
     });
+
   }
 
   return entries;
