@@ -2152,6 +2152,37 @@ html, body {
   z-index: 500;
 }
 
+/* Comment indicator on BPMN elements */
+.comment-indicator {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px 2px 4px;
+  background: var(--vscode-editorInfo-foreground, #3794ff);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  pointer-events: auto;
+}
+
+.comment-indicator:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.4);
+}
+
+.comment-indicator-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.comment-indicator-count {
+  line-height: 1;
+}
+
 /* ========================================
    Deploy Panel (Phase 4)
    ======================================== */

@@ -344,8 +344,16 @@ async function init(): Promise<void> {
     selection as Parameters<typeof initSearchPanel>[2]
   );
 
-  // Comments panel
-  const commentsPanel = initCommentsPanel(eventBus as Parameters<typeof initCommentsPanel>[0]);
+  // Comments panel - pass bpmn-js services for persisting comments to BPMN elements
+  const bpmnFactory = modeler.get('bpmnFactory');
+  const commandStack = modeler.get('commandStack');
+  const commentsPanel = initCommentsPanel(
+    eventBus as Parameters<typeof initCommentsPanel>[0],
+    bpmnFactory as Parameters<typeof initCommentsPanel>[1],
+    commandStack as Parameters<typeof initCommentsPanel>[2],
+    elementRegistry as Parameters<typeof initCommentsPanel>[3],
+    overlays as Parameters<typeof initCommentsPanel>[4]
+  );
 
   // Diff panel
   const diffPanel = initDiffPanel(
