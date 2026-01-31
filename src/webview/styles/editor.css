@@ -568,12 +568,20 @@ html, body {
 }
 
 .bio-properties-panel-group-header {
-  background: var(--vscode-sideBar-background, #252526) !important;
-  color: var(--vscode-foreground, #cccccc) !important;
+  background: var(--vscode-sideBarSectionHeader-background, #37373d) !important;
+  color: var(--vscode-sideBarSectionHeader-foreground, #cccccc) !important;
+  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c) !important;
+  border-left: 3px solid var(--vscode-activityBarBadge-background, #007acc) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+  letter-spacing: 0.5px !important;
+  padding-left: 8px !important;
 }
 
 .bio-properties-panel-group-header:hover {
   background: var(--vscode-list-hoverBackground, #2a2d2e) !important;
+  border-left-color: var(--vscode-focusBorder, #007fd4) !important;
 }
 
 .bio-properties-panel-group-entries {
