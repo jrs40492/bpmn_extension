@@ -149,6 +149,9 @@ async function init(): Promise<void> {
   // Set up zoom controls
   setupZoomControls(modeler);
 
+  // Set up properties panel resize
+  setupPropertiesPanelResize();
+
   // Initialize Kafka configuration panel
   const modeling = modeler.get('modeling');
   initKafkaPanel(eventBus, modeling);
@@ -397,6 +400,55 @@ function setupZoomControls(modeler: ReturnType<typeof createModeler>): void {
 
   zoomReset?.addEventListener('click', () => {
     canvas.zoom(1);
+  });
+}
+
+// Set up properties panel resize
+function setupPropertiesPanelResize(): void {
+  const wrapper = document.getElementById('properties-panel-wrapper');
+  const handle = document.getElementById('properties-resize-handle');
+
+  if (!wrapper || !handle) {
+    return;
+  }
+
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  const minWidth = 200;
+  const maxWidth = 600;
+
+  handle.addEventListener('mousedown', (e: MouseEvent) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = wrapper.offsetWidth;
+    handle.classList.add('resizing');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e: MouseEvent) => {
+    if (!isResizing) return;
+
+    // Calculate new width (dragging left increases width, dragging right decreases)
+    const deltaX = startX - e.clientX;
+    let newWidth = startWidth + deltaX;
+
+    // Clamp to min/max
+    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+
+    wrapper.style.width = `${newWidth}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      handle.classList.remove('resizing');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
   });
 }
 

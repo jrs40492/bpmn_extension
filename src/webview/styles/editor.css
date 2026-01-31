@@ -35,12 +35,38 @@ html, body {
 }
 
 /* Properties Panel */
-.properties-panel {
+.properties-panel-wrapper {
+  display: flex;
+  height: 100%;
   width: 300px;
+  min-width: 200px;
+  max-width: 600px;
+}
+
+.properties-panel-wrapper:has(.properties-panel:empty) {
+  display: none;
+}
+
+.properties-resize-handle {
+  width: 4px;
+  height: 100%;
+  background: var(--vscode-panel-border, #3c3c3c);
+  cursor: ew-resize;
+  flex-shrink: 0;
+  transition: background 0.15s ease;
+}
+
+.properties-resize-handle:hover,
+.properties-resize-handle.resizing {
+  background: var(--vscode-focusBorder, #007acc);
+}
+
+.properties-panel {
+  flex: 1;
   height: 100%;
   overflow-y: auto;
   background: var(--vscode-sideBar-background, #252526);
-  border-left: 1px solid var(--vscode-panel-border, #3c3c3c);
+  min-width: 0;
 }
 
 .properties-panel:empty {

@@ -875,7 +875,10 @@ ${inputEdges}
           <button id="zoom-reset" title="Reset Zoom (100%)">1:1</button>
         </div>
       </div>
-      <div id="properties-panel" class="properties-panel"></div>
+      <div id="properties-panel-wrapper" class="properties-panel-wrapper">
+        <div id="properties-resize-handle" class="properties-resize-handle"></div>
+        <div id="properties-panel" class="properties-panel"></div>
+      </div>
     </div>
   </div>
   <script nonce="${nonce}" src="${scriptUri}"></script>
