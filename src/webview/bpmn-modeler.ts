@@ -224,7 +224,12 @@ export function createModeler(
       msgevt: messageEventDescriptor
     },
     propertiesPanel: propertiesContainer ? {
-      parent: propertiesContainer
+      parent: propertiesContainer,
+      layout: {
+        groups: {
+          'rest-configuration': { open: true }
+        }
+      }
     } : undefined,
     minimap: {
       open: false

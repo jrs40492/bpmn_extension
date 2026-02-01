@@ -54,7 +54,7 @@ interface ModdleElement {
  * - Headers: Custom headers as JSON object
  */
 export const REST_PARAMS = {
-  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass', 'HandleResponseErrors'],
+  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],
   // Note: jBPM RESTWorkItemHandler uses 'Status' (not 'StatusCode') and it's a String type
   outputs: ['Result', 'Status', 'StatusMsg']
 } as const;
@@ -71,8 +71,7 @@ const DEFAULT_CONFIG: Record<string, string> = {
   Content: '',
   ConnectTimeout: '30000',
   ReadTimeout: '30000',
-  ResultClass: '',
-  HandleResponseErrors: 'false'
+  ResultClass: ''
 };
 
 export default class RestTaskPaletteProvider {
@@ -255,46 +254,6 @@ export function isRestTask(element: any): boolean {
   // Check for drools:taskName="Rest"
   const taskName = bo.get?.('drools:taskName') || bo['drools:taskName'];
   return taskName === 'Rest';
-}
-
-/**
- * Check if a REST task already has a boundary error event attached
- */
-export function hasBoundaryErrorEvent(element: any): boolean {
-  if (!element?.attachers) return false;
-
-  for (const attacher of element.attachers) {
-    if (attacher.type === 'bpmn:BoundaryEvent') {
-      const bo = attacher.businessObject;
-      const eventDefs = bo?.eventDefinitions || [];
-      for (const eventDef of eventDefs) {
-        if (eventDef.$type === 'bpmn:ErrorEventDefinition') {
-          return true;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-/**
- * Get the boundary error event attached to a REST task (if any)
- */
-export function getBoundaryErrorEvent(element: any): any | null {
-  if (!element?.attachers) return null;
-
-  for (const attacher of element.attachers) {
-    if (attacher.type === 'bpmn:BoundaryEvent') {
-      const bo = attacher.businessObject;
-      const eventDefs = bo?.eventDefinitions || [];
-      for (const eventDef of eventDefs) {
-        if (eventDef.$type === 'bpmn:ErrorEventDefinition') {
-          return attacher;
-        }
-      }
-    }
-  }
-  return null;
 }
 
 /**

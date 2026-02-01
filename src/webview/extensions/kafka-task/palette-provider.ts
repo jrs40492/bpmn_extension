@@ -120,53 +120,6 @@ export default class KafkaTaskPaletteProvider {
       create.start(event, shape);
     }
 
-    function createKafkaConsumerTask(event: Event): void {
-      // Let bpmn-js create the shape normally - this ensures proper ID assignment
-      const shape = elementFactory.createShape({
-        type: 'bpmn:ReceiveTask'
-      }) as Shape;
-
-      const businessObject = shape.businessObject;
-
-      // Set task name AFTER creation
-      businessObject.name = 'Kafka Consume';
-
-      // Create the Kafka task configuration using moddle
-      const kafkaConfig = moddle.create('kafka:KafkaTaskConfig', {
-        topic: 'my-topic',
-        bootstrapServers: 'localhost:9092',
-        operation: 'consume',
-        groupId: 'my-consumer-group',
-        autoOffsetReset: 'earliest',
-        timeout: 30000,
-        responseVariable: 'kafkaMessage'
-      });
-
-      // Create or get extension elements container
-      let extensionElements = businessObject.extensionElements;
-      if (!extensionElements) {
-        extensionElements = moddle.create('bpmn:ExtensionElements', {
-          values: []
-        });
-        extensionElements.$parent = businessObject;
-        businessObject.extensionElements = extensionElements;
-      }
-
-      // Initialize values array if needed
-      if (!extensionElements.values) {
-        extensionElements.values = [];
-      }
-
-      // Add kafka config to extension elements
-      kafkaConfig.$parent = extensionElements;
-      extensionElements.values.push(kafkaConfig);
-
-      // Note: jBPM requires ReceiveTask to have a messageRef
-      // The KafkaTaskPropertiesProvider will auto-create the message when the task is selected
-
-      create.start(event, shape);
-    }
-
     return {
       'create.kafka-producer-task': {
         group: 'activity',
@@ -175,15 +128,6 @@ export default class KafkaTaskPaletteProvider {
         action: {
           dragstart: createKafkaProducerTask,
           click: createKafkaProducerTask
-        }
-      },
-      'create.kafka-consumer-task': {
-        group: 'activity',
-        className: 'bpmn-icon-receive-task kafka-consumer-icon',
-        title: 'Create Kafka Consumer Task',
-        action: {
-          dragstart: createKafkaConsumerTask,
-          click: createKafkaConsumerTask
         }
       }
     };

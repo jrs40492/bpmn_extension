@@ -1,14 +1,13 @@
 import { createModeler, importDiagram, exportDiagram } from './bpmn-modeler';
 import { setupMessageHandler, postMessage } from './message-handler';
-import { initRestPanel } from './extensions/rest-task/rest-panel';
 import { initKafkaPanel } from './extensions/kafka-task/kafka-panel';
-import { setAvailableDmnFiles, getAvailableDmnFiles, validateBusinessRuleTasks } from './extensions/business-rule-task';
+import { setAvailableDmnFiles, getAvailableDmnFiles, validateBusinessRuleTasks, handleCreateDmnFileResult } from './extensions/business-rule-task';
 import { initTemplatesPanel } from './features/templates';
 import { initSearchPanel } from './features/search';
 import { initCommentsPanel } from './features/comments';
 import { initDiffPanel } from './features/diff';
 import { initDeployPanel } from './features/deploy';
-import { initCompliancePanel } from './features/compliance';
+import { initCompliancePanel, validateAll, type ComplianceViolation } from './features/compliance';
 import { initExtensionsPanel } from './features/extensions';
 import { initProjectsPanel, analyzeBpmnFile } from './features/projects';
 import type { ExtensionToWebviewMessage, ValidationIssue, DmnFileInfo } from '../shared/message-types';
@@ -92,6 +91,164 @@ async function init(): Promise<void> {
   // Get services needed for validation
   const eventBus = modeler.get('eventBus');
   const elementRegistry = modeler.get('elementRegistry');
+  const selection = modeler.get('selection') as { select: (element: unknown) => void };
+
+  // Store lint issues for compliance panel
+  let storedLintIssues: Record<string, Array<{ id: string; message: string; category: 'error' | 'warn'; rule: string }>> = {};
+
+  // Store reference to compliance panel (set later after initialization)
+  let compliancePanelRef: { show: () => void } | null = null;
+
+  // Validation status bar element
+  const statusBar = document.getElementById('validation-status-bar');
+  const statusIcon = statusBar?.querySelector('.validation-icon') as HTMLElement | null;
+  const statusText = statusBar?.querySelector('.validation-text') as HTMLElement | null;
+
+  // Update validation status bar
+  function updateValidationStatusBar(violations: ComplianceViolation[]): void {
+    if (!statusBar || !statusIcon || !statusText) return;
+
+    const errors = violations.filter(v => v.severity === 'error').length;
+    const warnings = violations.filter(v => v.severity === 'warning').length;
+
+    // Remove all state classes
+    statusBar.classList.remove('success', 'warning', 'error', 'loading');
+
+    if (errors > 0) {
+      statusBar.classList.add('error');
+      statusIcon.textContent = '✕';
+      statusText.textContent = `${errors} error${errors > 1 ? 's' : ''}${warnings > 0 ? `, ${warnings} warning${warnings > 1 ? 's' : ''}` : ''}`;
+    } else if (warnings > 0) {
+      statusBar.classList.add('warning');
+      statusIcon.textContent = '⚠';
+      statusText.textContent = `${warnings} warning${warnings > 1 ? 's' : ''}`;
+    } else {
+      statusBar.classList.add('success');
+      statusIcon.textContent = '✓';
+      statusText.textContent = 'No issues';
+    }
+  }
+
+  // Show loading state on status bar
+  function showValidationLoading(): void {
+    if (!statusBar || !statusIcon || !statusText) return;
+    statusBar.classList.remove('success', 'warning', 'error');
+    statusBar.classList.add('loading');
+    statusIcon.textContent = '↻';
+    statusText.textContent = 'Validating...';
+  }
+
+  // Get overlays service for adding visual indicators on elements
+  const overlays = modeler.get('overlays') as {
+    add: (elementId: string, type: string, overlay: {
+      position: { top?: number; bottom?: number; left?: number; right?: number };
+      html: string | HTMLElement;
+    }) => string;
+    remove: (filter: { type?: string }) => void;
+  };
+
+  // Track overlay IDs for cleanup
+  const VALIDATION_OVERLAY_TYPE = 'validation-issue';
+
+  // Update validation overlays on elements
+  function updateValidationOverlays(violations: ComplianceViolation[]): void {
+    // Remove existing validation overlays
+    try {
+      overlays.remove({ type: VALIDATION_OVERLAY_TYPE });
+    } catch (_e) {
+      // Ignore errors when no overlays exist
+    }
+
+    // Group violations by element ID
+    const violationsByElement = new Map<string, ComplianceViolation[]>();
+    for (const violation of violations) {
+      const existing = violationsByElement.get(violation.elementId) || [];
+      existing.push(violation);
+      violationsByElement.set(violation.elementId, existing);
+    }
+
+    // Add overlays for each element with violations
+    for (const [elementId, elementViolations] of violationsByElement) {
+      // Skip if element doesn't exist in registry
+      const element = elementRegistry.get(elementId);
+      if (!element) continue;
+
+      // Determine severity (error takes precedence)
+      const hasError = elementViolations.some(v => v.severity === 'error');
+      const severityClass = hasError ? 'error' : 'warning';
+      const count = elementViolations.length;
+
+      // Create tooltip content as HTML list
+      const tooltipItems = elementViolations.map(v =>
+        `<div class="validation-tooltip-item ${v.severity}">
+          <span class="validation-tooltip-icon">${v.severity === 'error' ? '✕' : '⚠'}</span>
+          <span class="validation-tooltip-message">${v.message}</span>
+        </div>`
+      ).join('');
+
+      // Create overlay HTML with hover tooltip
+      const overlayHtml = document.createElement('div');
+      overlayHtml.className = `validation-overlay ${severityClass}`;
+      overlayHtml.innerHTML = `
+        <span class="validation-badge">${count}</span>
+        <div class="validation-tooltip">${tooltipItems}</div>
+      `;
+
+      // Add overlay to top-right corner of element (matching comment bubble positioning)
+      try {
+        overlays.add(elementId, VALIDATION_OVERLAY_TYPE, {
+          position: { top: -10, right: 8 },
+          html: overlayHtml
+        });
+      } catch (_e) {
+        // Element might not support overlays (e.g., connections)
+      }
+    }
+  }
+
+  // Get linting service for triggering lint on demand
+  const linting = modeler.get('linting') as {
+    lint: () => Promise<Record<string, Array<{ id: string; message: string; category: string; rule: string }>>>;
+    toggle: (active: boolean) => void;
+  } | undefined;
+
+  // Debounced function to run full validation
+  const runValidationDebounced = debounce(async () => {
+    try {
+      // Get lint results first
+      let lintIssues = storedLintIssues;
+      if (linting) {
+        const lintResults = await linting.lint();
+        // Convert lint results - issues are keyed by element ID
+        lintIssues = {};
+        for (const [elementId, issues] of Object.entries(lintResults)) {
+          if (!lintIssues[elementId]) {
+            lintIssues[elementId] = [];
+          }
+          for (const issue of issues) {
+            lintIssues[elementId].push({
+              id: issue.id || elementId,
+              message: issue.message,
+              category: issue.category === 'error' ? 'error' : 'warn',
+              rule: issue.rule || 'unknown'
+            });
+          }
+        }
+        storedLintIssues = lintIssues;
+      }
+
+      // Run full validation
+      const elements = elementRegistry.getAll() as unknown[];
+      const dmnFiles = getAvailableDmnFiles();
+      const violations = validateAll(elements, lintIssues, dmnFiles);
+
+      // Update status bar and element overlays
+      updateValidationStatusBar(violations);
+      updateValidationOverlays(violations);
+    } catch (err) {
+      console.error('Validation error:', err);
+    }
+  }, 500);
 
   // Listen for diagram changes
   eventBus.on('commandStack.changed', () => {
@@ -100,6 +257,10 @@ async function init(): Promise<void> {
       return;
     }
     sendChange();
+
+    // Show loading state and run validation
+    showValidationLoading();
+    runValidationDebounced();
 
     // Re-run DMN validation after changes
     const dmnFiles = getAvailableDmnFiles();
@@ -112,9 +273,6 @@ async function init(): Promise<void> {
       postMessage(vscode, { type: 'validation', issues });
     }
   });
-
-  // Store lint issues for compliance panel
-  let storedLintIssues: Record<string, Array<{ id: string; message: string; category: 'error' | 'warn'; rule: string }>> = {};
 
   // Handle validation results
   eventBus.on('linting.completed', (event: unknown) => {
@@ -150,16 +308,14 @@ async function init(): Promise<void> {
   // Set up zoom controls
   setupZoomControls(modeler);
 
-  // Initialize REST configuration panel
-  const modeling = modeler.get('modeling');
-  const bpmnFactory = modeler.get('bpmnFactory');
-  initRestPanel(eventBus, modeling, bpmnFactory);
+  // Set up properties panel resize
+  setupPropertiesPanelResize();
 
   // Initialize Kafka configuration panel
+  const modeling = modeler.get('modeling');
   initKafkaPanel(eventBus, modeling);
 
   // Initialize Phase 3 features
-  const selection = modeler.get('selection');
   const canvas = modeler.get('canvas');
 
   // Templates panel
@@ -179,8 +335,16 @@ async function init(): Promise<void> {
     selection as Parameters<typeof initSearchPanel>[2]
   );
 
-  // Comments panel
-  const commentsPanel = initCommentsPanel(eventBus as Parameters<typeof initCommentsPanel>[0]);
+  // Comments panel - pass bpmn-js services for persisting comments to BPMN elements
+  const bpmnFactory = modeler.get('bpmnFactory');
+  const commandStack = modeler.get('commandStack');
+  const commentsPanel = initCommentsPanel(
+    eventBus as Parameters<typeof initCommentsPanel>[0],
+    bpmnFactory as Parameters<typeof initCommentsPanel>[1],
+    commandStack as Parameters<typeof initCommentsPanel>[2],
+    elementRegistry as Parameters<typeof initCommentsPanel>[3],
+    overlays as Parameters<typeof initCommentsPanel>[4]
+  );
 
   // Diff panel
   const diffPanel = initDiffPanel(
@@ -190,6 +354,9 @@ async function init(): Promise<void> {
       await importDiagram(modeler, xml);
       const newXml = await exportDiagram(modeler);
       postMessage(vscode, { type: 'change', xml: newXml });
+    },
+    () => {
+      postMessage(vscode, { type: 'requestGitDiff' });
     }
   );
 
@@ -228,9 +395,6 @@ async function init(): Promise<void> {
     () => currentFileName
   );
 
-  // Get linting service for triggering lint on demand
-  const linting = modeler.get('linting') as { lint: () => void; toggle: (active: boolean) => void } | undefined;
-
   // Compliance panel - pass lint issues provider function and linting trigger
   const compliancePanel = initCompliancePanel(
     () => elementRegistry.getAll() as unknown[],
@@ -239,32 +403,28 @@ async function init(): Promise<void> {
       // Trigger linting before validation
       if (linting) {
         try {
-          const result = linting.lint();
-          // lint() returns a promise with the results
-          if (result && typeof result === 'object' && 'then' in result) {
-            const lintResults = await (result as Promise<Record<string, Array<{ id: string; message: string; category: string }>>>);
+          const lintResults = await linting.lint();
 
-            // Convert lint results to the format expected by compliance panel
-            const formattedIssues: Record<string, Array<{ id: string; message: string; category: 'error' | 'warn'; rule: string }>> = {};
-            for (const [ruleName, issues] of Object.entries(lintResults)) {
-              for (const issue of issues) {
-                const elementId = issue.id;
-                if (!formattedIssues[elementId]) {
-                  formattedIssues[elementId] = [];
-                }
-                formattedIssues[elementId].push({
-                  id: issue.id,
-                  message: issue.message,
-                  category: issue.category === 'error' ? 'error' : 'warn',
-                  rule: ruleName
-                });
-              }
+          // Convert lint results - issues are keyed by element ID
+          // Each issue has: id (element id), message, category, rule
+          const formattedIssues: Record<string, Array<{ id: string; message: string; category: 'error' | 'warn'; rule: string }>> = {};
+          for (const [elementId, issues] of Object.entries(lintResults)) {
+            if (!formattedIssues[elementId]) {
+              formattedIssues[elementId] = [];
             }
-
-            // Update stored lint issues and compliance panel
-            storedLintIssues = formattedIssues;
-            compliancePanel.setLintIssues(formattedIssues);
+            for (const issue of issues) {
+              formattedIssues[elementId].push({
+                id: issue.id || elementId,
+                message: issue.message,
+                category: issue.category === 'error' ? 'error' : 'warn',
+                rule: issue.rule || 'unknown'
+              });
+            }
           }
+
+          // Update stored lint issues and compliance panel
+          storedLintIssues = formattedIssues;
+          compliancePanel.setLintIssues(formattedIssues);
         } catch (err) {
           console.error('[BAMOE Compliance] Linting error:', err);
         }
@@ -272,9 +432,14 @@ async function init(): Promise<void> {
     }
   );
 
+  // Store reference for use in validation overlays
+  compliancePanelRef = compliancePanel;
+
   // Wire up lint issues to compliance panel when they change
   eventBus.on('linting.completed', () => {
     compliancePanel.setLintIssues(storedLintIssues);
+    // Re-run validation to update status bar
+    runValidationDebounced();
   });
 
   // Extensions panel
@@ -306,6 +471,13 @@ async function init(): Promise<void> {
     projectsPanel
   );
 
+  // Set up validation status bar click handler
+  if (statusBar) {
+    statusBar.addEventListener('click', () => {
+      compliancePanel.show();
+    });
+  }
+
   // Handle messages from the extension
   setupMessageHandler(async (message: ExtensionToWebviewMessage) => {
     switch (message.type) {
@@ -317,6 +489,10 @@ async function init(): Promise<void> {
           // Fit to viewport on initial load
           const canvas = modeler.get('canvas');
           canvas.zoom('fit-viewport');
+
+          // Run initial validation after diagram loads
+          showValidationLoading();
+          runValidationDebounced();
         } catch (err) {
           console.error('Failed to import diagram:', err);
           skipNextChange = false;
@@ -350,6 +526,10 @@ async function init(): Promise<void> {
         // Update compliance panel with DMN files for validation
         compliancePanel.setDmnFiles(message.files);
 
+        // Re-run full validation now that DMN files are available
+        // This updates the status bar and element overlays
+        runValidationDebounced();
+
         // Run DMN reference validation
         const dmnValidationIssues = validateBusinessRuleTasks(
           elementRegistry as Parameters<typeof validateBusinessRuleTasks>[0],
@@ -359,6 +539,21 @@ async function init(): Promise<void> {
           console.log('[BAMOE Webview] DMN validation issues:', dmnValidationIssues);
           postMessage(vscode, { type: 'validation', issues: dmnValidationIssues });
         }
+        break;
+
+      case 'createDmnFileResult':
+        // Handle DMN file creation result
+        console.log('[BAMOE Webview] Received createDmnFileResult:', message);
+        handleCreateDmnFileResult({
+          success: message.success,
+          file: message.file,
+          error: message.error
+        });
+        break;
+
+      case 'gitDiffResponse':
+        // Handle git diff response
+        diffPanel.handleGitDiffResponse(message);
         break;
     }
   });
@@ -392,6 +587,55 @@ function setupZoomControls(modeler: ReturnType<typeof createModeler>): void {
 
   zoomReset?.addEventListener('click', () => {
     canvas.zoom(1);
+  });
+}
+
+// Set up properties panel resize
+function setupPropertiesPanelResize(): void {
+  const wrapper = document.getElementById('properties-panel-wrapper');
+  const handle = document.getElementById('properties-resize-handle');
+
+  if (!wrapper || !handle) {
+    return;
+  }
+
+  let isResizing = false;
+  let startX = 0;
+  let startWidth = 0;
+
+  const minWidth = 200;
+  const maxWidth = 600;
+
+  handle.addEventListener('mousedown', (e: MouseEvent) => {
+    isResizing = true;
+    startX = e.clientX;
+    startWidth = wrapper.offsetWidth;
+    handle.classList.add('resizing');
+    document.body.style.cursor = 'ew-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', (e: MouseEvent) => {
+    if (!isResizing) return;
+
+    // Calculate new width (dragging left increases width, dragging right decreases)
+    const deltaX = startX - e.clientX;
+    let newWidth = startWidth + deltaX;
+
+    // Clamp to min/max
+    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+
+    wrapper.style.width = `${newWidth}px`;
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (isResizing) {
+      isResizing = false;
+      handle.classList.remove('resizing');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
   });
 }
 

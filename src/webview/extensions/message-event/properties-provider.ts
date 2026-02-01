@@ -9,7 +9,7 @@
  */
 
 // @ts-expect-error - no type definitions available
-import { ListGroup, TextFieldEntry, SelectEntry, CheckboxEntry } from '@bpmn-io/properties-panel';
+import { ListGroup, TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
 
@@ -176,6 +176,16 @@ function isBoundaryMessageEvent(element: BpmnElement): boolean {
 }
 
 /**
+ * Check if element is a Receive Task
+ * Receive Tasks can also consume messages (e.g., Kafka messages) and may need payload extraction
+ */
+function isReceiveTask(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+  return bo.$type === 'bpmn:ReceiveTask';
+}
+
+/**
  * Check if element is any type of Message Event
  */
 function isMessageEvent(element: BpmnElement): boolean {
@@ -184,6 +194,17 @@ function isMessageEvent(element: BpmnElement): boolean {
     isIntermediateThrowMessageEvent(element) ||
     isEndMessageEvent(element) ||
     isBoundaryMessageEvent(element);
+}
+
+/**
+ * Check if element is any type that can receive messages and needs payload extraction
+ * This includes message catch events and receive tasks
+ */
+function isMessageReceiver(element: BpmnElement): boolean {
+  return isStartMessageEvent(element) ||
+    isIntermediateCatchMessageEvent(element) ||
+    isBoundaryMessageEvent(element) ||
+    isReceiveTask(element);
 }
 
 /**
@@ -360,26 +381,14 @@ function getPayloadFields(element: BpmnElement): PayloadField[] {
 }
 
 /**
- * Check if CloudEvents mode is enabled for the element
- * Defaults to true if not explicitly set
+ * Build the full JSONPath expression for CloudEvents format
+ * fieldName -> $.data.fieldName
+ * Note: The runtime deserializer auto-detects CloudEvents vs flat JSON,
+ * so we always store expressions in CloudEvents format.
  */
-function isCloudEventsEnabled(element: BpmnElement): boolean {
-  const payloadDef = getPayloadDefinition(element);
-  // Default to true if not set
-  return payloadDef?.cloudEvents !== false;
-}
-
-/**
- * Build the full JSONPath expression based on CloudEvents mode
- * In CloudEvents mode: fieldName -> $.data.fieldName
- * In standard mode: fieldName -> $.fieldName
- */
-function buildExpression(fieldName: string, isCloudEvents: boolean): string {
+function buildExpression(fieldName: string): string {
   if (!fieldName) return '';
-  if (isCloudEvents) {
-    return `$.data.${fieldName}`;
-  }
-  return `$.${fieldName}`;
+  return `$.data.${fieldName}`;
 }
 
 /**
@@ -726,6 +735,12 @@ function setOutputMapping(
       properties: { dataOutputAssociations: newAssociations }
     });
   }
+
+  // NOTE: We no longer update itemDefinition.structureRef to specific payload classes.
+  // This was causing type mismatch errors in Kogito validation because not all related
+  // itemDefinitions were being updated consistently. Using java.lang.Object everywhere
+  // ensures compatibility, and the MessagePayloadExtractor listener handles proper
+  // deserialization at runtime.
 }
 
 /**
@@ -772,97 +787,11 @@ function getAvailableProcessVariables(element: BpmnElement): Array<{ id: string;
 // ============================================================================
 
 /**
- * Message Name component
- */
-function MessageName(props: { element: BpmnElement; id: string }) {
-  const { element, id } = props;
-  const commandStack = useService('commandStack') as CommandStack;
-  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
-  const translate = useService('translate') as (text: string) => string;
-  const debounce = useService('debounceInput') as <T>(fn: T) => T;
-
-  const getValue = () => {
-    const msgEvtDef = getMessageEventDefinition(element);
-    return msgEvtDef?.messageRef?.name || '';
-  };
-
-  const setValue = (value: string) => {
-    const message = getOrCreateMessage(element, bpmnFactory, commandStack);
-    if (message) {
-      commandStack.execute('element.updateModdleProperties', {
-        element,
-        moddleElement: message,
-        properties: { name: value }
-      });
-    }
-  };
-
-  return TextFieldEntry({
-    id,
-    element,
-    label: translate('Message Name'),
-    description: translate('Name of the message that triggers this start event'),
-    getValue,
-    setValue,
-    debounce
-  });
-}
-
-/**
- * CloudEvents Toggle component
- * When enabled, expressions are automatically prefixed with $.data.
- */
-function CloudEventsToggle(props: { element: BpmnElement; id: string }) {
-  const { element, id } = props;
-  const commandStack = useService('commandStack') as CommandStack;
-  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
-  const translate = useService('translate') as (text: string) => string;
-
-  const getValue = () => {
-    return isCloudEventsEnabled(element);
-  };
-
-  const setValue = (value: boolean) => {
-    const payloadDef = ensurePayloadDefinition(element, bpmnFactory, commandStack);
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: payloadDef,
-      properties: { cloudEvents: value }
-    });
-
-    // Update all field expressions when toggling CloudEvents mode
-    const fields = payloadDef.fields || [];
-    for (const field of fields) {
-      if (field.name) {
-        // Extract the simple field name from existing expression
-        const simpleName = extractFieldFromExpression(field.expression) || field.name;
-        // Rebuild the expression with the new mode
-        const newExpression = buildExpression(simpleName, value);
-        commandStack.execute('element.updateModdleProperties', {
-          element,
-          moddleElement: field,
-          properties: { expression: newExpression }
-        });
-      }
-    }
-  };
-
-  return CheckboxEntry({
-    id,
-    element,
-    label: translate('CloudEvents Format'),
-    description: translate('Enable for CloudEvents messages (data nested under $.data). Disable for flat JSON payloads.'),
-    getValue,
-    setValue
-  });
-}
-
-/**
  * Payload Field Name component
- * When field name is set in CloudEvents mode, also auto-sets the expression
+ * When field name is set, also auto-sets the expression using CloudEvents format
  */
 function PayloadFieldName(props: { id: string; field: PayloadField; element: BpmnElement }) {
-  const { id, field, element } = props;
+  const { id, field } = props;
   const commandStack = useService('commandStack') as CommandStack;
   const translate = useService('translate') as (text: string) => string;
   const debounce = useService('debounceInput') as <T>(fn: T) => T;
@@ -870,25 +799,24 @@ function PayloadFieldName(props: { id: string; field: PayloadField; element: Bpm
   const getValue = () => field.name || '';
 
   const setValue = (value: string) => {
-    const cloudEventsMode = isCloudEventsEnabled(element);
     const properties: Record<string, unknown> = { name: value };
 
-    // In CloudEvents mode, auto-set expression if not already set or if it matches the old name pattern
-    if (cloudEventsMode && value) {
+    // Auto-set expression if not already set or if it matches the old name pattern
+    if (value) {
       const currentExpression = field.expression || '';
       const oldName = field.name || '';
 
       // Auto-update expression if:
       // 1. Expression is empty
       // 2. Expression matches the old field name pattern (user hasn't customized it)
-      const expectedOldExpression = buildExpression(oldName, true);
+      const expectedOldExpression = buildExpression(oldName);
       if (!currentExpression || currentExpression === expectedOldExpression || currentExpression === `$.data.${oldName}`) {
-        properties.expression = buildExpression(value, true);
+        properties.expression = buildExpression(value);
       }
     }
 
     commandStack.execute('element.updateModdleProperties', {
-      element,
+      element: props.element,
       moddleElement: field,
       properties
     });
@@ -896,7 +824,7 @@ function PayloadFieldName(props: { id: string; field: PayloadField; element: Bpm
 
   return TextFieldEntry({
     id,
-    element,
+    element: props.element,
     label: translate('Field Name'),
     getValue,
     setValue,
@@ -906,9 +834,8 @@ function PayloadFieldName(props: { id: string; field: PayloadField; element: Bpm
 
 /**
  * Payload Field Expression component
- * Shows simplified input when CloudEvents mode is enabled
- * In CloudEvents mode: user enters "userId", stored as "$.data.userId"
- * In standard mode: user enters full JSONPath expression
+ * User enters "userId", stored as "$.data.userId"
+ * The runtime deserializer auto-detects CloudEvents vs flat JSON formats.
  */
 function PayloadFieldExpression(props: { id: string; field: PayloadField; element: BpmnElement }) {
   const { id, field, element } = props;
@@ -916,26 +843,14 @@ function PayloadFieldExpression(props: { id: string; field: PayloadField; elemen
   const translate = useService('translate') as (text: string) => string;
   const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
-  const cloudEventsMode = isCloudEventsEnabled(element);
-
   const getValue = () => {
-    if (cloudEventsMode) {
-      // In CloudEvents mode, show just the field name (extract from expression)
-      return extractFieldFromExpression(field.expression);
-    }
-    // In standard mode, show the full expression
-    return field.expression || '';
+    // Show just the field name (extract from expression)
+    return extractFieldFromExpression(field.expression);
   };
 
   const setValue = (value: string) => {
-    let expression: string;
-    if (cloudEventsMode) {
-      // In CloudEvents mode, auto-build the full expression
-      expression = buildExpression(value, true);
-    } else {
-      // In standard mode, use the value as-is
-      expression = value;
-    }
+    // Auto-build the full expression using CloudEvents format
+    const expression = buildExpression(value);
 
     commandStack.execute('element.updateModdleProperties', {
       element,
@@ -944,20 +859,11 @@ function PayloadFieldExpression(props: { id: string; field: PayloadField; elemen
     });
   };
 
-  // Different labels and descriptions based on mode
-  const label = cloudEventsMode
-    ? translate('Source Field')
-    : translate('Source Expression');
-
-  const description = cloudEventsMode
-    ? translate('Field name in CloudEvents data (e.g., userId). Auto-prefixed with $.data.')
-    : translate('JSONPath expression to extract value (e.g., $.request.data.id).');
-
   return TextFieldEntry({
     id,
     element,
-    label,
-    description,
+    label: translate('Source Field'),
+    description: translate('Field name in message payload (e.g., userId)'),
     getValue,
     setValue,
     debounce
@@ -1197,7 +1103,8 @@ function createRemoveFieldHandler(commandStack: CommandStack, element: BpmnEleme
 function PayloadFieldsGroup(props: { element: BpmnElement; injector: unknown }) {
   const { element, injector } = props;
 
-  if (!isStartMessageEvent(element)) {
+  // Support all message receivers (message catch events and receive tasks)
+  if (!isMessageReceiver(element)) {
     return null;
   }
 
@@ -1229,50 +1136,194 @@ function PayloadFieldsGroup(props: { element: BpmnElement; injector: unknown }) 
   };
 }
 
-/**
- * Create entries for Message Event Configuration
- */
-function MessageEventEntries(props: { element: BpmnElement }): PropertyEntry[] {
-  const { element } = props;
-
-  // Works for all message event types
-  if (!isMessageEvent(element)) {
-    return [];
-  }
-
-  const entries: PropertyEntry[] = [
-    {
-      id: 'messageName',
-      component: MessageName,
-      isEdited: () => {
-        const msgEvtDef = getMessageEventDefinition(element);
-        return !!(msgEvtDef?.messageRef?.name);
-      }
-    }
-  ];
-
-  // Add CloudEvents toggle for events that can receive messages
-  if (isStartMessageEvent(element) || isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
-    entries.push({
-      id: 'cloudEventsToggle',
-      component: CloudEventsToggle,
-      isEdited: () => {
-        // Show as edited if explicitly set to false (since default is true)
-        const payloadDef = getPayloadDefinition(element);
-        return payloadDef?.cloudEvents === false;
-      }
-    });
-  }
-
-  return entries;
-}
-
 // ============================================================================
 // Properties Provider Class
 // ============================================================================
 
 // Track elements that have had their drools:dtype fixed to prevent infinite loops
 const fixedDtypeElements = new WeakSet<object>();
+
+// Track definitions that have had comprehensive cleanup performed
+const cleanedUpDefinitions = new WeakSet<object>();
+
+/**
+ * Comprehensive cleanup of orphaned message-related BPMN elements.
+ * This finds and removes:
+ * - Orphaned itemDefinitions (with patterns like _Event_xxx_, _message_Event_xxx)
+ * - Orphaned process properties (message_Event_xxx that don't correspond to existing events)
+ * - Normalizes all structureRef values to java.lang.Object to prevent type mismatch errors
+ *
+ * @param element The currently selected element (used as context for commandStack)
+ * @param definitions The BPMN definitions root element
+ * @param commandStack The command stack for executing changes
+ */
+function cleanupOrphanedMessageElements(
+  element: BpmnElement,
+  definitions: Definitions,
+  commandStack: CommandStack
+): void {
+  const rootElements = definitions.rootElements || [];
+  const process = rootElements.find((el: ModdleElement) => el.$type === 'bpmn:Process');
+  if (!process) return;
+
+  // Get all actual event IDs from the process
+  const flowElements = (process as unknown as { flowElements?: ModdleElement[] }).flowElements || [];
+  const actualEventIds = new Set<string>();
+  const actualTaskIds = new Set<string>();
+  for (const el of flowElements) {
+    if (el.$type?.includes('Event')) {
+      actualEventIds.add(el.id || '');
+    }
+    if (el.$type === 'bpmn:ReceiveTask') {
+      actualTaskIds.add(el.id || '');
+    }
+  }
+
+  // Find orphaned itemDefinitions
+  // Patterns to check:
+  // - _Event_xxx_...Item (e.g., _Event_0m799to_OutputItem)
+  // - _message_Event_xxxItem (e.g., _message_Event_0m799toItem)
+  // - _Message_Event_xxx_Item (e.g., _Message_Event_0tyznr4_Item)
+  const orphanedItemDefIds = new Set<string>();
+  const orphanedMessageIds = new Set<string>();
+
+  for (const el of rootElements) {
+    if (el.$type === 'bpmn:ItemDefinition' && el.id) {
+      // Check for event-related patterns
+      const eventMatch = el.id.match(/_(?:message_)?(Event_[a-zA-Z0-9]+)/);
+      if (eventMatch) {
+        const eventId = eventMatch[1];
+        if (!actualEventIds.has(eventId)) {
+          orphanedItemDefIds.add(el.id);
+        }
+      }
+
+      // Check for Message_Event_xxx pattern
+      const msgEventMatch = el.id.match(/_Message_(Event_[a-zA-Z0-9]+)_Item/);
+      if (msgEventMatch) {
+        const eventId = msgEventMatch[1];
+        if (!actualEventIds.has(eventId)) {
+          orphanedItemDefIds.add(el.id);
+        }
+      }
+
+      // Check for Activity_xxx pattern (for receive tasks)
+      const activityMatch = el.id.match(/_(?:Message_)?(Activity_[a-zA-Z0-9]+)/);
+      if (activityMatch) {
+        const activityId = activityMatch[1];
+        if (!actualTaskIds.has(activityId)) {
+          orphanedItemDefIds.add(el.id);
+        }
+      }
+    }
+
+    // Check for orphaned messages
+    if (el.$type === 'bpmn:Message' && el.id) {
+      const eventMatch = el.id.match(/Message_(Event_[a-zA-Z0-9]+)/);
+      if (eventMatch) {
+        const eventId = eventMatch[1];
+        if (!actualEventIds.has(eventId)) {
+          orphanedMessageIds.add(el.id);
+          // Also add the message's itemRef
+          const itemRef = (el as unknown as { itemRef?: ModdleElement }).itemRef;
+          if (itemRef?.id) {
+            orphanedItemDefIds.add(itemRef.id);
+          }
+        }
+      }
+
+      const activityMatch = el.id.match(/Message_(Activity_[a-zA-Z0-9]+)/);
+      if (activityMatch) {
+        const activityId = activityMatch[1];
+        if (!actualTaskIds.has(activityId)) {
+          orphanedMessageIds.add(el.id);
+          const itemRef = (el as unknown as { itemRef?: ModdleElement }).itemRef;
+          if (itemRef?.id) {
+            orphanedItemDefIds.add(itemRef.id);
+          }
+        }
+      }
+    }
+  }
+
+  // Remove orphaned elements from rootElements
+  if (orphanedItemDefIds.size > 0 || orphanedMessageIds.size > 0) {
+    const newRootElements = rootElements.filter((el: ModdleElement) =>
+      !orphanedItemDefIds.has(el.id || '') && !orphanedMessageIds.has(el.id || '')
+    );
+
+    if (newRootElements.length < rootElements.length) {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: definitions,
+        properties: { rootElements: newRootElements }
+      });
+    }
+  }
+
+  // Remove orphaned process properties
+  const properties = (process as unknown as { properties?: ModdleElement[] }).properties || [];
+  const newProperties = properties.filter((p: ModdleElement) => {
+    if (!p.id) return true;
+
+    // Check for message_Event_xxx pattern
+    const eventMatch = p.id.match(/message_(Event_[a-zA-Z0-9]+)/);
+    if (eventMatch) {
+      return actualEventIds.has(eventMatch[1]);
+    }
+
+    // Check for message_Activity_xxx pattern
+    const activityMatch = p.id.match(/message_(Activity_[a-zA-Z0-9]+)/);
+    if (activityMatch) {
+      return actualTaskIds.has(activityMatch[1]);
+    }
+
+    return true;
+  });
+
+  if (newProperties.length !== properties.length) {
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: process,
+      properties: { properties: newProperties }
+    });
+  }
+}
+
+/**
+ * Normalize all payload-related itemDefinition structureRef values to java.lang.Object.
+ * This prevents Kogito type mismatch errors where the event's data output has a specific
+ * payload class type but the process variable has java.lang.Object or java.lang.String.
+ *
+ * @param element The currently selected element (used as context for commandStack)
+ * @param definitions The BPMN definitions root element
+ * @param commandStack The command stack for executing changes
+ */
+function normalizePayloadTypes(
+  element: BpmnElement,
+  definitions: Definitions,
+  commandStack: CommandStack
+): void {
+  const rootElements = definitions.rootElements || [];
+
+  for (const el of rootElements) {
+    if (el.$type === 'bpmn:ItemDefinition') {
+      const structureRef = (el as unknown as { structureRef?: string }).structureRef;
+
+      // If it's a specific payload class (contains a dot but not java.lang.), normalize it
+      if (structureRef &&
+          structureRef.includes('.') &&
+          !structureRef.startsWith('java.lang.')) {
+
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: el,
+          properties: { structureRef: 'java.lang.Object' }
+        });
+      }
+    }
+  }
+}
 
 export default class MessageEventPropertiesProvider {
   static $inject = ['propertiesPanel', 'injector', 'eventBus'];
@@ -1296,7 +1347,8 @@ export default class MessageEventPropertiesProvider {
   getGroups(element: BpmnElement) {
     return (groups: PropertiesGroup[]) => {
       // Handle all types of message events (Start, Intermediate Catch/Throw, End, Boundary)
-      if (!isMessageEvent(element)) {
+      // AND receive tasks (which can also consume messages like Kafka)
+      if (!isMessageEvent(element) && !isReceiveTask(element)) {
         return groups;
       }
 
@@ -1540,91 +1592,22 @@ export default class MessageEventPropertiesProvider {
         }
       }
 
-      // Clean up orphaned messages that are not referenced by any message event
-      // Orphaned messages can cause Kogito code generation errors (duplicate topic names, missing producers)
-      // Use a guard to only run this cleanup once per session
-      if (!fixedDtypeElements.has(definitions)) {
-        fixedDtypeElements.add(definitions);
+      // Comprehensive cleanup of orphaned message elements and type normalization
+      // Run this once per session per definitions element to avoid infinite loops
+      if (!cleanedUpDefinitions.has(definitions)) {
+        cleanedUpDefinitions.add(definitions);
 
-        // Find all messages in definitions
-        const allMessagesInDefs = rootElements.filter((el: ModdleElement) => el.$type === 'bpmn:Message');
+        // Clean up orphaned itemDefinitions, messages, and process properties
+        cleanupOrphanedMessageElements(element, definitions, commandStack);
 
-        // Find all message references from message events in the process
-        const process = rootElements.find((el: ModdleElement) => el.$type === 'bpmn:Process');
-        const referencedMessageIds = new Set<string>();
-
-        if (process) {
-          const flowElements = (process as unknown as { flowElements?: ModdleElement[] }).flowElements || [];
-          for (const flowElement of flowElements) {
-            const eventDefs = (flowElement as unknown as { eventDefinitions?: ModdleElement[] }).eventDefinitions || [];
-            for (const ed of eventDefs) {
-              if (ed.$type === 'bpmn:MessageEventDefinition') {
-                const msgRef = (ed as unknown as { messageRef?: ModdleElement }).messageRef;
-                if (msgRef?.id) {
-                  referencedMessageIds.add(msgRef.id);
-                }
-              }
-            }
-          }
-        }
-
-        // Find orphaned messages (messages not referenced by any event)
-        const orphanedMessages = allMessagesInDefs.filter((msg: ModdleElement) =>
-          msg.id && !referencedMessageIds.has(msg.id)
-        );
-
-        if (orphanedMessages.length > 0) {
-          // Collect all elements to remove (orphaned messages and their itemDefinitions)
-          const elementsToRemove = new Set<string>();
-
-          for (const orphanedMsg of orphanedMessages) {
-            if (orphanedMsg.id) {
-              elementsToRemove.add(orphanedMsg.id);
-
-              // Also remove the message's itemRef (itemDefinition)
-              const itemRef = (orphanedMsg as unknown as { itemRef?: ModdleElement }).itemRef;
-              if (itemRef?.id) {
-                elementsToRemove.add(itemRef.id);
-              }
-
-              // Also check for event-specific itemDefinitions (pattern: _Event_xxx_InputItem)
-              // These are created for message throw events
-              const msgIdMatch = orphanedMsg.id.match(/Message_Event_(.+)/);
-              if (msgIdMatch) {
-                const eventId = `Event_${msgIdMatch[1]}`;
-                const eventItemDefId = `_${eventId}_InputItem`;
-                if (rootElements.some((el: ModdleElement) => el.id === eventItemDefId)) {
-                  elementsToRemove.add(eventItemDefId);
-                }
-              }
-            }
-          }
-
-          // Remove orphaned elements
-          const newRootElements = rootElements.filter((el: ModdleElement) =>
-            !elementsToRemove.has(el.id || '')
-          );
-
-          if (newRootElements.length < rootElements.length) {
-            commandStack.execute('element.updateModdleProperties', {
-              element,
-              moddleElement: definitions,
-              properties: { rootElements: newRootElements }
-            });
-          }
-        }
+        // Normalize all payload-related types to java.lang.Object to prevent type mismatch errors
+        normalizePayloadTypes(element, definitions, commandStack);
       }
 
-      // Add Message Event Configuration group for all message event types
-      groups.push({
-        id: 'message-event-configuration',
-        label: 'Message Event Configuration',
-        entries: MessageEventEntries({ element })
-      });
-
-      // Add Payload Fields as a ListGroup (only for Start Message Events and Intermediate Catch Events)
-      // These event types receive incoming messages and may need to extract data
-      if (isStartMessageEvent(element) || isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
+      // Add Payload Fields as a ListGroup for message receivers
+      // (Start Message Events, Intermediate Catch Events, Boundary Events, and Receive Tasks)
+      // These element types receive incoming messages and may need to extract data
+      if (isMessageReceiver(element)) {
         const payloadGroup = PayloadFieldsGroup({ element, injector: this.injector });
         if (payloadGroup) {
           groups.push({

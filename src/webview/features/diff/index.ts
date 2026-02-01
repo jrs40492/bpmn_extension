@@ -1,7 +1,9 @@
 /**
  * Version Diff Feature
- * Visual diff between diagram versions
+ * Shows changes since the last git commit
  */
+
+import type { GitDiffResponseMessage } from '../../../shared/message-types';
 
 interface DiffChange {
   type: 'added' | 'removed' | 'modified';
@@ -20,52 +22,79 @@ interface ParsedElement {
 
 export function initDiffPanel(
   getCurrentXml: () => Promise<string>,
-  onApplyVersion: (xml: string) => void
+  _onApplyVersion: (xml: string) => void,
+  requestGitDiff: () => void
 ): {
   show: () => void;
   hide: () => void;
   compareWith: (otherXml: string, label?: string) => void;
+  handleGitDiffResponse: (message: GitDiffResponseMessage) => void;
 } {
   const panel = createDiffPanelHTML();
   document.body.appendChild(panel);
 
   const closeButton = panel.querySelector('.diff-panel-close') as HTMLButtonElement;
-  const loadButton = panel.querySelector('.diff-load-btn') as HTMLButtonElement;
-  const fileInput = panel.querySelector('#diff-file-input') as HTMLInputElement;
   const diffResults = panel.querySelector('.diff-results') as HTMLDivElement;
   const summaryDiv = panel.querySelector('.diff-summary') as HTMLDivElement;
 
-  let storedOtherXml: string | null = null;
+  let storedCurrentXml: string | null = null;
 
   closeButton.addEventListener('click', () => {
     panel.classList.remove('visible');
   });
 
-  loadButton.addEventListener('click', () => {
-    fileInput.click();
-  });
+  function showLoading() {
+    summaryDiv.innerHTML = '';
+    diffResults.innerHTML = `
+      <div class="diff-loading">
+        <div class="diff-spinner"></div>
+        <div class="diff-loading-text">Loading committed version from Git...</div>
+      </div>
+    `;
+  }
 
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files?.[0];
-    if (!file) return;
+  function showError(code: string, message: string) {
+    summaryDiv.innerHTML = '';
 
-    try {
-      const otherXml = await file.text();
-      const currentXml = await getCurrentXml();
-      const changes = compareXml(currentXml, otherXml);
-      renderDiff(changes, diffResults, summaryDiv, file.name);
-      storedOtherXml = otherXml;
-    } catch (err) {
-      diffResults.innerHTML = `<div class="diff-error">Error reading file: ${err}</div>`;
+    let icon: string;
+    let title: string;
+
+    switch (code) {
+      case 'NOT_GIT_REPO':
+        icon = '📁';
+        title = 'Not a Git Repository';
+        break;
+      case 'FILE_UNTRACKED':
+        icon = '📄';
+        title = 'File Not Tracked';
+        break;
+      case 'NO_COMMITS':
+        icon = '📜';
+        title = 'No Commit History';
+        break;
+      default:
+        icon = '⚠️';
+        title = 'Git Error';
     }
 
-    fileInput.value = '';
-  });
+    diffResults.innerHTML = `
+      <div class="diff-error-state">
+        <div class="diff-error-icon">${icon}</div>
+        <div class="diff-error-title">${escapeHtml(title)}</div>
+        <div class="diff-error-message">${escapeHtml(message)}</div>
+      </div>
+    `;
+  }
 
-  function show() {
+  async function show() {
     panel.classList.add('visible');
-    diffResults.innerHTML = '<div class="diff-empty">Load a BPMN file to compare with current diagram</div>';
-    summaryDiv.innerHTML = '';
+    showLoading();
+
+    // Store current XML for comparison when response arrives
+    storedCurrentXml = await getCurrentXml();
+
+    // Request the git committed version
+    requestGitDiff();
   }
 
   function hide() {
@@ -76,12 +105,31 @@ export function initDiffPanel(
     getCurrentXml().then(currentXml => {
       const changes = compareXml(currentXml, otherXml);
       renderDiff(changes, diffResults, summaryDiv, label);
-      storedOtherXml = otherXml;
       panel.classList.add('visible');
     });
   }
 
-  return { show, hide, compareWith };
+  function handleGitDiffResponse(message: GitDiffResponseMessage) {
+    if (!message.success) {
+      if (message.error) {
+        showError(message.error.code, message.error.message);
+      } else {
+        showError('UNKNOWN', 'An unknown error occurred');
+      }
+      return;
+    }
+
+    if (!message.xml || !storedCurrentXml) {
+      showError('UNKNOWN', 'Failed to retrieve file content');
+      return;
+    }
+
+    const label = message.commitHash ? `Last Commit (${message.commitHash})` : 'Last Commit';
+    const changes = compareXml(storedCurrentXml, message.xml);
+    renderDiff(changes, diffResults, summaryDiv, label);
+  }
+
+  return { show, hide, compareWith, handleGitDiffResponse };
 }
 
 function parseElements(xml: string): Map<string, ParsedElement> {
@@ -204,7 +252,7 @@ function renderDiff(
   `;
 
   if (changes.length === 0) {
-    container.innerHTML = '<div class="diff-empty">No differences found - diagrams are identical</div>';
+    container.innerHTML = '<div class="diff-empty">No differences found - diagram matches the last commit</div>';
     return;
   }
 
@@ -272,16 +320,12 @@ function createDiffPanelHTML(): HTMLDivElement {
   panel.innerHTML = `
     <div class="diff-panel-header">
       <span class="diff-panel-icon">📊</span>
-      <span class="diff-panel-title">Version Diff</span>
+      <span class="diff-panel-title">Changes Since Last Commit</span>
       <button class="diff-panel-close" title="Close">&times;</button>
-    </div>
-    <div class="diff-toolbar">
-      <button class="diff-load-btn">📂 Load File to Compare</button>
-      <input type="file" id="diff-file-input" accept=".bpmn,.xml" hidden />
     </div>
     <div class="diff-summary"></div>
     <div class="diff-results">
-      <div class="diff-empty">Load a BPMN file to compare with current diagram</div>
+      <div class="diff-empty">Loading...</div>
     </div>
   `;
 
