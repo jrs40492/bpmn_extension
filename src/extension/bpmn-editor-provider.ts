@@ -954,10 +954,6 @@ ${inputEdges}
         </button>
       </div>
       <div class="toolbar-group">
-        <button id="btn-deploy" class="toolbar-btn" title="Deploy to Engine">
-          <span class="toolbar-icon">🚀</span>
-          <span class="toolbar-label">Deploy</span>
-        </button>
         <button id="btn-compliance" class="toolbar-btn" title="BPMN Compliance">
           <span class="toolbar-icon">✓</span>
           <span class="toolbar-label">Compliance</span>

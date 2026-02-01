@@ -6,7 +6,6 @@ import { initTemplatesPanel } from './features/templates';
 import { initSearchPanel } from './features/search';
 import { initCommentsPanel } from './features/comments';
 import { initDiffPanel } from './features/diff';
-import { initDeployPanel } from './features/deploy';
 import { initCompliancePanel, validateAll, type ComplianceViolation } from './features/compliance';
 import { initExtensionsPanel } from './features/extensions';
 import { initProjectsPanel, analyzeBpmnFile } from './features/projects';
@@ -386,15 +385,6 @@ async function init(): Promise<void> {
 
   // Initialize Phase 4 features
 
-  // File name tracking
-  const currentFileName = 'diagram.bpmn';
-
-  // Deploy panel
-  const deployPanel = initDeployPanel(
-    () => exportDiagram(modeler),
-    () => currentFileName
-  );
-
   // Compliance panel - pass lint issues provider function and linting trigger
   const compliancePanel = initCompliancePanel(
     () => elementRegistry.getAll() as unknown[],
@@ -465,7 +455,6 @@ async function init(): Promise<void> {
     commentsPanel,
     diffPanel,
     toggleSimulation,
-    deployPanel,
     compliancePanel,
     extensionsPanel,
     projectsPanel
@@ -646,7 +635,6 @@ function setupToolbarButtons(
   commentsPanel: { show: () => void; hide: () => void },
   diffPanel: { show: () => void; hide: () => void },
   toggleSimulation: () => void,
-  deployPanel: { show: () => void; hide: () => void },
   compliancePanel: { show: () => void; hide: () => void },
   extensionsPanel: { show: () => void; hide: () => void },
   projectsPanel: { show: () => void; hide: () => void }
@@ -659,7 +647,6 @@ function setupToolbarButtons(
   const btnDiff = document.getElementById('btn-diff');
 
   // Phase 4 buttons
-  const btnDeploy = document.getElementById('btn-deploy');
   const btnCompliance = document.getElementById('btn-compliance');
   const btnExtensions = document.getElementById('btn-extensions');
   const btnProject = document.getElementById('btn-project');
@@ -672,7 +659,6 @@ function setupToolbarButtons(
   btnDiff?.addEventListener('click', () => diffPanel.show());
 
   // Phase 4 handlers
-  btnDeploy?.addEventListener('click', () => deployPanel.show());
   btnCompliance?.addEventListener('click', () => compliancePanel.show());
   btnExtensions?.addEventListener('click', () => extensionsPanel.show());
   btnProject?.addEventListener('click', () => projectsPanel.show());
