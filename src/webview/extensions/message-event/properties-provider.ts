@@ -9,7 +9,7 @@
  */
 
 // @ts-expect-error - no type definitions available
-import { ListGroup, TextFieldEntry, SelectEntry, CheckboxEntry } from '@bpmn-io/properties-panel';
+import { ListGroup, TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
 
@@ -381,26 +381,14 @@ function getPayloadFields(element: BpmnElement): PayloadField[] {
 }
 
 /**
- * Check if CloudEvents mode is enabled for the element
- * Defaults to true if not explicitly set
+ * Build the full JSONPath expression for CloudEvents format
+ * fieldName -> $.data.fieldName
+ * Note: The runtime deserializer auto-detects CloudEvents vs flat JSON,
+ * so we always store expressions in CloudEvents format.
  */
-function isCloudEventsEnabled(element: BpmnElement): boolean {
-  const payloadDef = getPayloadDefinition(element);
-  // Default to true if not set
-  return payloadDef?.cloudEvents !== false;
-}
-
-/**
- * Build the full JSONPath expression based on CloudEvents mode
- * In CloudEvents mode: fieldName -> $.data.fieldName
- * In standard mode: fieldName -> $.fieldName
- */
-function buildExpression(fieldName: string, isCloudEvents: boolean): string {
+function buildExpression(fieldName: string): string {
   if (!fieldName) return '';
-  if (isCloudEvents) {
-    return `$.data.${fieldName}`;
-  }
-  return `$.${fieldName}`;
+  return `$.data.${fieldName}`;
 }
 
 /**
@@ -799,97 +787,11 @@ function getAvailableProcessVariables(element: BpmnElement): Array<{ id: string;
 // ============================================================================
 
 /**
- * Message Name component
- */
-function MessageName(props: { element: BpmnElement; id: string }) {
-  const { element, id } = props;
-  const commandStack = useService('commandStack') as CommandStack;
-  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
-  const translate = useService('translate') as (text: string) => string;
-  const debounce = useService('debounceInput') as <T>(fn: T) => T;
-
-  const getValue = () => {
-    const msgEvtDef = getMessageEventDefinition(element);
-    return msgEvtDef?.messageRef?.name || '';
-  };
-
-  const setValue = (value: string) => {
-    const message = getOrCreateMessage(element, bpmnFactory, commandStack);
-    if (message) {
-      commandStack.execute('element.updateModdleProperties', {
-        element,
-        moddleElement: message,
-        properties: { name: value }
-      });
-    }
-  };
-
-  return TextFieldEntry({
-    id,
-    element,
-    label: translate('Message Name'),
-    description: translate('Name of the message that triggers this start event'),
-    getValue,
-    setValue,
-    debounce
-  });
-}
-
-/**
- * CloudEvents Toggle component
- * When enabled, expressions are automatically prefixed with $.data.
- */
-function CloudEventsToggle(props: { element: BpmnElement; id: string }) {
-  const { element, id } = props;
-  const commandStack = useService('commandStack') as CommandStack;
-  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
-  const translate = useService('translate') as (text: string) => string;
-
-  const getValue = () => {
-    return isCloudEventsEnabled(element);
-  };
-
-  const setValue = (value: boolean) => {
-    const payloadDef = ensurePayloadDefinition(element, bpmnFactory, commandStack);
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: payloadDef,
-      properties: { cloudEvents: value }
-    });
-
-    // Update all field expressions when toggling CloudEvents mode
-    const fields = payloadDef.fields || [];
-    for (const field of fields) {
-      if (field.name) {
-        // Extract the simple field name from existing expression
-        const simpleName = extractFieldFromExpression(field.expression) || field.name;
-        // Rebuild the expression with the new mode
-        const newExpression = buildExpression(simpleName, value);
-        commandStack.execute('element.updateModdleProperties', {
-          element,
-          moddleElement: field,
-          properties: { expression: newExpression }
-        });
-      }
-    }
-  };
-
-  return CheckboxEntry({
-    id,
-    element,
-    label: translate('CloudEvents Format'),
-    description: translate('Enable for CloudEvents messages (data nested under $.data). Disable for flat JSON payloads.'),
-    getValue,
-    setValue
-  });
-}
-
-/**
  * Payload Field Name component
- * When field name is set in CloudEvents mode, also auto-sets the expression
+ * When field name is set, also auto-sets the expression using CloudEvents format
  */
 function PayloadFieldName(props: { id: string; field: PayloadField; element: BpmnElement }) {
-  const { id, field, element } = props;
+  const { id, field } = props;
   const commandStack = useService('commandStack') as CommandStack;
   const translate = useService('translate') as (text: string) => string;
   const debounce = useService('debounceInput') as <T>(fn: T) => T;
@@ -897,25 +799,24 @@ function PayloadFieldName(props: { id: string; field: PayloadField; element: Bpm
   const getValue = () => field.name || '';
 
   const setValue = (value: string) => {
-    const cloudEventsMode = isCloudEventsEnabled(element);
     const properties: Record<string, unknown> = { name: value };
 
-    // In CloudEvents mode, auto-set expression if not already set or if it matches the old name pattern
-    if (cloudEventsMode && value) {
+    // Auto-set expression if not already set or if it matches the old name pattern
+    if (value) {
       const currentExpression = field.expression || '';
       const oldName = field.name || '';
 
       // Auto-update expression if:
       // 1. Expression is empty
       // 2. Expression matches the old field name pattern (user hasn't customized it)
-      const expectedOldExpression = buildExpression(oldName, true);
+      const expectedOldExpression = buildExpression(oldName);
       if (!currentExpression || currentExpression === expectedOldExpression || currentExpression === `$.data.${oldName}`) {
-        properties.expression = buildExpression(value, true);
+        properties.expression = buildExpression(value);
       }
     }
 
     commandStack.execute('element.updateModdleProperties', {
-      element,
+      element: props.element,
       moddleElement: field,
       properties
     });
@@ -923,7 +824,7 @@ function PayloadFieldName(props: { id: string; field: PayloadField; element: Bpm
 
   return TextFieldEntry({
     id,
-    element,
+    element: props.element,
     label: translate('Field Name'),
     getValue,
     setValue,
@@ -933,9 +834,8 @@ function PayloadFieldName(props: { id: string; field: PayloadField; element: Bpm
 
 /**
  * Payload Field Expression component
- * Shows simplified input when CloudEvents mode is enabled
- * In CloudEvents mode: user enters "userId", stored as "$.data.userId"
- * In standard mode: user enters full JSONPath expression
+ * User enters "userId", stored as "$.data.userId"
+ * The runtime deserializer auto-detects CloudEvents vs flat JSON formats.
  */
 function PayloadFieldExpression(props: { id: string; field: PayloadField; element: BpmnElement }) {
   const { id, field, element } = props;
@@ -943,26 +843,14 @@ function PayloadFieldExpression(props: { id: string; field: PayloadField; elemen
   const translate = useService('translate') as (text: string) => string;
   const debounce = useService('debounceInput') as <T>(fn: T) => T;
 
-  const cloudEventsMode = isCloudEventsEnabled(element);
-
   const getValue = () => {
-    if (cloudEventsMode) {
-      // In CloudEvents mode, show just the field name (extract from expression)
-      return extractFieldFromExpression(field.expression);
-    }
-    // In standard mode, show the full expression
-    return field.expression || '';
+    // Show just the field name (extract from expression)
+    return extractFieldFromExpression(field.expression);
   };
 
   const setValue = (value: string) => {
-    let expression: string;
-    if (cloudEventsMode) {
-      // In CloudEvents mode, auto-build the full expression
-      expression = buildExpression(value, true);
-    } else {
-      // In standard mode, use the value as-is
-      expression = value;
-    }
+    // Auto-build the full expression using CloudEvents format
+    const expression = buildExpression(value);
 
     commandStack.execute('element.updateModdleProperties', {
       element,
@@ -971,20 +859,11 @@ function PayloadFieldExpression(props: { id: string; field: PayloadField; elemen
     });
   };
 
-  // Different labels and descriptions based on mode
-  const label = cloudEventsMode
-    ? translate('Source Field')
-    : translate('Source Expression');
-
-  const description = cloudEventsMode
-    ? translate('Field name in CloudEvents data (e.g., userId). Auto-prefixed with $.data.')
-    : translate('JSONPath expression to extract value (e.g., $.request.data.id).');
-
   return TextFieldEntry({
     id,
     element,
-    label,
-    description,
+    label: translate('Source Field'),
+    description: translate('Field name in message payload (e.g., userId)'),
     getValue,
     setValue,
     debounce
@@ -1255,45 +1134,6 @@ function PayloadFieldsGroup(props: { element: BpmnElement; injector: unknown }) 
     add: createAddFieldHandler(bpmnFactory, commandStack, element),
     label: translate('Payload Fields')
   };
-}
-
-/**
- * Create entries for Message Event Configuration
- */
-function MessageEventEntries(props: { element: BpmnElement }): PropertyEntry[] {
-  const { element } = props;
-
-  // Works for all message event types
-  if (!isMessageEvent(element)) {
-    return [];
-  }
-
-  const entries: PropertyEntry[] = [
-    {
-      id: 'messageName',
-      component: MessageName,
-      isEdited: () => {
-        const msgEvtDef = getMessageEventDefinition(element);
-        return !!(msgEvtDef?.messageRef?.name);
-      }
-    }
-  ];
-
-  // Add CloudEvents toggle for events that can receive messages
-  if (isStartMessageEvent(element) || isIntermediateCatchMessageEvent(element) || isBoundaryMessageEvent(element)) {
-    entries.push({
-      id: 'cloudEventsToggle',
-      component: CloudEventsToggle,
-      isEdited: () => {
-        // Show as edited if explicitly set to false (since default is true)
-        const payloadDef = getPayloadDefinition(element);
-        return payloadDef?.cloudEvents === false;
-      }
-    });
-
-  }
-
-  return entries;
 }
 
 // ============================================================================
@@ -1762,15 +1602,6 @@ export default class MessageEventPropertiesProvider {
 
         // Normalize all payload-related types to java.lang.Object to prevent type mismatch errors
         normalizePayloadTypes(element, definitions, commandStack);
-      }
-
-      // Add Message Event Configuration group for message event types (not receive tasks)
-      if (isMessageEvent(element)) {
-        groups.push({
-          id: 'message-event-configuration',
-          label: 'Message Event Configuration',
-          entries: MessageEventEntries({ element })
-        });
       }
 
       // Add Payload Fields as a ListGroup for message receivers
