@@ -354,6 +354,9 @@ async function init(): Promise<void> {
       await importDiagram(modeler, xml);
       const newXml = await exportDiagram(modeler);
       postMessage(vscode, { type: 'change', xml: newXml });
+    },
+    () => {
+      postMessage(vscode, { type: 'requestGitDiff' });
     }
   );
 
@@ -546,6 +549,11 @@ async function init(): Promise<void> {
           file: message.file,
           error: message.error
         });
+        break;
+
+      case 'gitDiffResponse':
+        // Handle git diff response
+        diffPanel.handleGitDiffResponse(message);
         break;
     }
   });

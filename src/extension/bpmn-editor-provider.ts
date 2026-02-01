@@ -1,6 +1,11 @@
 import * as vscode from 'vscode';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as path from 'path';
 import { getNonce } from './util/nonce';
 import { Disposable, disposeAll } from './util/dispose';
+
+const execAsync = promisify(exec);
 import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo, DmnInputDefinition } from '../shared/message-types';
 import {
   extractMessageEventsFromContent,
@@ -160,6 +165,15 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
                 error: error instanceof Error ? error.message : 'Unknown error'
               });
             }
+            break;
+
+          case 'requestGitDiff':
+            // Get the committed version of the file from git
+            const gitResult = await this.getGitCommittedVersion(document);
+            this.postMessage(webviewPanel.webview, {
+              type: 'gitDiffResponse',
+              ...gitResult
+            });
             break;
         }
       }
@@ -765,6 +779,101 @@ ${inputEdges}
       seen.add(d.id);
       return true;
     });
+  }
+
+  /**
+   * Get the committed version of a file from git
+   * Returns the XML content from HEAD or an error
+   */
+  private async getGitCommittedVersion(document: vscode.TextDocument): Promise<{
+    success: boolean;
+    xml?: string;
+    commitHash?: string;
+    error?: { code: string; message: string };
+  }> {
+    const filePath = document.uri.fsPath;
+    const cwd = path.dirname(filePath);
+    const fileName = path.basename(filePath);
+
+    try {
+      // Check if we're in a git repo
+      try {
+        await execAsync('git rev-parse --is-inside-work-tree', { cwd });
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: 'NOT_GIT_REPO',
+            message: 'This file is not in a Git repository. Git diff requires the file to be part of a Git repository.'
+          }
+        };
+      }
+
+      // Get the relative path from the git root
+      let relativePath: string;
+      try {
+        const { stdout: gitRoot } = await execAsync('git rev-parse --show-toplevel', { cwd });
+        relativePath = path.relative(gitRoot.trim(), filePath);
+      } catch {
+        relativePath = fileName;
+      }
+
+      // Check if file is tracked by git
+      try {
+        const { stdout } = await execAsync(`git ls-files "${relativePath}"`, { cwd });
+        if (!stdout.trim()) {
+          return {
+            success: false,
+            error: {
+              code: 'FILE_UNTRACKED',
+              message: 'This file is not tracked by Git yet. Commit the file first to enable version comparison.'
+            }
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: 'FILE_UNTRACKED',
+            message: 'This file is not tracked by Git yet. Commit the file first to enable version comparison.'
+          }
+        };
+      }
+
+      // Check if file has any commits
+      try {
+        await execAsync(`git log -1 -- "${relativePath}"`, { cwd });
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: 'NO_COMMITS',
+            message: 'This file has no commit history. Commit the file first to enable version comparison.'
+          }
+        };
+      }
+
+      // Get the committed version from HEAD
+      const { stdout: xml } = await execAsync(`git show HEAD:"${relativePath}"`, { cwd });
+
+      // Get the short commit hash for display
+      const { stdout: commitHash } = await execAsync('git rev-parse --short HEAD', { cwd });
+
+      return {
+        success: true,
+        xml: xml,
+        commitHash: commitHash.trim()
+      };
+    } catch (error) {
+      console.error('[BAMOE] Git diff error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GIT_ERROR',
+          message: error instanceof Error ? error.message : 'An unknown Git error occurred'
+        }
+      };
+    }
   }
 
   /**

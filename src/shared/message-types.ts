@@ -42,7 +42,7 @@ export interface DmnFilesMessage {
   files: DmnFileInfo[];
 }
 
-export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage | CreateDmnFileResultMessage;
+export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage | CreateDmnFileResultMessage | GitDiffResponseMessage;
 
 // Webview -> Extension messages
 export interface ReadyMessage {
@@ -96,7 +96,21 @@ export interface CreateDmnFileResultMessage {
   error?: string;
 }
 
-export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage | CreateDmnFileMessage;
+// Extension -> Webview: Response with git diff data
+export interface GitDiffResponseMessage {
+  type: 'gitDiffResponse';
+  success: boolean;
+  xml?: string;
+  commitHash?: string;
+  error?: { code: string; message: string };
+}
+
+// Webview -> Extension: Request the committed version from git
+export interface RequestGitDiffMessage {
+  type: 'requestGitDiff';
+}
+
+export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage | CreateDmnFileMessage | RequestGitDiffMessage;
 
 // Validation types
 export interface ValidationIssue {

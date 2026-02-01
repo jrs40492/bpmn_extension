@@ -1980,25 +1980,6 @@ html, body {
   background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
 }
 
-.diff-toolbar {
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--vscode-panel-border, #3c3c3c);
-}
-
-.diff-load-btn {
-  padding: 8px 16px;
-  border: none;
-  background: var(--vscode-button-secondaryBackground, #3a3d41);
-  color: var(--vscode-button-secondaryForeground, #cccccc);
-  border-radius: 4px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.diff-load-btn:hover {
-  background: var(--vscode-button-secondaryHoverBackground, #45494e);
-}
-
 .diff-summary {
   padding: 12px 16px;
   background: var(--vscode-editor-background, #1e1e1e);
@@ -2151,6 +2132,65 @@ html, body {
   color: var(--vscode-descriptionForeground, #8c8c8c);
   margin-top: 4px;
   font-style: italic;
+}
+
+/* Diff Loading State */
+.diff-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  gap: 16px;
+}
+
+.diff-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--vscode-widget-border, #3c3c3c);
+  border-top-color: var(--vscode-focusBorder, #007acc);
+  border-radius: 50%;
+  animation: diff-spin 0.8s linear infinite;
+}
+
+@keyframes diff-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.diff-loading-text {
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+}
+
+/* Diff Error State */
+.diff-error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  gap: 12px;
+}
+
+.diff-error-icon {
+  font-size: 48px;
+  opacity: 0.8;
+}
+
+.diff-error-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.diff-error-message {
+  font-size: 13px;
+  color: var(--vscode-descriptionForeground, #8c8c8c);
+  max-width: 350px;
+  line-height: 1.5;
 }
 
 /* ========================================
