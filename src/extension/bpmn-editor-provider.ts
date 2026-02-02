@@ -811,16 +811,18 @@ ${inputEdges}
 
       // Get the relative path from the git root
       let relativePath: string;
+      let gitRootPath = cwd;
       try {
         const { stdout: gitRoot } = await execAsync('git rev-parse --show-toplevel', { cwd });
-        relativePath = path.relative(gitRoot.trim(), filePath);
+        gitRootPath = gitRoot.trim();
+        relativePath = path.relative(gitRootPath, filePath);
       } catch {
         relativePath = fileName;
       }
 
       // Check if file is tracked by git
       try {
-        const { stdout } = await execAsync(`git ls-files "${relativePath}"`, { cwd });
+        const { stdout } = await execAsync(`git ls-files "${relativePath}"`, { cwd: gitRootPath });
         if (!stdout.trim()) {
           return {
             success: false,
@@ -842,7 +844,7 @@ ${inputEdges}
 
       // Check if file has any commits
       try {
-        await execAsync(`git log -1 -- "${relativePath}"`, { cwd });
+        await execAsync(`git log -1 -- "${relativePath}"`, { cwd: gitRootPath });
       } catch {
         return {
           success: false,
@@ -854,7 +856,7 @@ ${inputEdges}
       }
 
       // Get the committed version from HEAD
-      const { stdout: xml } = await execAsync(`git show HEAD:"${relativePath}"`, { cwd });
+      const { stdout: xml } = await execAsync(`git show HEAD:"${relativePath}"`, { cwd: gitRootPath });
 
       // Get the short commit hash for display
       const { stdout: commitHash } = await execAsync('git rev-parse --short HEAD', { cwd });
