@@ -318,27 +318,45 @@ export class DmnEditorProvider implements vscode.CustomTextEditorProvider {
   <title>DMN Editor</title>
 </head>
 <body>
-  <div class="dmn-editor-container">
-    <div class="dmn-toolbar">
+  <div class="editor-container">
+    <div class="toolbar">
       <div class="toolbar-group">
-        <span class="toolbar-title">DMN Decision Editor</span>
-      </div>
-      <div class="toolbar-group toolbar-tabs" id="view-tabs">
-        <!-- Tabs will be dynamically created -->
-      </div>
-      <div class="toolbar-group">
-        <button id="btn-feel-ref" class="toolbar-btn" title="FEEL Quick Reference">FEEL</button>
-        <button id="btn-validate" class="toolbar-btn toolbar-btn-validate" title="Validate DMN">Validate</button>
+        <button id="btn-undo" class="toolbar-btn" title="Undo (Ctrl+Z)">
+          <span class="toolbar-icon">↩</span>
+        </button>
+        <button id="btn-redo" class="toolbar-btn" title="Redo (Ctrl+Y)">
+          <span class="toolbar-icon">↪</span>
+        </button>
       </div>
       <div class="toolbar-group">
-        <button id="btn-zoom-in" class="toolbar-btn" title="Zoom In">+</button>
-        <button id="btn-zoom-out" class="toolbar-btn" title="Zoom Out">−</button>
-        <button id="btn-zoom-fit" class="toolbar-btn" title="Fit to Viewport">Fit</button>
+        <div class="toolbar-tabs" id="view-tabs"></div>
+      </div>
+      <div class="toolbar-group">
+        <button id="btn-search" class="toolbar-btn" title="Search (Ctrl+F)">
+          <span class="toolbar-icon">🔍</span>
+          <span class="toolbar-label">Search</span>
+        </button>
+        <button id="btn-test" class="toolbar-btn" title="Test Decision">
+          <span class="toolbar-icon">🧪</span>
+          <span class="toolbar-label">Test</span>
+        </button>
+        <button id="btn-feel-ref" class="toolbar-btn" title="FEEL Quick Reference">
+          <span class="toolbar-icon">📖</span>
+          <span class="toolbar-label">FEEL</span>
+        </button>
       </div>
     </div>
-    <div class="dmn-editor-main">
-      <div id="dmn-canvas" class="dmn-canvas"></div>
-      <div id="dmn-properties" class="dmn-properties-panel"></div>
+    <div class="editor-main">
+      <div class="canvas-container">
+        <div id="canvas"></div>
+        <div class="zoom-controls">
+          <button id="zoom-in" title="Zoom In (+)">+</button>
+          <button id="zoom-out" title="Zoom Out (-)">−</button>
+          <button id="zoom-fit" title="Fit to Viewport">Fit</button>
+          <button id="zoom-reset" title="Reset Zoom (100%)">1:1</button>
+        </div>
+      </div>
+      <div id="properties-panel" class="properties-panel"></div>
     </div>
   </div>
   <script nonce="${nonce}" src="${scriptUri}"></script>

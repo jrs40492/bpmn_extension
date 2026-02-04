@@ -1,5 +1,16 @@
 import DmnJS from 'dmn-js/lib/Modeler';
 
+// @ts-expect-error - no type definitions available
+import gridModule from 'diagram-js-grid';
+
+import './styles/dmn-editor.css';
+
+// Import new features
+import { DecisionTestingEngine, createTestingPanel, decisionTestingEngine } from './features/testing';
+import { DmnSearchEngine, createSearchPanel, dmnSearchEngine } from './features/search';
+import { createFeelReferencePanel } from './features/feel-reference';
+import { createRuleAnalysisPanel, ruleAnalyzer } from './features/rule-analysis';
+
 // Import DMN validation feature
 import { initDmnValidationPanel, type DmnValidationIssue } from './features/validation';
 
@@ -175,8 +186,8 @@ function toDmn13(xml: string): string {
 
 // Initialize the editor
 async function init(): Promise<void> {
-  const container = document.getElementById('dmn-canvas');
-  const propertiesContainer = document.getElementById('dmn-properties');
+  const container = document.getElementById('canvas');
+  const propertiesContainer = document.getElementById('properties-panel');
   const tabsContainer = document.getElementById('view-tabs');
 
   if (!container) {
@@ -188,9 +199,10 @@ async function init(): Promise<void> {
     container,
     drd: {
       propertiesPanel: {
-        parent: '#dmn-properties'
+        parent: '#properties-panel'
       },
       additionalModules: [
+        gridModule,
         DmnPropertiesPanelModule,
         DmnPropertiesProviderModule,
         inputDataPropertiesModule,
@@ -264,7 +276,104 @@ async function init(): Promise<void> {
     console.log('[DMN Editor] import.done event fired');
   });
 
-  // Listen for custom properties changed events from extensions
+    // Initialize search engine
+    dmnSearchEngine.setModeler(dmnModeler);
+
+    // Re-index search on import
+    dmnModeler.on('import.done', () => {
+        console.log('[DMN Editor] Re-indexing search after import');
+        dmnSearchEngine.indexElements();
+    });
+
+    // Search panel toggle
+    let searchPanelVisible = false;
+    function toggleSearchPanel(): void {
+        const existing = document.getElementById('dmn-search-panel');
+        if (existing) {
+            existing.remove();
+            searchPanelVisible = false;
+            return;
+        }
+        const panel = createSearchPanel(
+            dmnSearchEngine,
+            () => { document.getElementById('dmn-search-panel')?.remove(); searchPanelVisible = false; },
+            (result) => { dmnSearchEngine.navigateTo(result); }
+        );
+        document.body.appendChild(panel);
+        searchPanelVisible = true;
+    }
+
+    // Testing panel toggle
+    let testingPanelVisible = false;
+    function toggleTestingPanel(): void {
+        const existing = document.getElementById('decision-test-panel');
+        if (existing) {
+            existing.remove();
+            testingPanelVisible = false;
+            return;
+        }
+        const decisionTable = decisionTestingEngine.parseDecisionTable(dmnModeler);
+        const panel = createTestingPanel(
+            decisionTestingEngine,
+            decisionTable,
+            () => { document.getElementById('decision-test-panel')?.remove(); testingPanelVisible = false; }
+        );
+        document.body.appendChild(panel);
+        testingPanelVisible = true;
+    }
+
+    // FEEL reference panel toggle
+    let feelReferencePanelVisible = false;
+    function toggleFeelReferencePanel(): void {
+        const existing = document.getElementById('feel-reference-panel');
+        if (existing) {
+            existing.remove();
+            feelReferencePanelVisible = false;
+            return;
+        }
+        const panel = createFeelReferencePanel(
+            () => { document.getElementById('feel-reference-panel')?.remove(); feelReferencePanelVisible = false; }
+        );
+        document.body.appendChild(panel);
+        feelReferencePanelVisible = true;
+    }
+
+    // Rule analysis panel toggle
+    let ruleAnalysisPanelVisible = false;
+    function toggleRuleAnalysisPanel(): void {
+        const existing = document.getElementById('rule-analysis-panel');
+        if (existing) {
+            existing.remove();
+            ruleAnalysisPanelVisible = false;
+            return;
+        }
+        const decisionTable = decisionTestingEngine.parseDecisionTable(dmnModeler);
+        const panel = createRuleAnalysisPanel(
+            ruleAnalyzer,
+            decisionTable,
+            () => { document.getElementById('rule-analysis-panel')?.remove(); ruleAnalysisPanelVisible = false; }
+        );
+        document.body.appendChild(panel);
+        ruleAnalysisPanelVisible = true;
+    }
+
+    // Add toolbar button handlers
+    document.getElementById('btn-search')?.addEventListener('click', toggleSearchPanel);
+    document.getElementById('btn-test')?.addEventListener('click', toggleTestingPanel);
+    document.getElementById('btn-feel-ref')?.addEventListener('click', toggleFeelReferencePanel);
+    // Note: Rule analysis would need a toolbar button added to the provider
+
+    // Keyboard shortcut for search (Ctrl/Cmd + F)
+    document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            toggleSearchPanel();
+        }
+    });
+
+
+
+    // Listen for custom properties changed events from extensions
   // This is needed because the DRD viewer's eventBus is isolated from the main modeler
   window.addEventListener('dmn-properties-changed', (event) => {
     console.log('[DMN Editor] Received dmn-properties-changed event:', (event as CustomEvent).detail);
