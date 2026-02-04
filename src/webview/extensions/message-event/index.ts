@@ -653,10 +653,220 @@ class MessageEventDeletionHandler {
   }
 }
 
+// ============================================================================
+// Generate Message Classes Button Handler
+// ============================================================================
+
+/**
+ * Check if element is a message receiver (start, catch, or boundary message event)
+ */
+function isMessageReceiverElement(element: BpmnElement): boolean {
+  const bo = element?.businessObject;
+  if (!bo) return false;
+
+  const validTypes = ['bpmn:StartEvent', 'bpmn:IntermediateCatchEvent', 'bpmn:BoundaryEvent'];
+  if (!validTypes.includes(bo.$type)) return false;
+
+  const eventDefinitions = bo.eventDefinitions || [];
+  return eventDefinitions.some((ed: ModdleElement) => ed.$type === 'bpmn:MessageEventDefinition');
+}
+
+/**
+ * Get payload fields from an element's extension elements
+ */
+function getElementPayloadFields(element: BpmnElement): ModdleElement[] {
+  const bo = element?.businessObject;
+  if (!bo) return [];
+
+  const extensionElements = bo.extensionElements;
+  if (!extensionElements) return [];
+
+  const values = (extensionElements as unknown as { values?: ModdleElement[] }).values || [];
+  const payloadDef = values.find((ext: ModdleElement) => ext.$type === 'msgevt:PayloadDefinition');
+  if (!payloadDef) return [];
+
+  return (payloadDef as unknown as { fields?: ModdleElement[] }).fields || [];
+}
+
+/**
+ * Request message class generation from the extension
+ */
+function requestGenerateMessageClasses(): void {
+  const vscode = (window as unknown as { vscodeApi?: { postMessage: (msg: unknown) => void } }).vscodeApi;
+  if (vscode) {
+    vscode.postMessage({ type: 'generateMessageClasses' });
+  }
+}
+
+/**
+ * Injects a "Generate Message Classes" button into the properties panel
+ * when a message receiver event is selected.
+ */
+class GenerateButtonHandler {
+  static $inject = ['eventBus'];
+
+  private currentButton: HTMLElement | null = null;
+  private messageHandler: ((event: MessageEvent) => void) | null = null;
+
+  constructor(eventBus: EventBus) {
+    // Listen for selection changes
+    eventBus.on('selection.changed', (event: ShapeEvent) => {
+      this.removeButton();
+
+      const selection = (event as unknown as { newSelection?: BpmnElement[] }).newSelection;
+      if (!selection || selection.length !== 1) return;
+
+      const element = selection[0];
+      if (isMessageReceiverElement(element)) {
+        // Delay to allow properties panel to render
+        setTimeout(() => this.injectButton(element), 100);
+      }
+    });
+  }
+
+  private removeButton(): void {
+    if (this.currentButton && this.currentButton.parentNode) {
+      this.currentButton.parentNode.removeChild(this.currentButton);
+    }
+    this.currentButton = null;
+
+    if (this.messageHandler) {
+      window.removeEventListener('message', this.messageHandler);
+      this.messageHandler = null;
+    }
+  }
+
+  private injectButton(element: BpmnElement): void {
+    // Find the message event configuration group in the properties panel
+    const propertiesPanel = document.getElementById('properties-panel');
+    if (!propertiesPanel) return;
+
+    // Find a good insertion point - after the message-event-configuration group
+    const groups = propertiesPanel.querySelectorAll('.bio-properties-panel-group');
+    let targetGroup: Element | null = null;
+
+    for (const group of groups) {
+      const header = group.querySelector('.bio-properties-panel-group-header-title');
+      if (header && (header.textContent?.includes('Message Event') || header.textContent?.includes('Payload Fields'))) {
+        targetGroup = group;
+      }
+    }
+
+    if (!targetGroup) {
+      // Fallback: insert after first group
+      targetGroup = groups[0] || null;
+    }
+
+    if (!targetGroup) return;
+
+    // Create the button container
+    const container = document.createElement('div');
+    container.className = 'bio-properties-panel-group generate-message-classes-button-container';
+    container.style.cssText = 'padding: 12px; border-top: 1px solid var(--vscode-panel-border, #3c3c3c);';
+
+    const payloadFields = getElementPayloadFields(element);
+    const hasPayloadFields = payloadFields.length > 0;
+
+    // Create button
+    const button = document.createElement('button');
+    button.id = 'generate-message-classes-btn';
+    button.disabled = !hasPayloadFields;
+    button.style.cssText = `
+      width: 100%;
+      padding: 8px 16px;
+      background: ${hasPayloadFields ? 'var(--vscode-button-background, #0e639c)' : 'var(--vscode-button-secondaryBackground, #3a3d41)'};
+      color: ${hasPayloadFields ? 'var(--vscode-button-foreground, #ffffff)' : 'var(--vscode-button-secondaryForeground, #cccccc)'};
+      border: none;
+      border-radius: 4px;
+      cursor: ${hasPayloadFields ? 'pointer' : 'not-allowed'};
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    `;
+    button.innerHTML = '<span>⚡</span> Generate Message Classes';
+
+    // Create status div
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'generate-message-classes-status';
+    statusDiv.style.cssText = 'margin-top: 8px; font-size: 12px; text-align: center; display: none;';
+
+    // Create help text if no payload fields
+    const helpDiv = document.createElement('div');
+    helpDiv.style.cssText = `
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--vscode-descriptionForeground, #717171);
+      text-align: center;
+      display: ${hasPayloadFields ? 'none' : 'block'};
+    `;
+    helpDiv.textContent = 'Add payload fields first to enable generation';
+
+    container.appendChild(button);
+    container.appendChild(statusDiv);
+    container.appendChild(helpDiv);
+
+    // Insert after target group
+    if (targetGroup.nextSibling) {
+      targetGroup.parentNode?.insertBefore(container, targetGroup.nextSibling);
+    } else {
+      targetGroup.parentNode?.appendChild(container);
+    }
+
+    this.currentButton = container;
+
+    // Set up click handler
+    button.addEventListener('click', () => {
+      if (!hasPayloadFields) return;
+
+      button.disabled = true;
+      button.innerHTML = '<span style="animation: spin 1s linear infinite; display: inline-block;">↻</span> Generating...';
+
+      requestGenerateMessageClasses();
+    });
+
+    // Set up message handler for results
+    this.messageHandler = (event: MessageEvent) => {
+      const message = event.data;
+      if (message.type === 'generateMessageClassesResult') {
+        button.disabled = false;
+        button.innerHTML = '<span>⚡</span> Generate Message Classes';
+
+        statusDiv.style.display = 'block';
+        if (message.success) {
+          const fileCount = message.generatedFiles?.length || 0;
+          statusDiv.style.cssText = 'margin-top: 8px; font-size: 12px; text-align: center; padding: 6px 10px; border-radius: 4px; background: var(--vscode-testing-iconPassed, #388a34); color: white;';
+          statusDiv.textContent = fileCount > 0 ? `✓ Generated ${fileCount} class(es)` : '✓ No classes needed';
+        } else {
+          statusDiv.style.cssText = 'margin-top: 8px; font-size: 12px; text-align: center; padding: 6px 10px; border-radius: 4px; background: var(--vscode-testing-iconFailed, #f14c4c); color: white;';
+          statusDiv.textContent = `✗ ${message.error || 'Generation failed'}`;
+        }
+
+        // Hide status after 5 seconds
+        setTimeout(() => {
+          statusDiv.style.display = 'none';
+        }, 5000);
+      }
+    };
+
+    window.addEventListener('message', this.messageHandler);
+
+    // Add keyframe animation for spinner
+    if (!document.getElementById('generate-btn-styles')) {
+      const style = document.createElement('style');
+      style.id = 'generate-btn-styles';
+      style.textContent = '@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }';
+      document.head.appendChild(style);
+    }
+  }
+}
+
 // Export the module for bpmn-js additionalModules
 export default {
-  __init__: ['messageEventPropertiesProvider', 'messageEventCreationHandler', 'messageEventDeletionHandler'],
+  __init__: ['messageEventPropertiesProvider', 'messageEventCreationHandler', 'messageEventDeletionHandler', 'generateButtonHandler'],
   messageEventPropertiesProvider: ['type', MessageEventPropertiesProvider],
   messageEventCreationHandler: ['type', MessageEventCreationHandler],
-  messageEventDeletionHandler: ['type', MessageEventDeletionHandler]
+  messageEventDeletionHandler: ['type', MessageEventDeletionHandler],
+  generateButtonHandler: ['type', GenerateButtonHandler]
 };

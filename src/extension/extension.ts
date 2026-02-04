@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { BpmnEditorProvider } from './bpmn-editor-provider';
 import { DmnEditorProvider } from './dmn-editor-provider';
-import { registerGenerateMessageClassesCommand } from './commands/generate-message-classes';
 
 export function activate(context: vscode.ExtensionContext): void {
   // Register the BPMN custom editor provider
@@ -9,9 +8,6 @@ export function activate(context: vscode.ExtensionContext): void {
 
   // Register the DMN custom editor provider
   context.subscriptions.push(DmnEditorProvider.register(context));
-
-  // Register command to generate Java message classes
-  registerGenerateMessageClassesCommand(context);
 
   // Register command to create new BPMN file
   context.subscriptions.push(

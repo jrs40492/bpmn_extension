@@ -7,7 +7,7 @@
  * - Standard BPMN ioSpecification with dataInputs: model, namespace, decision
  */
 
-import BusinessRuleTaskPropertiesProvider, { setAvailableDmnFiles, getAvailableDmnFiles, DmnFileInfo } from './properties-provider';
+import BusinessRuleTaskPropertiesProvider, { setAvailableDmnFiles, getAvailableDmnFiles, handleCreateDmnFileResult, DmnFileInfo } from './properties-provider';
 import BusinessRuleTaskRenderer from './renderer';
 import businessRuleTaskDescriptor, { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
 import { validateBusinessRuleTasks } from './validator';
@@ -19,7 +19,7 @@ export { businessRuleTaskDescriptor };
 export { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS };
 
 // Export DMN file management functions
-export { setAvailableDmnFiles, getAvailableDmnFiles };
+export { setAvailableDmnFiles, getAvailableDmnFiles, handleCreateDmnFileResult };
 export type { DmnFileInfo };
 
 // Export validation function

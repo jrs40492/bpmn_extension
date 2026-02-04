@@ -1,7 +1,12 @@
 import * as vscode from 'vscode';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import * as path from 'path';
 import { getNonce } from './util/nonce';
 import { Disposable, disposeAll } from './util/dispose';
-import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo } from '../shared/message-types';
+
+const execAsync = promisify(exec);
+import type { ExtensionToWebviewMessage, WebviewToExtensionMessage, ValidationIssue, DmnFileInfo, DmnInputDefinition } from '../shared/message-types';
 import {
   extractMessageEventsFromContent,
   generateJavaClasses,
@@ -114,6 +119,62 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
               files: dmnFiles
             });
             break;
+
+          case 'generateMessageClasses':
+            // Generate message classes for the current BPMN file
+            console.log('[BAMOE] Received generateMessageClasses message');
+            try {
+              const result = await this.generateMessageClassesForDocument(document);
+              this.postMessage(webviewPanel.webview, {
+                type: 'generateMessageClassesResult',
+                success: true,
+                generatedFiles: result.generated
+              });
+            } catch (error) {
+              console.error('[BAMOE] Message class generation failed:', error);
+              this.postMessage(webviewPanel.webview, {
+                type: 'generateMessageClassesResult',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+            }
+            break;
+
+          case 'createDmnFile':
+            // Create a new DMN file with the specified inputs
+            console.log('[BAMOE] Received createDmnFile message:', message);
+            try {
+              const createResult = await this.createDmnFile(
+                document,
+                message.fileName,
+                message.modelName,
+                message.inputs
+              );
+              this.postMessage(webviewPanel.webview, {
+                type: 'createDmnFileResult',
+                ...createResult
+              });
+              // Also refresh DMN files list
+              const updatedFiles = await this.findDmnFiles();
+              this.postMessage(webviewPanel.webview, { type: 'dmnFiles', files: updatedFiles });
+            } catch (error) {
+              console.error('[BAMOE] DMN file creation failed:', error);
+              this.postMessage(webviewPanel.webview, {
+                type: 'createDmnFileResult',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+            }
+            break;
+
+          case 'requestGitDiff':
+            // Get the committed version of the file from git
+            const gitResult = await this.getGitCommittedVersion(document);
+            this.postMessage(webviewPanel.webview, {
+              type: 'gitDiffResponse',
+              ...gitResult
+            });
+            break;
         }
       }
     );
@@ -184,6 +245,56 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
       documentSaveHandler.dispose();
       this.diagnosticCollection.delete(document.uri);
     });
+  }
+
+  /**
+   * Generate Java message classes for a specific document (triggered from webview)
+   * Shows VS Code notification with results
+   */
+  private async generateMessageClassesForDocument(document: vscode.TextDocument): Promise<{ generated: string[] }> {
+    // Extract message events from the BPMN
+    const bpmnXml = document.getText();
+    const events = extractMessageEventsFromContent(bpmnXml, document.uri.fsPath);
+
+    if (events.length === 0) {
+      vscode.window.showInformationMessage(
+        'No message events with payload definitions found. Define payload fields on Message Events first.'
+      );
+      return { generated: [] };
+    }
+
+    // Get project info
+    const projectInfo = await getProjectInfo();
+
+    if (!projectInfo.projectRoot) {
+      throw new Error('No workspace folder found. Please open a folder first.');
+    }
+
+    // Generate classes
+    const { generated } = await generateJavaClasses(
+      events,
+      projectInfo.basePackage,
+      projectInfo.projectRoot
+    );
+
+    if (generated.length > 0) {
+      const relativePaths = generated.map(p =>
+        vscode.workspace.asRelativePath(p, false)
+      );
+      vscode.window.showInformationMessage(
+        `Generated ${generated.length} Java class(es): ${relativePaths.join(', ')}`,
+        'Open Folder'
+      ).then(action => {
+        if (action === 'Open Folder' && generated.length > 0) {
+          const folderPath = require('path').dirname(generated[0]);
+          vscode.commands.executeCommand('revealFileInOS', vscode.Uri.file(folderPath));
+        }
+      });
+    } else {
+      vscode.window.showInformationMessage('No message classes needed to be generated.');
+    }
+
+    return { generated };
   }
 
   /**
@@ -302,6 +413,209 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     return dmnFiles;
+  }
+
+  /**
+   * Create a new DMN file with the specified inputs
+   * Saves the file in the same directory as the current BPMN file
+   */
+  private async createDmnFile(
+    bpmnDocument: vscode.TextDocument,
+    fileName: string,
+    modelName: string,
+    inputs: DmnInputDefinition[]
+  ): Promise<{ success: boolean; file?: DmnFileInfo; error?: string }> {
+    try {
+      // Validate inputs
+      if (!fileName || !fileName.trim()) {
+        return { success: false, error: 'File name is required' };
+      }
+      if (!modelName || !modelName.trim()) {
+        return { success: false, error: 'Model name is required' };
+      }
+
+      // Clean up file name (remove extension if provided)
+      const cleanFileName = fileName.trim().replace(/\.dmn$/i, '');
+
+      // Determine the directory to save the file
+      // Use the same directory as the current BPMN file
+      const bpmnDir = vscode.Uri.joinPath(bpmnDocument.uri, '..');
+      const dmnUri = vscode.Uri.joinPath(bpmnDir, `${cleanFileName}.dmn`);
+
+      // Check if file already exists
+      try {
+        await vscode.workspace.fs.stat(dmnUri);
+        return { success: false, error: `File "${cleanFileName}.dmn" already exists` };
+      } catch {
+        // File doesn't exist, we can proceed
+      }
+
+      // Generate DMN XML content
+      const dmnContent = this.generateDmnContent(cleanFileName, modelName, inputs);
+
+      // Write the file
+      await vscode.workspace.fs.writeFile(dmnUri, Buffer.from(dmnContent, 'utf-8'));
+
+      // Parse the newly created file to return its info
+      const document = await vscode.workspace.openTextDocument(dmnUri);
+      const content = document.getText();
+      const decisions = this.parseDecisionsFromDmn(content);
+      const namespace = this.parseNamespaceFromDmn(content);
+      const parsedModelName = this.parseModelNameFromDmn(content);
+      const inputData = this.parseInputDataFromDmn(content);
+      const outputData = this.parseOutputDataFromDmn(content, decisions);
+
+      // Get relative path for display
+      const workspaceFolder = vscode.workspace.getWorkspaceFolder(dmnUri);
+      const relativePath = workspaceFolder
+        ? vscode.workspace.asRelativePath(dmnUri, false)
+        : dmnUri.fsPath;
+
+      const fileInfo: DmnFileInfo = {
+        path: dmnUri.fsPath,
+        name: relativePath,
+        modelName: parsedModelName,
+        namespace,
+        decisions,
+        inputData,
+        outputData
+      };
+
+      // Show success message
+      vscode.window.showInformationMessage(`Created DMN file: ${relativePath}`);
+
+      return { success: true, file: fileInfo };
+    } catch (error) {
+      console.error('[BAMOE] Error creating DMN file:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error creating DMN file'
+      };
+    }
+  }
+
+  /**
+   * Generate DMN XML content with the specified inputs
+   */
+  private generateDmnContent(
+    fileName: string,
+    modelName: string,
+    inputs: DmnInputDefinition[]
+  ): string {
+    const uniqueId = `Definitions_${Date.now()}`;
+    const namespace = 'http://camunda.org/schema/1.0/dmn';
+
+    // Generate input data elements
+    const inputDataElements = inputs.map((input, _index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      return `  <inputData id="${inputId}" name="${this.escapeXml(input.name)}">
+    <variable id="Variable_${this.sanitizeId(input.name)}" name="${this.escapeXml(input.name)}" typeRef="${input.typeRef}" />
+  </inputData>`;
+    }).join('\n');
+
+    // Generate information requirements for the decision
+    const informationRequirements = inputs.map((input, _index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      return `    <informationRequirement id="IR_${this.sanitizeId(input.name)}">
+      <requiredInput href="#${inputId}" />
+    </informationRequirement>`;
+    }).join('\n');
+
+    // Generate decision table inputs
+    const decisionTableInputs = inputs.map((input, index) => {
+      return `      <input id="Input_${index + 1}" label="${this.escapeXml(input.name)}">
+        <inputExpression id="InputExpression_${index + 1}" typeRef="${input.typeRef}">
+          <text>${this.escapeXml(input.name)}</text>
+        </inputExpression>
+      </input>`;
+    }).join('\n');
+
+    // Generate empty input entries for the default rule
+    const inputEntries = inputs.map((_, index) => {
+      return `        <inputEntry id="InputEntry_${index + 1}">
+          <text></text>
+        </inputEntry>`;
+    }).join('\n');
+
+    // Generate DMN shapes for the diagram
+    const inputShapes = inputs.map((input, index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      // Position inputs in a row above the decision
+      const x = 80 + (index * 200);
+      const y = 200;
+      return `      <dmndi:DMNShape id="DMNShape_${inputId}" dmnElementRef="${inputId}">
+        <dc:Bounds x="${x}" y="${y}" width="160" height="50" />
+      </dmndi:DMNShape>`;
+    }).join('\n');
+
+    // Generate edges from inputs to decision
+    const inputEdges = inputs.map((input, index) => {
+      const inputId = `InputData_${this.sanitizeId(input.name)}`;
+      const irId = `IR_${this.sanitizeId(input.name)}`;
+      // Draw edge from input data to decision
+      const inputX = 80 + (index * 200) + 80; // center of input
+      const decisionX = 160 + 90; // center of decision
+      return `      <dmndi:DMNEdge id="DMNEdge_${irId}" dmnElementRef="${irId}">
+        <di:waypoint x="${inputX}" y="${200}" />
+        <di:waypoint x="${decisionX}" y="${80 + 80}" />
+      </dmndi:DMNEdge>`;
+    }).join('\n');
+
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+             xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+             xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+             xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+             id="${uniqueId}"
+             name="${this.escapeXml(modelName)}"
+             namespace="${namespace}">
+
+${inputDataElements}
+
+  <decision id="Decision_1" name="${this.escapeXml(modelName)}">
+    <variable id="DecisionVariable_1" name="${this.escapeXml(modelName)}" typeRef="string" />
+${informationRequirements}
+    <decisionTable id="DecisionTable_1" hitPolicy="UNIQUE">
+${decisionTableInputs}
+      <output id="Output_1" label="Output" typeRef="string" />
+      <rule id="Rule_1">
+${inputEntries}
+        <outputEntry id="OutputEntry_1">
+          <text></text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram id="DMNDiagram_1">
+      <dmndi:DMNShape id="DMNShape_Decision_1" dmnElementRef="Decision_1">
+        <dc:Bounds x="160" y="80" width="180" height="80" />
+      </dmndi:DMNShape>
+${inputShapes}
+${inputEdges}
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>`;
+  }
+
+  /**
+   * Sanitize a string to be used as an XML ID
+   */
+  private sanitizeId(name: string): string {
+    return name.replace(/[^a-zA-Z0-9_]/g, '_');
+  }
+
+  /**
+   * Escape special XML characters
+   */
+  private escapeXml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 
   /**
@@ -468,6 +782,101 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
   }
 
   /**
+   * Get the committed version of a file from git
+   * Returns the XML content from HEAD or an error
+   */
+  private async getGitCommittedVersion(document: vscode.TextDocument): Promise<{
+    success: boolean;
+    xml?: string;
+    commitHash?: string;
+    error?: { code: string; message: string };
+  }> {
+    const filePath = document.uri.fsPath;
+    const cwd = path.dirname(filePath);
+    const fileName = path.basename(filePath);
+
+    try {
+      // Check if we're in a git repo
+      try {
+        await execAsync('git rev-parse --is-inside-work-tree', { cwd });
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: 'NOT_GIT_REPO',
+            message: 'This file is not in a Git repository. Git diff requires the file to be part of a Git repository.'
+          }
+        };
+      }
+
+      // Get the relative path from the git root
+      let relativePath: string;
+      try {
+        const { stdout: gitRoot } = await execAsync('git rev-parse --show-toplevel', { cwd });
+        relativePath = path.relative(gitRoot.trim(), filePath);
+      } catch {
+        relativePath = fileName;
+      }
+
+      // Check if file is tracked by git
+      try {
+        const { stdout } = await execAsync(`git ls-files "${relativePath}"`, { cwd });
+        if (!stdout.trim()) {
+          return {
+            success: false,
+            error: {
+              code: 'FILE_UNTRACKED',
+              message: 'This file is not tracked by Git yet. Commit the file first to enable version comparison.'
+            }
+          };
+        }
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: 'FILE_UNTRACKED',
+            message: 'This file is not tracked by Git yet. Commit the file first to enable version comparison.'
+          }
+        };
+      }
+
+      // Check if file has any commits
+      try {
+        await execAsync(`git log -1 -- "${relativePath}"`, { cwd });
+      } catch {
+        return {
+          success: false,
+          error: {
+            code: 'NO_COMMITS',
+            message: 'This file has no commit history. Commit the file first to enable version comparison.'
+          }
+        };
+      }
+
+      // Get the committed version from HEAD
+      const { stdout: xml } = await execAsync(`git show HEAD:"${relativePath}"`, { cwd });
+
+      // Get the short commit hash for display
+      const { stdout: commitHash } = await execAsync('git rev-parse --short HEAD', { cwd });
+
+      return {
+        success: true,
+        xml: xml,
+        commitHash: commitHash.trim()
+      };
+    } catch (error) {
+      console.error('[BAMOE] Git diff error:', error);
+      return {
+        success: false,
+        error: {
+          code: 'GIT_ERROR',
+          message: error instanceof Error ? error.message : 'An unknown Git error occurred'
+        }
+      };
+    }
+  }
+
+  /**
    * Update VS Code diagnostics from validation issues
    */
   private updateDiagnostics(uri: vscode.Uri, issues: ValidationIssue[]): void {
@@ -545,10 +954,6 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
         </button>
       </div>
       <div class="toolbar-group">
-        <button id="btn-deploy" class="toolbar-btn" title="Deploy to Engine">
-          <span class="toolbar-icon">🚀</span>
-          <span class="toolbar-label">Deploy</span>
-        </button>
         <button id="btn-compliance" class="toolbar-btn" title="BPMN Compliance">
           <span class="toolbar-icon">✓</span>
           <span class="toolbar-label">Compliance</span>
@@ -574,8 +979,15 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
           <button id="zoom-fit" title="Fit to Viewport">Fit</button>
           <button id="zoom-reset" title="Reset Zoom (100%)">1:1</button>
         </div>
+        <div id="validation-status-bar" class="validation-status-bar" title="Click to open Compliance panel">
+          <span class="validation-icon">✓</span>
+          <span class="validation-text">Validating...</span>
+        </div>
       </div>
-      <div id="properties-panel" class="properties-panel"></div>
+      <div id="properties-panel-wrapper" class="properties-panel-wrapper">
+        <div id="properties-resize-handle" class="properties-resize-handle"></div>
+        <div id="properties-panel" class="properties-panel"></div>
+      </div>
     </div>
   </div>
   <script nonce="${nonce}" src="${scriptUri}"></script>

@@ -84,20 +84,41 @@ export function parseJsonPath(expression: string): string {
 }
 
 /**
+ * Extract the actual field name from a JSONPath expression.
+ * Returns the last segment of the path as the field name.
+ *
+ * Examples:
+ *   $.data.userId -> "userId"
+ *   $.userId -> "userId"
+ *   $.data.nested.deeply.field -> "field" (but this needs special handling)
+ */
+export function extractFieldNameFromExpression(expression: string, fallbackFieldName: string): string {
+  if (!expression) return fallbackFieldName;
+  const segments = getPathSegments(expression);
+  return segments.length > 0 ? segments[segments.length - 1] : fallbackFieldName;
+}
+
+/**
  * Check if any field requires nested JSONPath extraction.
- * An expression requires a custom deserializer if it navigates into nested structure.
- * For example:
- *   $.data.userId - requires deserializer (goes into "data" object)
- *   $.userId - does not require deserializer (direct field access)
+ *
+ * Kogito's behavior depends on the messaging configuration:
+ * - With CloudEvents binding enabled: Kogito extracts the `data` field before passing to Jackson
+ * - With raw message handling: Kogito passes the full CloudEvents envelope
+ *
+ * To handle both cases robustly, we generate a custom deserializer that detects
+ * whether it received the full envelope or extracted data and handles both.
+ *
+ * A custom deserializer is needed for any path with 2+ segments (e.g., $.data.userId).
  */
 export function requiresCustomDeserializer(fields: PayloadFieldDefinition[]): boolean {
   return fields.some(field => {
     if (!field.expression) return false;
-    const expr = field.expression.trim();
-    // Count dots in expression: $.data.userId has 2 dots (requires deserializer)
-    // $.userId has 1 dot (simple access, no deserializer needed)
-    const dotCount = (expr.match(/\./g) || []).length;
-    return dotCount >= 2;
+    const segments = getPathSegments(field.expression);
+
+    // Need custom deserializer for any nested path (2+ segments)
+    // $.data.userId has segments ["data", "userId"] -> needs deserializer
+    // $.userId has segments ["userId"] -> no deserializer needed
+    return segments.length >= 2;
   });
 }
 
@@ -113,6 +134,7 @@ export function generatePayloadClass(
 
   let imports = `package ${packageName};
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.quarkus.runtime.annotations.RegisterForReflection;`;
 
   if (needsDeserializer) {
@@ -124,6 +146,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;`;
   if (needsDeserializer) {
     classAnnotations = `@JsonDeserialize(using = ${className}Deserializer.class)\n`;
   }
+  classAnnotations += '@JsonIgnoreProperties(ignoreUnknown = true)\n';
   classAnnotations += '@RegisterForReflection';
 
   const fieldDeclarations = fields
@@ -183,8 +206,11 @@ function getPathSegments(expression: string): string[] {
 
 /**
  * Check if any field actually requires JsonPath library.
- * We use JsonPath for paths with 3+ segments (e.g., $.data.nested.field)
- * For simpler paths like $.data.userId (2 segments), we can use Jackson traversal.
+ *
+ * Examples:
+ *   $.userId -> 1 segment -> no JsonPath needed (simple access)
+ *   $.data.userId -> 2 segments -> no JsonPath needed (path traversal)
+ *   $.data.nested.field -> 3 segments -> needs JsonPath for deep nesting
  */
 export function requiresJsonPathLibrary(fields: PayloadFieldDefinition[]): boolean {
   return fields.some(f => {
@@ -227,23 +253,49 @@ export function generateDeserializerClass(
         }`;
       }
 
-      // For deeply nested paths (3+ segments), use JsonPath
-      if (segments.length >= 3) {
-        return `        try {
-            ${javaType} ${fieldName}Value = JsonPath.read(json, "${expression}");
-            payload.set${methodSuffix}(${fieldName}Value);
-        } catch (PathNotFoundException e) {
-            // Field not found in payload, leave as null
+      // For simple field access (1 segment like $.userId), use direct access
+      if (segments.length === 1) {
+        const jsonFieldName = segments[0];
+        return `        if (root.has("${jsonFieldName}")) {
+            payload.set${methodSuffix}(root.get("${jsonFieldName}").${getJsonNodeMethod(javaType)});
         }`;
       }
 
-      // For 1-2 segment paths, use Jackson's path() method for safe traversal
-      // This handles both $.userId and $.data.userId
-      const traversal = generateJsonTraversal(segments, javaType);
-      const lastSegment = segments[segments.length - 1];
-      return `        JsonNode ${fieldName}Node = ${traversal};
+      // For 2-segment paths (like $.data.userId), handle both CloudEvents cases:
+      // 1. Full CloudEvents envelope (has "specversion" and "data") - navigate full path
+      // 2. Data already extracted by Kogito - access directly
+      if (segments.length === 2 && segments[0] === 'data') {
+        const actualFieldName = segments[1];
+        const traversal = segments.map(s => `path("${s}")`).join('.');
+        return `        // Handle both full CloudEvents envelope and extracted data
+        if (root.has("specversion") && root.has("data")) {
+            // Full CloudEvents envelope - navigate full path
+            JsonNode ${fieldName}Node = root.${traversal};
+            if (${fieldName}Node != null && !${fieldName}Node.isMissingNode()) {
+                payload.set${methodSuffix}(${fieldName}Node.${getJsonNodeMethod(javaType)});
+            }
+        } else if (root.has("${actualFieldName}")) {
+            // Data already extracted by Kogito - access directly
+            payload.set${methodSuffix}(root.get("${actualFieldName}").${getJsonNodeMethod(javaType)});
+        }`;
+      }
+
+      // For other 2-segment paths (not $.data.X), use simple traversal
+      if (segments.length === 2) {
+        const traversal = segments.map(s => `path("${s}")`).join('.');
+        return `        JsonNode ${fieldName}Node = root.${traversal};
         if (${fieldName}Node != null && !${fieldName}Node.isMissingNode()) {
             payload.set${methodSuffix}(${fieldName}Node.${getJsonNodeMethod(javaType)});
+        }`;
+      }
+
+      // For deeply nested paths (3+ segments), use JsonPath
+      const fullJsonPath = '$.' + segments.join('.');
+      return `        try {
+            ${javaType} ${fieldName}Value = JsonPath.read(json, "${fullJsonPath}");
+            payload.set${methodSuffix}(${fieldName}Value);
+        } catch (PathNotFoundException e) {
+            // Field not found in payload, leave as null
         }`;
     })
     .join('\n\n');
@@ -271,6 +323,7 @@ import com.jayway.jsonpath.PathNotFoundException;`;
 
 /**
  * Custom deserializer for ${className} to handle nested JSONPath expressions.
+ * Handles both full CloudEvents envelope and extracted data payloads.
  * Generated by BAMOE - do not edit manually.
  */
 public class ${className}Deserializer extends JsonDeserializer<${className}> {
@@ -310,152 +363,6 @@ function getJsonNodeMethod(javaType: string): string {
   }
 }
 
-/**
- * Message event configuration for the listener
- */
-export interface MessageEventConfig {
-  eventId: string;
-  messageName: string;
-  payloadClassName: string;
-  fields: PayloadFieldDefinition[];
-}
-
-/**
- * Generate a ProcessEventListener that automatically extracts payload fields
- * and sets them as process variables when message events are triggered.
- * Handles both typed payload classes AND raw Map/JsonNode payloads for flexibility.
- */
-export function generatePayloadExtractorListener(
-  packageName: string,
-  events: MessageEventConfig[]
-): string {
-  // Generate extraction code for each event
-  const eventCases = events.map(event => {
-    const fieldSetters = event.fields.map(field => {
-      const fieldName = toCamelCase(field.name);
-      const getterName = `get${toPascalCase(field.name)}`;
-      const expression = field.expression || '';
-
-      // Parse the JSONPath to get the path segments for Map extraction
-      const pathSegments = expression
-        .replace(/^\$\.?/, '')
-        .split('.')
-        .filter((s: string) => s);
-
-      // Build nested map extraction code
-      let mapExtraction: string;
-      if (pathSegments.length === 0) {
-        mapExtraction = `rawMap.get("${fieldName}")`;
-      } else if (pathSegments.length === 1) {
-        mapExtraction = `rawMap.get("${pathSegments[0]}")`;
-      } else {
-        // For nested paths like $.data.userId, traverse the map
-        mapExtraction = 'rawMap';
-        for (let i = 0; i < pathSegments.length - 1; i++) {
-          mapExtraction = `getNestedMap(${mapExtraction}, "${pathSegments[i]}")`;
-        }
-        mapExtraction = `${mapExtraction} != null ? ${mapExtraction}.get("${pathSegments[pathSegments.length - 1]}") : null`;
-      }
-
-      return `                        variables.put("${fieldName}", typedPayload.${getterName}());`;
-    }).join('\n');
-
-    // Build the raw map extraction as fallback
-    const rawMapSetters = event.fields.map(field => {
-      const fieldName = toCamelCase(field.name);
-      const expression = field.expression || '';
-
-      const pathSegments = expression
-        .replace(/^\$\.?/, '')
-        .split('.')
-        .filter((s: string) => s);
-
-      let mapExtraction: string;
-      if (pathSegments.length === 0) {
-        mapExtraction = `rawMap.get("${fieldName}")`;
-      } else if (pathSegments.length === 1) {
-        mapExtraction = `rawMap.get("${pathSegments[0]}")`;
-      } else {
-        mapExtraction = 'rawMap';
-        for (let i = 0; i < pathSegments.length - 1; i++) {
-          mapExtraction = `getNestedMap(${mapExtraction}, "${pathSegments[i]}")`;
-        }
-        mapExtraction = `(${mapExtraction} != null ? ${mapExtraction}.get("${pathSegments[pathSegments.length - 1]}") : null)`;
-      }
-
-      return `                        Object ${fieldName}Value = ${mapExtraction};
-                        if (${fieldName}Value != null) {
-                            variables.put("${fieldName}", ${fieldName}Value);
-                        }`;
-    }).join('\n');
-
-    return `            if ("${event.eventId}".equals(nodeId)) {
-                Object messageData = variables.get("message_${event.eventId}");
-                if (messageData != null) {
-                    if (messageData instanceof ${event.payloadClassName}) {
-                        // Typed payload - BPMN has correct structureRef
-                        ${event.payloadClassName} typedPayload = (${event.payloadClassName}) messageData;
-${fieldSetters}
-                    } else if (messageData instanceof java.util.Map) {
-                        // Raw Map payload - extract using JSONPath expressions
-                        @SuppressWarnings("unchecked")
-                        java.util.Map<String, Object> rawMap = (java.util.Map<String, Object>) messageData;
-${rawMapSetters}
-                    }
-                }
-            }`;
-  }).join(' else ');
-
-  return `package ${packageName};
-
-import jakarta.enterprise.context.ApplicationScoped;
-import org.kie.api.event.process.ProcessNodeTriggeredEvent;
-import org.kie.api.event.process.ProcessNodeLeftEvent;
-import org.kie.api.event.process.ProcessStartedEvent;
-import org.kie.api.event.process.ProcessCompletedEvent;
-import org.kie.api.event.process.ProcessVariableChangedEvent;
-import org.kie.kogito.internal.process.event.DefaultKogitoProcessEventListener;
-import org.kie.kogito.internal.process.runtime.KogitoProcessInstance;
-
-import java.util.Map;
-
-/**
- * Auto-generated listener that extracts payload fields from message events
- * and sets them as process variables.
- * Handles both typed payload classes and raw Map payloads.
- * Generated by BAMOE - do not edit manually.
- */
-@ApplicationScoped
-public class MessagePayloadExtractor extends DefaultKogitoProcessEventListener {
-
-    @Override
-    public void afterNodeTriggered(ProcessNodeTriggeredEvent event) {
-        String nodeId = event.getNodeInstance().getNodeId().toExternalFormat();
-
-        if (event.getProcessInstance() instanceof KogitoProcessInstance) {
-            KogitoProcessInstance kpi = (KogitoProcessInstance) event.getProcessInstance();
-            Map<String, Object> variables = kpi.getVariables();
-
-${eventCases}
-        }
-    }
-
-    /**
-     * Safely get a nested map from a parent map
-     */
-    @SuppressWarnings("unchecked")
-    private static java.util.Map<String, Object> getNestedMap(Object parent, String key) {
-        if (parent instanceof java.util.Map) {
-            Object value = ((java.util.Map<String, Object>) parent).get(key);
-            if (value instanceof java.util.Map) {
-                return (java.util.Map<String, Object>) value;
-            }
-        }
-        return null;
-    }
-}
-`;
-}
 
 /**
  * Generate class name from message name

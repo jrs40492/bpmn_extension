@@ -3,182 +3,299 @@
  * Uses STANDARD BPMN data input/output associations - no custom extensions
  */
 
+// @ts-expect-error - no type definitions available
+import { TextFieldEntry, TextAreaEntry, SelectEntry } from '@bpmn-io/properties-panel';
+// @ts-expect-error - no type definitions available
+import { useService } from 'bpmn-js-properties-panel';
+
 import {
   isRestTask,
   getRestConfig,
   updateRestParam,
-  REST_PARAMS,
   getResultVariableName,
   getAvailableProcessVariables,
-  updateResultVariable
+  updateResultVariable,
+  updateResultOutputType,
+  updateResultVariableType
 } from './palette-provider';
 
-// REST Properties Group
-function RestPropertiesGroup(element: any, injector: any) {
-  if (!isRestTask(element)) {
-    return null;
-  }
+// ============================================================================
+// Type Definitions
+// ============================================================================
 
-  const modeling = injector.get('modeling');
-  const bpmnFactory = injector.get('bpmnFactory');
-  const config = getRestConfig(element);
-
-  if (!config) return null;
-
-  return {
-    id: 'rest-configuration',
-    label: 'REST API Configuration',
-    entries: [
-      {
-        id: 'rest-url',
-        element,
-        label: 'URL',
-        description: 'REST API endpoint URL',
-        component: createTextInput('Url', config, modeling, element)
-      },
-      {
-        id: 'rest-method',
-        element,
-        label: 'HTTP Method',
-        component: createSelectInput('Method', config, modeling, element, [
-          { value: 'GET', label: 'GET' },
-          { value: 'POST', label: 'POST' },
-          { value: 'PUT', label: 'PUT' },
-          { value: 'PATCH', label: 'PATCH' },
-          { value: 'DELETE', label: 'DELETE' }
-        ])
-      },
-      {
-        id: 'rest-content-type',
-        element,
-        label: 'Content-Type',
-        component: createSelectInput('ContentType', config, modeling, element, [
-          { value: 'application/json', label: 'application/json' },
-          { value: 'application/xml', label: 'application/xml' },
-          { value: 'text/plain', label: 'text/plain' }
-        ])
-      },
-      {
-        id: 'rest-content',
-        element,
-        label: 'Request Body',
-        description: 'Request body for POST/PUT/PATCH',
-        component: createTextAreaInput('Content', config, modeling, element)
-      },
-      {
-        id: 'rest-timeout',
-        element,
-        label: 'Timeout (ms)',
-        component: createTextInput('ReadTimeout', config, modeling, element)
-      },
-      {
-        id: 'rest-handle-errors',
-        element,
-        label: 'Handle Response Errors',
-        description: 'Throw exception on HTTP errors (4xx/5xx)',
-        component: createSelectInput('HandleResponseErrors', config, modeling, element, [
-          { value: 'false', label: 'False (return error in Result)' },
-          { value: 'true', label: 'True (throw exception)' }
-        ])
-      },
-      {
-        id: 'rest-output-variable',
-        element,
-        label: 'Output Variable',
-        description: 'Process variable to store the REST response',
-        component: createOutputVariableSelect(element, modeling, bpmnFactory)
-      }
-    ]
-  };
+interface BpmnElement {
+  businessObject?: any;
 }
 
-function createTextInput(paramName: string, config: Record<string, string>, modeling: any, element: any) {
-  return function TextInput(props: any) {
-    const html = (window as any).html;
-    if (!html) {
-      return null;
+interface CommandStack {
+  execute(command: string, context: Record<string, unknown>): void;
+}
+
+interface Modeling {
+  updateProperties(element: any, props: Record<string, unknown>): void;
+}
+
+interface BpmnFactory {
+  create(type: string, attrs?: Record<string, unknown>): any;
+}
+
+interface PropertyEntry {
+  id: string;
+  component: (props: { element: BpmnElement; id: string }) => unknown;
+  isEdited?: (element: BpmnElement) => boolean;
+}
+
+interface PropertiesGroup {
+  id: string;
+  label: string;
+  entries: PropertyEntry[];
+}
+
+interface PropertiesPanel {
+  registerProvider(priority: number, provider: unknown): void;
+}
+
+// ============================================================================
+// Property Panel Components
+// ============================================================================
+
+function UrlEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['Url'] || '';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'Url', value, modeling, bpmnFactory);
+  };
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('URL'),
+    description: translate('Use {variableName} for process variable substitution'),
+    getValue,
+    setValue,
+    debounce
+  });
+}
+
+function MethodEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['Method'] || 'GET';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'Method', value, modeling, bpmnFactory);
+  };
+
+  const getOptions = () => [
+    { value: 'GET', label: 'GET' },
+    { value: 'POST', label: 'POST' },
+    { value: 'PUT', label: 'PUT' },
+    { value: 'PATCH', label: 'PATCH' },
+    { value: 'DELETE', label: 'DELETE' },
+    { value: 'HEAD', label: 'HEAD' },
+    { value: 'OPTIONS', label: 'OPTIONS' }
+  ];
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('HTTP Method'),
+    getValue,
+    setValue,
+    getOptions
+  });
+}
+
+function ContentTypeEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['ContentType'] || 'application/json';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'ContentType', value, modeling, bpmnFactory);
+  };
+
+  const getOptions = () => [
+    { value: 'application/json', label: 'application/json' },
+    { value: 'application/xml', label: 'application/xml' },
+    { value: 'application/x-www-form-urlencoded', label: 'application/x-www-form-urlencoded' },
+    { value: 'text/plain', label: 'text/plain' }
+  ];
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Content-Type'),
+    getValue,
+    setValue,
+    getOptions
+  });
+}
+
+function AcceptHeaderEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['AcceptHeader'] || 'application/json';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'AcceptHeader', value, modeling, bpmnFactory);
+  };
+
+  const getOptions = () => [
+    { value: 'application/json', label: 'application/json' },
+    { value: 'application/xml', label: 'application/xml' },
+    { value: 'text/plain', label: 'text/plain' },
+    { value: '*/*', label: '*/* (any)' }
+  ];
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Accept Header'),
+    getValue,
+    setValue,
+    getOptions
+  });
+}
+
+function RequestBodyEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['Content'] || '';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'Content', value, modeling, bpmnFactory);
+  };
+
+  return TextAreaEntry({
+    id,
+    element,
+    label: translate('Request Body'),
+    description: translate('Request body for POST/PUT/PATCH'),
+    getValue,
+    setValue,
+    debounce,
+    rows: 4
+  });
+}
+
+function ResponseTypeEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['ResultClass'] || '';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'ResultClass', value, modeling, bpmnFactory);
+    updateResultOutputType(element, value);
+    updateResultVariableType(element, value, bpmnFactory);
+  };
+
+  const getOptions = () => [
+    { value: '', label: translate('String (raw response)') },
+    { value: 'java.util.Map', label: translate('Map (JSON object)') },
+    { value: 'java.util.List', label: translate('List (JSON array)') },
+    { value: 'com.fasterxml.jackson.databind.JsonNode', label: translate('JsonNode (generic JSON)') }
+  ];
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Response Type'),
+    description: translate('How to parse the response body'),
+    getValue,
+    setValue,
+    getOptions
+  });
+}
+
+function TimeoutEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
+
+  const getValue = () => {
+    const config = getRestConfig(element);
+    return config?.['ReadTimeout'] || '30000';
+  };
+
+  const setValue = (value: string) => {
+    updateRestParam(element, 'ReadTimeout', value, modeling, bpmnFactory);
+    updateRestParam(element, 'ConnectTimeout', value, modeling, bpmnFactory);
+  };
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('Timeout (ms)'),
+    getValue,
+    setValue,
+    debounce
+  });
+}
+
+function OutputVariableEntry(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const modeling = useService('modeling') as Modeling;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+
+  const getValue = () => {
+    return getResultVariableName(element) || 'restResult';
+  };
+
+  const setValue = (value: string) => {
+    if (value && value !== '__new__') {
+      updateResultVariable(element, value, modeling, bpmnFactory);
     }
-
-    const value = config[paramName] || '';
-
-    const onChange = (event: any) => {
-      updateRestParam(element, paramName, event.target.value, modeling);
-      config[paramName] = event.target.value;
-    };
-
-    return html`
-      <input
-        type="text"
-        class="bio-properties-panel-input"
-        value=${value}
-        onInput=${onChange}
-      />
-    `;
   };
-}
 
-function createSelectInput(paramName: string, config: Record<string, string>, modeling: any, element: any, options: Array<{value: string, label: string}>) {
-  return function SelectInput(props: any) {
-    const html = (window as any).html;
-    if (!html) return null;
-
-    const value = config[paramName] || options[0].value;
-
-    const onChange = (event: any) => {
-      updateRestParam(element, paramName, event.target.value, modeling);
-      config[paramName] = event.target.value;
-    };
-
-    return html`
-      <select
-        class="bio-properties-panel-input"
-        value=${value}
-        onChange=${onChange}
-      >
-        ${options.map(opt => html`<option value=${opt.value}>${opt.label}</option>`)}
-      </select>
-    `;
-  };
-}
-
-function createTextAreaInput(paramName: string, config: Record<string, string>, modeling: any, element: any) {
-  return function TextAreaInput(props: any) {
-    const html = (window as any).html;
-    if (!html) return null;
-
-    const value = config[paramName] || '';
-
-    const onChange = (event: any) => {
-      updateRestParam(element, paramName, event.target.value, modeling);
-      config[paramName] = event.target.value;
-    };
-
-    return html`
-      <textarea
-        class="bio-properties-panel-input"
-        rows="4"
-        onInput=${onChange}
-      >${value}</textarea>
-    `;
-  };
-}
-
-function createOutputVariableSelect(element: any, modeling: any, bpmnFactory: any) {
-  return function OutputVariableSelect(props: any) {
-    const html = (window as any).html;
-    if (!html) return null;
-
-    // Get current result variable
+  const getOptions = () => {
     const currentVariable = getResultVariableName(element) || 'restResult';
-
-    // Get available process variables
     const availableVariables = getAvailableProcessVariables(element);
 
-    // Build options list - include current value even if not in list
     const options: Array<{ value: string; label: string }> = [];
-
-    // Add "Create new variable" option
-    options.push({ value: '__new__', label: '-- Create New Variable --' });
 
     // Add existing variables
     for (const v of availableVariables) {
@@ -190,53 +307,120 @@ function createOutputVariableSelect(element: any, modeling: any, bpmnFactory: an
       options.push({ value: currentVariable, label: `${currentVariable} (current)` });
     }
 
-    const onChange = (event: any) => {
-      const newValue = event.target.value;
-
-      if (newValue === '__new__') {
-        // Prompt for new variable name
-        const newVarName = prompt('Enter new variable name:', 'responseData');
-        if (newVarName && newVarName.trim()) {
-          updateResultVariable(element, newVarName.trim(), modeling, bpmnFactory);
-        }
-      } else if (newValue) {
-        updateResultVariable(element, newValue, modeling, bpmnFactory);
-      }
-    };
-
-    return html`
-      <select
-        class="bio-properties-panel-input"
-        value=${currentVariable}
-        onChange=${onChange}
-      >
-        ${options.map(opt => html`
-          <option value=${opt.value} selected=${opt.value === currentVariable}>
-            ${opt.label}
-          </option>
-        `)}
-      </select>
-    `;
+    return options;
   };
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Output Variable'),
+    description: translate('Process variable to store the REST response'),
+    getValue,
+    setValue,
+    getOptions
+  });
 }
 
-// Provider class
+// Create entries for REST Task
+function RestTaskEntries(props: { element: BpmnElement }): PropertyEntry[] {
+  const { element } = props;
+
+  if (!isRestTask(element)) {
+    return [];
+  }
+
+  return [
+    {
+      id: 'rest-url',
+      component: UrlEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['Url'];
+      }
+    },
+    {
+      id: 'rest-method',
+      component: MethodEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['Method'] && config['Method'] !== 'GET';
+      }
+    },
+    {
+      id: 'rest-content-type',
+      component: ContentTypeEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['ContentType'] && config['ContentType'] !== 'application/json';
+      }
+    },
+    {
+      id: 'rest-accept-header',
+      component: AcceptHeaderEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['AcceptHeader'] && config['AcceptHeader'] !== 'application/json';
+      }
+    },
+    {
+      id: 'rest-content',
+      component: RequestBodyEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['Content'];
+      }
+    },
+    {
+      id: 'rest-result-class',
+      component: ResponseTypeEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['ResultClass'];
+      }
+    },
+    {
+      id: 'rest-timeout',
+      component: TimeoutEntry,
+      isEdited: () => {
+        const config = getRestConfig(element);
+        return !!config?.['ReadTimeout'] && config['ReadTimeout'] !== '30000';
+      }
+    },
+    {
+      id: 'rest-output-variable',
+      component: OutputVariableEntry,
+      isEdited: () => {
+        const varName = getResultVariableName(element);
+        return !!varName && varName !== 'restResult';
+      }
+    }
+  ];
+}
+
+// ============================================================================
+// Properties Provider Class
+// ============================================================================
+
 export default class RestTaskPropertiesProvider {
-  static $inject = ['propertiesPanel', 'injector'];
+  static $inject = ['propertiesPanel'];
 
-  private injector: any;
-
-  constructor(propertiesPanel: any, injector: any) {
-    this.injector = injector;
+  constructor(propertiesPanel: PropertiesPanel) {
     propertiesPanel.registerProvider(500, this);
   }
 
-  getGroups(element: any) {
-    return (groups: any[]) => {
-      const restGroup = RestPropertiesGroup(element, this.injector);
-      if (restGroup) {
-        groups.push(restGroup);
+  getGroups(element: BpmnElement) {
+    return (groups: PropertiesGroup[]) => {
+      if (!isRestTask(element)) {
+        return groups;
       }
+
+      // Add REST Configuration group
+      groups.push({
+        id: 'rest-configuration',
+        label: 'REST API Configuration',
+        entries: RestTaskEntries({ element })
+      });
+
       return groups;
     };
   }
