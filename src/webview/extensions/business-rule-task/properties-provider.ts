@@ -8,6 +8,12 @@
  * - dataInputAssociation with assignments for values
  */
 
+// Type definitions for properties panel components
+// @ts-expect-error - no type definitions available
+import type { TextFieldEntry as TextFieldEntryFn, SelectEntry as SelectEntryFn } from '@bpmn-io/properties-panel';
+// @ts-expect-error - no type definitions available
+import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
+
 // @ts-expect-error - no type definitions available
 import { TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
@@ -16,6 +22,29 @@ import { useService } from 'bpmn-js-properties-panel';
 import { html } from 'htm/preact';
 // @ts-expect-error - no type definitions available
 import { useState } from '@bpmn-io/properties-panel/preact/hooks';
+
+// Extended types for properties panel entries that include runtime-supported properties
+interface ExtendedTextFieldEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  debounce?: unknown;
+  disabled?: boolean;
+}
+
+interface ExtendedSelectEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  getOptions: () => Array<{ value: string; label: string }>;
+  debounce?: unknown;
+}
 
 import { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
 
@@ -1058,9 +1087,8 @@ function DmnFileSelect(props: { element: BpmnElement; id: string }) {
     description: translate('Select the DMN file containing the decision'),
     getValue,
     setValue,
-    getOptions,
-    debounce
-  });
+    getOptions
+  } as ExtendedSelectEntryProps);
 }
 
 // Decision Select component
@@ -1118,9 +1146,8 @@ function DecisionSelect(props: { element: BpmnElement; id: string }) {
     description: translate('Select the decision to invoke'),
     getValue,
     setValue,
-    getOptions,
-    debounce
-  });
+    getOptions
+  } as ExtendedSelectEntryProps);
 }
 
 // DMN Namespace component (read-only, auto-populated)
@@ -1144,9 +1171,8 @@ function DmnNamespace(props: { element: BpmnElement; id: string }) {
     description: translate('Namespace of the DMN model (auto-populated)'),
     getValue,
     setValue,
-    debounce,
     disabled: true
-  });
+  } as ExtendedTextFieldEntryProps);
 }
 
 // Available type options for DMN inputs
@@ -1598,7 +1624,7 @@ function createDmnOutputMappingComponent(outputName: string, dmnVariableName: st
       getValue,
       setValue,
       getOptions
-    });
+    } as ExtendedSelectEntryProps);
   };
 }
 
