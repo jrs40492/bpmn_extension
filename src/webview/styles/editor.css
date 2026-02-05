@@ -769,38 +769,38 @@ html, body {
 
 /* Sequence Flows - keep default but style arrows */
 .djs-connection .djs-visual > path {
-  stroke: #b3b3b3 !important;
+  stroke: #8c8c8c !important;
 }
 
 /* Arrow markers (arrowheads) for dark mode */
 /* These are SVG markers defined in <defs> that need explicit fill styling */
 .djs-container svg defs marker path {
-  fill: #b3b3b3 !important;
-  stroke: #b3b3b3 !important;
+  fill: #8c8c8c !important;
+  stroke: #8c8c8c !important;
 }
 
 /* Specifically target sequence flow end markers */
 .djs-container svg defs marker[id*="sequenceflow-end"] path,
 .djs-container svg defs marker[id*="association-end"] path,
 .djs-container svg defs marker[id*="messageflow-end"] path {
-  fill: #b3b3b3 !important;
-  stroke: #b3b3b3 !important;
+  fill: #8c8c8c !important;
+  stroke: #8c8c8c !important;
 }
 
 /* Conditional flow markers (diamond) */
 .djs-container svg defs marker[id*="conditional-flow"] path {
   fill: var(--vscode-editor-background, #1e1e1e) !important;
-  stroke: #b3b3b3 !important;
+  stroke: #8c8c8c !important;
 }
 
 /* Default flow markers (slash) */
 .djs-container svg defs marker[id*="conditional-default"] path {
-  stroke: #b3b3b3 !important;
+  stroke: #8c8c8c !important;
 }
 
 /* Message Flows - dashed gray */
 [data-element-id*="MessageFlow"] .djs-visual > path {
-  stroke: #b3b3b3 !important;
+  stroke: #8c8c8c !important;
 }
 
 /* Selected element highlight */
