@@ -77,6 +77,9 @@ async function init(): Promise<void> {
   // Track if we should skip the next change event
   let skipNextChange = false;
 
+  // Track the current file name (for project analysis)
+  let currentFileName = 'diagram.bpmn';
+
   // Debounced function to send changes to extension
   const sendChange = debounce(async () => {
     try {
@@ -507,28 +510,34 @@ async function init(): Promise<void> {
         }
         break;
 
-      case 'dmnFiles':
+      case 'dmnFiles': {
         // Update available DMN files for Business Rule Task properties
-        console.log('[BAMOE Webview] Received dmnFiles:', message.files);
-        setAvailableDmnFiles(message.files);
+        
+        // Only update if something actually changed to prevent unnecessary re-validation/re-renders
+        const currentFiles = getAvailableDmnFiles();
+        const hasChanged = JSON.stringify(currentFiles) !== JSON.stringify(message.files);
+        
+        if (hasChanged) {
+          setAvailableDmnFiles(message.files);
 
-        // Update compliance panel with DMN files for validation
-        compliancePanel.setDmnFiles(message.files);
+          // Update compliance panel with DMN files for validation
+          compliancePanel.setDmnFiles(message.files);
 
-        // Re-run full validation now that DMN files are available
-        // This updates the status bar and element overlays
-        runValidationDebounced();
+          // Re-run full validation now that DMN files are available
+          // This updates the status bar and element overlays
+          runValidationDebounced();
 
-        // Run DMN reference validation
-        const dmnValidationIssues = validateBusinessRuleTasks(
-          elementRegistry as Parameters<typeof validateBusinessRuleTasks>[0],
-          message.files
-        );
-        if (dmnValidationIssues.length > 0) {
-          console.log('[BAMOE Webview] DMN validation issues:', dmnValidationIssues);
-          postMessage(vscode, { type: 'validation', issues: dmnValidationIssues });
+          // Run DMN reference validation
+          const dmnValidationIssues = validateBusinessRuleTasks(
+            elementRegistry as Parameters<typeof validateBusinessRuleTasks>[0],
+            message.files
+          );
+          if (dmnValidationIssues.length > 0) {
+            postMessage(vscode, { type: 'validation', issues: dmnValidationIssues });
+          }
         }
         break;
+      }
 
       case 'createDmnFileResult':
         // Handle DMN file creation result

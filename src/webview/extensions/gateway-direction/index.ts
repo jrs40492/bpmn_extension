@@ -8,12 +8,10 @@
 import { is } from 'bpmn-js/lib/util/ModelUtil';
 
 // Type definitions for properties panel components
-// @ts-expect-error - no type definitions available
 import type { SelectEntry as SelectEntryFn } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
 
-// @ts-expect-error - no type definitions available
 import { SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';

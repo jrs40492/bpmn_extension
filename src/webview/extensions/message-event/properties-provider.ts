@@ -15,7 +15,7 @@ import type { ListGroup as ListGroupFn, TextFieldEntry as TextFieldEntryFn, Sele
 import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
 
 // @ts-expect-error - no type definitions available
-import { ListGroup, TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
+import { ListGroup, TextFieldEntry, SelectEntry, CheckboxEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
 
@@ -416,6 +416,14 @@ function getPayloadDefinition(element: BpmnElement): PayloadDefinition | null {
 function getPayloadFields(element: BpmnElement): PayloadField[] {
   const payloadDef = getPayloadDefinition(element);
   return payloadDef?.fields || [];
+}
+
+/**
+ * Check if CloudEvents format is enabled for this element
+ */
+function isCloudEventsEnabled(element: BpmnElement): boolean {
+  const payloadDef = getPayloadDefinition(element);
+  return payloadDef?.cloudEvents ?? false;
 }
 
 /**
@@ -889,7 +897,7 @@ function CloudEventsToggle(props: { element: BpmnElement; id: string }) {
         // Extract the simple field name from existing expression
         const simpleName = extractFieldFromExpression(field.expression) || field.name;
         // Rebuild the expression with the new mode
-        const newExpression = buildExpression(simpleName, value);
+        const newExpression = buildExpression(simpleName);
         commandStack.execute('element.updateModdleProperties', {
           element,
           moddleElement: field,

@@ -178,7 +178,7 @@ export function createFeelReferencePanel(onClose: () => void): HTMLElement {
 
         // Update active content
         panel.querySelectorAll('.feel-category-content').forEach(c => c.classList.remove('active'));
-        const content = panel.querySelector(`[data-category="${categoryIndex}"]`);
+        const content = panel.querySelector(`.feel-category-content[data-category="${categoryIndex}"]`);
         content?.classList.add('active');
 
         // Hide search results

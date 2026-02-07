@@ -483,7 +483,7 @@ function showTestCasesDialog(engine: DecisionTestingEngine, onRunTestCase: (test
     btn.addEventListener('click', (e) => {
       const testId = (e.target as HTMLElement).dataset.testId;
       const testCase = testCases.find(tc => tc.id === testId);
-      if (testCase && confirm(`Delete test case "${testCase.name}"?`)) {
+      if (testCase && testId && confirm(`Delete test case "${testCase.name}"?`)) {
         engine.deleteTestCase(testId);
         document.body.removeChild(dialog);
         showToast('Test case deleted');
