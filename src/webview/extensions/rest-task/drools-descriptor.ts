@@ -27,6 +27,29 @@ export const droolsDescriptor = {
       ]
     },
     {
+      // Extends bpmn:ServiceTask to add drools:serviceimplementation, serviceinterface, serviceoperation
+      name: 'ServiceTaskExtension',
+      isAbstract: true,
+      extends: ['bpmn:ServiceTask'],
+      properties: [
+        {
+          name: 'serviceimplementation',
+          type: 'String',
+          isAttr: true
+        },
+        {
+          name: 'serviceinterface',
+          type: 'String',
+          isAttr: true
+        },
+        {
+          name: 'serviceoperation',
+          type: 'String',
+          isAttr: true
+        }
+      ]
+    },
+    {
       // Extends bpmn:DataInput to add drools:dtype attribute (required by Kogito/BAMOE)
       name: 'DataInputExtension',
       isAbstract: true,

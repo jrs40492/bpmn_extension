@@ -44,6 +44,9 @@ import kafkaTaskModule, { kafkaTaskDescriptor } from './extensions/kafka-task';
 // Custom Script task extension
 import scriptTaskModule from './extensions/script-task';
 
+// Custom Java Service Task extension
+import javaServiceTaskModule from './extensions/service-task';
+
 // Custom Business Rule Task extension (DMN linking)
 import businessRuleTaskModule, { businessRuleTaskDescriptor } from './extensions/business-rule-task';
 
@@ -189,6 +192,7 @@ export function createModeler(
     restTaskModule,
     kafkaTaskModule,
     scriptTaskModule,
+    javaServiceTaskModule,
     businessRuleTaskModule,
     processVariablesModule,
     messageEventModule,
