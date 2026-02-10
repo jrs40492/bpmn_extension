@@ -498,45 +498,19 @@ html, body {
 }
 
 /* Label styling for dark themes */
-/* Default: External labels (on canvas) - light color for dark background */
-.djs-label {
-  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
-/* Internal labels for Tasks/Activities (inside elements with light backgrounds) - dark color */
-/* Only target Task types which have internal labels and white/light fill */
-.djs-element[data-element-id*="Task"] .djs-label,
-.djs-element[data-element-id*="Activity"] .djs-label,
-.djs-element[data-element-id*="SubProcess"] .djs-label,
-.djs-element[data-element-id*="CallActivity"] .djs-label {
+/* Internal labels (text inside task/activity shapes with white backgrounds) - dark color */
+.djs-element.djs-shape .djs-visual .djs-label {
   fill: #1e1e1e !important;
 }
 
-/* Participant/Lane labels (inside pools with light backgrounds) - dark text */
-.djs-element[data-element-id*="Participant"] .djs-label,
-.djs-element[data-element-id*="Lane"] .djs-label {
-  fill: #1e1e1e !important;
-}
-
-/* Gateway labels are EXTERNAL (on dark canvas) - keep light */
-.djs-element[data-element-id*="Gateway"] .djs-label {
+/* External labels (events, gateways, etc. - separate label elements on dark canvas) - light color */
+.djs-element.djs-label .djs-label {
   fill: var(--vscode-editor-foreground, #d4d4d4) !important;
 }
 
-/* Event labels are EXTERNAL (on dark canvas) - keep light */
-.djs-element[data-element-id*="Event"] .djs-label {
-  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
-/* Sequence flow and association labels (on dark canvas) - light */
+/* Connection labels (sequence flow names on dark canvas) - light color */
 .djs-connection .djs-label {
   fill: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
-/* Data objects/stores have light fill, so dark text */
-.djs-element[data-element-id*="DataObject"] .djs-label,
-.djs-element[data-element-id*="DataStore"] .djs-label {
-  fill: #1e1e1e !important;
 }
 
 /* Error/warning overlays */
