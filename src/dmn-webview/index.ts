@@ -184,6 +184,11 @@ function toDmn13(xml: string): string {
   return result;
 }
 
+function fromDmn16ToDmn13(xml: string): string {
+  // Convert DMN 1.6 to DMN 1.3 (dmn-js doesn't support 1.6)
+  return convertNamespaces(xml, DMN16_MODEL, DMN16_DMNDI, DMN13_MODEL, DMN13_DMNDI);
+}
+
 // Initialize the editor
 async function init(): Promise<void> {
   const container = document.getElementById('canvas');
@@ -568,15 +573,22 @@ async function init(): Promise<void> {
           if (!xmlToImport || xmlToImport.trim() === '') {
             xmlToImport = getEmptyDmnDiagram();
           }
-          // Convert older DMN 1.2 documents to 1.3 for compatibility
+          // Convert non-1.3 DMN documents to 1.3 for compatibility (dmn-js only supports 1.3)
           const webviewSpec = detectDmnSpec(xmlToImport);
           console.log(`[DMN Webview Debug] Received XML with spec: ${webviewSpec}, length: ${xmlToImport.length}`);
           if (webviewSpec === '1.2') {
             console.log(`[DMN Webview Debug] Converting ${webviewSpec} to 1.3 in webview`);
             xmlToImport = toDmn13(xmlToImport);
             console.log(`[DMN Webview Debug] After webview conversion, spec: ${detectDmnSpec(xmlToImport)}`);
+          } else if (webviewSpec === '1.6') {
+            console.log(`[DMN Webview Debug] Converting ${webviewSpec} to 1.3 in webview`);
+            xmlToImport = fromDmn16ToDmn13(xmlToImport);
+            console.log(`[DMN Webview Debug] After webview conversion, spec: ${detectDmnSpec(xmlToImport)}`);
           }
           await dmnModeler.importXML(xmlToImport);
+
+          // Fix center-to-center waypoints from KIE/Drools-authored DMN files
+          fixConnectionWaypoints(dmnModeler);
 
           // Attach change listener to the active viewer (decision table, etc.)
           attachToCurrentViewer();
@@ -611,11 +623,17 @@ async function init(): Promise<void> {
           // Save current view
           const currentActiveView = activeView;
 
-          // Convert older DMN 1.2 documents to 1.3 on update as well
-          if (detectDmnSpec(xmlToUpdate) === '1.2') {
+          // Convert non-1.3 DMN documents to 1.3 on update as well
+          const updateSpec = detectDmnSpec(xmlToUpdate);
+          if (updateSpec === '1.2') {
             xmlToUpdate = toDmn13(xmlToUpdate);
+          } else if (updateSpec === '1.6') {
+            xmlToUpdate = fromDmn16ToDmn13(xmlToUpdate);
           }
           await dmnModeler.importXML(xmlToUpdate);
+
+          // Fix center-to-center waypoints from KIE/Drools-authored DMN files
+          fixConnectionWaypoints(dmnModeler);
 
           // Attach change listener to the active viewer
           attachToCurrentViewer();
@@ -679,6 +697,32 @@ function setupZoomControls(dmnModeler: any): void {
       canvas.zoom('fit-viewport');
     }
   });
+}
+
+/**
+ * Fix connection waypoints that were imported as center-to-center coordinates.
+ * DMN files authored by tools like KIE/Drools store waypoints pointing to element
+ * centers. This recalculates them to edge-to-edge without touching the command stack,
+ * so the document isn't marked dirty on open.
+ */
+function fixConnectionWaypoints(dmnModeler: any): void {
+  const activeViewer = dmnModeler.getActiveViewer();
+  if (!activeViewer) return;
+
+  try {
+    const elementRegistry = activeViewer.get('elementRegistry');
+    const connectionDocking = activeViewer.get('connectionDocking');
+    const graphicsFactory = activeViewer.get('graphicsFactory');
+
+    const connections = elementRegistry.filter((el: any) => el.waypoints);
+    connections.forEach((connection: any) => {
+      connection.waypoints = connectionDocking.getCroppedWaypoints(connection);
+      graphicsFactory.update('connection', connection, elementRegistry.getGraphics(connection));
+    });
+  } catch (err) {
+    // Not all viewers (e.g., decision table) have these services
+    console.log('[DMN Editor] Could not fix connection waypoints:', err);
+  }
 }
 
 // Start the editor when DOM is ready

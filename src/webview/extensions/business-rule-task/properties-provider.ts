@@ -426,7 +426,45 @@ function setDataInputValue(element: BpmnElement, inputName: string, value: strin
   const ioSpec = bo.ioSpecification;
   if (ioSpec) {
     const dataInputs = ioSpec.dataInputs || [];
-    const dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
+    let dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
+
+    // If data input doesn't exist yet, create it and add to the existing ioSpec
+    if (!dataInput) {
+      const taskId = bo.id;
+      const inputId = `${taskId}_${inputName}InputX`;
+      const itemDefId = `_${inputId}Item`;
+      const definitions = getDefinitions(element);
+      const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.String', bpmnFactory);
+
+      dataInput = bpmnFactory.create('bpmn:DataInput', {
+        id: inputId,
+        name: inputName,
+        itemSubjectRef: itemDef
+      }) as DataInput;
+      dataInput.set?.('drools:dtype', 'java.lang.String');
+      dataInput.$parent = ioSpec;
+
+      if (!ioSpec.dataInputs) {
+        ioSpec.dataInputs = [];
+      }
+      ioSpec.dataInputs.push(dataInput);
+
+      // Add to inputSet
+      const inputSet = ioSpec.inputSets?.[0];
+      if (inputSet) {
+        if (!(inputSet as any).dataInputRefs) {
+          (inputSet as any).dataInputRefs = [];
+        }
+        (inputSet as any).dataInputRefs.push(dataInput);
+      }
+
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: bo,
+        properties: { ioSpecification: ioSpec }
+      });
+    }
+
     if (dataInput) {
       const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: value });
       const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });

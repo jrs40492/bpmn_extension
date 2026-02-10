@@ -81,6 +81,10 @@ function toDmn13(xml: string): string {
   return result;
 }
 
+function fromDmn16ToDmn13(xml: string): string {
+  return convertNamespaces(xml, DMN16_MODEL, DMN16_DMNDI, DMN13_MODEL, DMN13_DMNDI);
+}
+
 function convertIfLegacy(xml: string): string {
   const spec = detectDmnSpec(xml);
   console.log(`[DMN Debug] Detected spec: ${spec} for XML length: ${xml.length}`);
@@ -96,6 +100,16 @@ function convertIfLegacy(xml: string): string {
       return converted;
     } catch (error) {
       console.error(`[DMN Debug] Failed to convert ${spec} to 1.3:`, error);
+      return xml;
+    }
+  }
+  if (spec === '1.6') {
+    try {
+      const converted = fromDmn16ToDmn13(xml);
+      console.log(`[DMN Debug] Successfully converted 1.6 to 1.3, XML length: ${converted.length}`);
+      return converted;
+    } catch (error) {
+      console.error(`[DMN Debug] Failed to convert 1.6 to 1.3:`, error);
       return xml;
     }
   }
