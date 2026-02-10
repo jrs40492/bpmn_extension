@@ -1,7 +1,7 @@
 {
   "name": "bamoe",
   "displayName": "BAMOE - BPMN & DMN Editor",
-  "description": "Visual BPMN 2.0 and DMN 1.3 editors for VS Code with validation support",
+  "description": "Visual BPMN 2.0 and DMN 1.6 editors for VS Code with validation support",
   "version": "0.1.0",
   "publisher": "bamoe",
   "license": "MIT",
@@ -141,7 +141,7 @@
     "@vscode/test-electron": "^2.4.0",
     "@vscode/vsce": "^2.22.0",
     "eslint": "^8.56.0",
-    "rollup": "^4.9.0",
+    "rollup": "^4.57.1",
     "rollup-plugin-css-only": "^4.5.2",
     "tslib": "^2.6.2",
     "typescript": "^5.3.3"

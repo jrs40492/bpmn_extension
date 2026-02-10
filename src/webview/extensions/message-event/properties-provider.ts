@@ -8,10 +8,46 @@
  * - Output mappings (creates bpmn:dataOutput and bpmn:dataOutputAssociation)
  */
 
+// Type definitions for properties panel components
 // @ts-expect-error - no type definitions available
-import { ListGroup, TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
+import type { ListGroup as ListGroupFn, TextFieldEntry as TextFieldEntryFn, SelectEntry as SelectEntryFn, CheckboxEntry as CheckboxEntryFn } from '@bpmn-io/properties-panel';
+// @ts-expect-error - no type definitions available
+import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
+
+// @ts-expect-error - no type definitions available
+import { ListGroup, TextFieldEntry, SelectEntry, CheckboxEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
+
+// Extended types for properties panel entries that include runtime-supported properties
+interface ExtendedTextFieldEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  debounce?: unknown;
+}
+
+interface ExtendedSelectEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => string;
+  setValue: (value: string) => void;
+  getOptions: () => Array<{ value: string; label: string }>;
+}
+
+interface ExtendedCheckboxEntryProps {
+  id: string;
+  element: unknown;
+  label: string;
+  description?: string;
+  getValue: () => boolean;
+  setValue: (value: boolean) => void;
+}
 
 // ============================================================================
 // Type Definitions
@@ -106,9 +142,11 @@ interface PropertyEntry {
 
 interface PropertiesGroup {
   id: string;
-  label: string;
-  entries: PropertyEntry[];
+  label?: string;
+  entries?: PropertyEntry[];
   component?: unknown;
+  items?: unknown[];
+  add?: (event: Event) => void;
 }
 
 // ============================================================================
@@ -378,6 +416,14 @@ function getPayloadDefinition(element: BpmnElement): PayloadDefinition | null {
 function getPayloadFields(element: BpmnElement): PayloadField[] {
   const payloadDef = getPayloadDefinition(element);
   return payloadDef?.fields || [];
+}
+
+/**
+ * Check if CloudEvents format is enabled for this element
+ */
+function isCloudEventsEnabled(element: BpmnElement): boolean {
+  const payloadDef = getPayloadDefinition(element);
+  return payloadDef?.cloudEvents ?? false;
 }
 
 /**
@@ -787,6 +833,91 @@ function getAvailableProcessVariables(element: BpmnElement): Array<{ id: string;
 // ============================================================================
 
 /**
+ * Message Name component
+ */
+function MessageName(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const commandStack = useService('commandStack') as CommandStack;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+  const debounce = useService('debounceInput') as <T>(fn: T) => T;
+
+  const getValue = () => {
+    const msgEvtDef = getMessageEventDefinition(element);
+    return msgEvtDef?.messageRef?.name || '';
+  };
+
+  const setValue = (value: string) => {
+    const message = getOrCreateMessage(element, bpmnFactory, commandStack);
+    if (message) {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: message,
+        properties: { name: value }
+      });
+    }
+  };
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('Message Name'),
+    description: translate('Name of the message that triggers this start event'),
+    getValue,
+    setValue
+  } as ExtendedTextFieldEntryProps);
+}
+
+/**
+ * CloudEvents Toggle component
+ * When enabled, expressions are automatically prefixed with $.data.
+ */
+function CloudEventsToggle(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const commandStack = useService('commandStack') as CommandStack;
+  const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
+  const translate = useService('translate') as (text: string) => string;
+
+  const getValue = () => {
+    return isCloudEventsEnabled(element);
+  };
+
+  const setValue = (value: boolean) => {
+    const payloadDef = ensurePayloadDefinition(element, bpmnFactory, commandStack);
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: payloadDef,
+      properties: { cloudEvents: value }
+    });
+
+    // Update all field expressions when toggling CloudEvents mode
+    const fields = payloadDef.fields || [];
+    for (const field of fields) {
+      if (field.name) {
+        // Extract the simple field name from existing expression
+        const simpleName = extractFieldFromExpression(field.expression) || field.name;
+        // Rebuild the expression with the new mode
+        const newExpression = buildExpression(simpleName);
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: field,
+          properties: { expression: newExpression }
+        });
+      }
+    }
+  };
+
+  return CheckboxEntry({
+    id,
+    element,
+    label: translate('CloudEvents Format'),
+    description: translate('Enable for CloudEvents messages (data nested under $.data). Disable for flat JSON payloads.'),
+    getValue,
+    setValue
+  });
+}
+
+/**
  * Payload Field Name component
  * When field name is set, also auto-sets the expression using CloudEvents format
  */
@@ -865,9 +996,8 @@ function PayloadFieldExpression(props: { id: string; field: PayloadField; elemen
     label: translate('Source Field'),
     description: translate('Field name in message payload (e.g., userId)'),
     getValue,
-    setValue,
-    debounce
-  });
+    setValue
+  } as ExtendedTextFieldEntryProps);
 }
 
 /**
@@ -953,7 +1083,7 @@ function createOutputMappingComponent(field: PayloadField) {
       getValue,
       setValue,
       getOptions
-    });
+    } as ExtendedSelectEntryProps);
   };
 }
 
@@ -1614,7 +1744,7 @@ export default class MessageEventPropertiesProvider {
             id: 'message-payload-fields',
             component: ListGroup,
             ...payloadGroup
-          } as PropertiesGroup);
+          });
         }
       }
 

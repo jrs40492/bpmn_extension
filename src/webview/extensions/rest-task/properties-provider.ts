@@ -79,7 +79,6 @@ function UrlEntry(props: { element: BpmnElement; id: string }) {
     id,
     element,
     label: translate('URL'),
-    description: translate('Use {variableName} for process variable substitution'),
     getValue,
     setValue,
     debounce
@@ -241,7 +240,6 @@ function ResponseTypeEntry(props: { element: BpmnElement; id: string }) {
     id,
     element,
     label: translate('Response Type'),
-    description: translate('How to parse the response body'),
     getValue,
     setValue,
     getOptions
@@ -314,7 +312,6 @@ function OutputVariableEntry(props: { element: BpmnElement; id: string }) {
     id,
     element,
     label: translate('Output Variable'),
-    description: translate('Process variable to store the REST response'),
     getValue,
     setValue,
     getOptions

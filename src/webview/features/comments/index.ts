@@ -174,7 +174,9 @@ function saveCommentToElement(comment: Comment): void {
 
   if (!commentsContainer) {
     commentsContainer = bpmnFactoryRef.create('bamoe:Comments', { comments: [] });
-    (commentsContainer as ModdleElement & { $parent: ExtensionElements }).$parent = extensionElements;
+    if (extensionElements) {
+      (commentsContainer as ModdleElement & { $parent: ExtensionElements }).$parent = extensionElements;
+    }
     commandStackRef.execute('element.updateModdleProperties', {
       element,
       moddleElement: extensionElements,

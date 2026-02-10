@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn2:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn2="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" id="_RHixQNoGED6vp-qqNxCmDQ" targetNamespace="http://www.omg.org/bpmn20" exporter="jBPM Process Modeler" exporterVersion="2.0" xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd http://www.jboss.org/drools drools.xsd http://www.omg.org/spec/DD/20100524/DC DC.xsd http://www.omg.org/spec/DD/20100524/DI DI.xsd">
+  <bpmn2:itemDefinition id="_requestItem" structureRef="com.sponsoredservices.EvaluationRequest" />
+  <bpmn2:itemDefinition id="_normalizedRequestItem" structureRef="com.sponsoredservices.NormalizedEvaluationRequest" />
+  <bpmn2:itemDefinition id="_contractsItem" structureRef="java.util.List" />
+  <bpmn2:itemDefinition id="_contractMatchItem" structureRef="Boolean" />
+  <bpmn2:itemDefinition id="_resultItem" structureRef="com.sponsoredservices.EvaluationResult" />
+  <bpmn2:itemDefinition id="_matchedContractItem" structureRef="com.sponsoredservices.Contract" />
+  <bpmn2:itemDefinition id="__1385319E-20BB-42ED-B323-790B00E2FD55_requestInputXItem" structureRef="com.sponsoredservices.EvaluationRequest" />
+  <bpmn2:itemDefinition id="__1385319E-20BB-42ED-B323-790B00E2FD55_normalizedRequestOutputXItem" structureRef="com.sponsoredservices.NormalizedEvaluationRequest" />
+  <bpmn2:itemDefinition id="__F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76_contractsOutputXItem" structureRef="java.util.List" />
+  <bpmn2:itemDefinition id="_3C2DFF42-C0C6-4972-8B71-2A80834A550B" structureRef="String" />
+  <bpmn2:message id="_NormalizeRequest_In" itemRef="_requestItem" />
+  <bpmn2:message id="_NormalizeRequest_Out" itemRef="_normalizedRequestItem" />
+  <bpmn2:message id="_LoadContracts_In" itemRef="_normalizedRequestItem" />
+  <bpmn2:message id="_LoadContracts_Out" itemRef="_contractsItem" />
+  <bpmn2:interface id="_NormalizeRequest_Service" name="com.sponsoredservices.EvaluationRequestNormalizer" implementationRef="com.sponsoredservices.EvaluationRequestNormalizer">
+    <bpmn2:operation id="_NormalizeRequest_Op" name="normalize" implementationRef="normalize">
+      <bpmn2:inMessageRef>_NormalizeRequest_In</bpmn2:inMessageRef>
+      <bpmn2:outMessageRef>_NormalizeRequest_Out</bpmn2:outMessageRef>
+    </bpmn2:operation>
+  </bpmn2:interface>
+  <bpmn2:interface id="_LoadContracts_Service" name="com.sponsoredservices.ContractLoader" implementationRef="com.sponsoredservices.ContractLoader">
+    <bpmn2:operation id="_LoadContracts_Op" name="loadContracts" implementationRef="loadContracts">
+      <bpmn2:inMessageRef>_LoadContracts_In</bpmn2:inMessageRef>
+      <bpmn2:outMessageRef>_LoadContracts_Out</bpmn2:outMessageRef>
+    </bpmn2:operation>
+  </bpmn2:interface>
+  <bpmn2:collaboration id="_6FDC2923-FDB6-43FA-B35C-0BF95BB1695A" name="Default Collaboration">
+    <bpmn2:participant id="_7A7E2AEB-BD18-44BA-88BF-053EA969FF88" name="Pool Participant" processRef="sponsorship_evaluation" />
+  </bpmn2:collaboration>
+  <bpmn2:itemDefinition id="__5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_userIdInputXItem" structureRef="java.lang.Object" />
+  <bpmn2:itemDefinition id="__5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_decisionInputXItem" structureRef="java.lang.String" />
+  <bpmn2:process id="sponsorship_evaluation" name="sponsorship-evaluation" processType="Public" isExecutable="true" drools:packageName="com.example" drools:version="1.0" drools:adHoc="false">
+    <bpmn2:property id="request" itemSubjectRef="_requestItem" name="request">
+      <bpmn2:extensionElements />
+    </bpmn2:property>
+    <bpmn2:property id="normalizedRequest" itemSubjectRef="_normalizedRequestItem" name="normalizedRequest">
+      <bpmn2:extensionElements />
+    </bpmn2:property>
+    <bpmn2:property id="contracts" itemSubjectRef="_contractsItem" name="contracts">
+      <bpmn2:extensionElements />
+    </bpmn2:property>
+    <bpmn2:property id="contractMatch" itemSubjectRef="_contractMatchItem" name="contractMatch" />
+    <bpmn2:property id="result" itemSubjectRef="_resultItem" name="result">
+      <bpmn2:extensionElements />
+    </bpmn2:property>
+    <bpmn2:property id="matchedContract" itemSubjectRef="_matchedContractItem" name="matchedContract">
+      <bpmn2:extensionElements />
+    </bpmn2:property>
+    <bpmn2:startEvent id="_918068F6-DD93-479E-A410-A1EF887D03BB">
+      <bpmn2:outgoing>_9EFD4033-DF7A-4CF0-999E-24469D073F97</bpmn2:outgoing>
+    </bpmn2:startEvent>
+    <bpmn2:endEvent id="_DB2B2C32-E59F-4D63-8880-1A242676A09A">
+      <bpmn2:incoming>_9BABC628-0980-4901-BD7A-BAB9E73D4326</bpmn2:incoming>
+    </bpmn2:endEvent>
+    <bpmn2:exclusiveGateway id="_5D85643B-3E47-4253-A4F6-E511AEBF7AF8" gatewayDirection="Diverging" default="_42386C68-B94F-4019-AD88-C09328415F8C">
+      <bpmn2:incoming>_5730091A-8DF1-4F01-9397-0BAA5F4ED500</bpmn2:incoming>
+      <bpmn2:outgoing>_E536D328-906A-4436-9FDB-7613077A5BC8</bpmn2:outgoing>
+      <bpmn2:outgoing>_42386C68-B94F-4019-AD88-C09328415F8C</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:exclusiveGateway id="_526D2F5E-1EA8-4E3A-96EA-43A4587B3BA8" gatewayDirection="Converging" default="_9BABC628-0980-4901-BD7A-BAB9E73D4326">
+      <bpmn2:incoming>_656374EF-A393-4127-9587-06CEEDCC66A5</bpmn2:incoming>
+      <bpmn2:incoming>_05E9CA57-A4EB-4434-9C77-1B962CA063E1</bpmn2:incoming>
+      <bpmn2:outgoing>_9BABC628-0980-4901-BD7A-BAB9E73D4326</bpmn2:outgoing>
+    </bpmn2:exclusiveGateway>
+    <bpmn2:scriptTask id="_1385319E-20BB-42ED-B323-790B00E2FD55" name="Normalize Request" scriptFormat="java">
+      <bpmn2:incoming>_9EFD4033-DF7A-4CF0-999E-24469D073F97</bpmn2:incoming>
+      <bpmn2:outgoing>_2787A13B-A24B-4B82-8E4C-0BFBA7AF7E57</bpmn2:outgoing>
+      <bpmn2:script>
+com.sponsoredservices.EvaluationRequest req = (com.sponsoredservices.EvaluationRequest) kcontext.getVariable("request");
+com.sponsoredservices.NormalizedEvaluationRequest norm = com.sponsoredservices.EvaluationRequestNormalizer.normalize(req);
+kcontext.setVariable("normalizedRequest", norm);
+      </bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:scriptTask id="_C497DA48-4857-4417-A73A-2E54D4FCD6C3" name="Build Sponsorship Result" scriptFormat="java">
+      <bpmn2:incoming>_E536D328-906A-4436-9FDB-7613077A5BC8</bpmn2:incoming>
+      <bpmn2:outgoing>_656374EF-A393-4127-9587-06CEEDCC66A5</bpmn2:outgoing>
+      <bpmn2:script>
+com.sponsoredservices.NormalizedEvaluationRequest normalized = (com.sponsoredservices.NormalizedEvaluationRequest) kcontext.getVariable("normalizedRequest");
+java.util.List contractsList = (java.util.List) kcontext.getVariable("contracts");
+com.sponsoredservices.Contract matched = com.sponsoredservices.ContractMatcher.findFirstMatch(normalized, contractsList);
+if (matched == null) {
+  kcontext.setVariable("matchedContract", null);
+  kcontext.setVariable("contractMatch", false);
+  kcontext.setVariable("result", com.sponsoredservices.EvaluationResult.notSponsored("No contract matched"));
+} else {
+  kcontext.setVariable("matchedContract", matched);
+  kcontext.setVariable("result", com.sponsoredservices.EvaluationResult.sponsored(
+    matched.getContractId(),
+    matched.getName(),
+    java.util.List.of("Matched contract")
+  ));
+}
+      </bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:scriptTask id="_5E58092A-2AC8-441C-8A12-A55FB5C071FB" name="Build Non Sponsored Result" scriptFormat="java">
+      <bpmn2:incoming>_42386C68-B94F-4019-AD88-C09328415F8C</bpmn2:incoming>
+      <bpmn2:outgoing>_05E9CA57-A4EB-4434-9C77-1B962CA063E1</bpmn2:outgoing>
+      <bpmn2:script>
+kcontext.setVariable("matchedContract", null);
+kcontext.setVariable("result", com.sponsoredservices.EvaluationResult.notSponsored("No contract matched"));
+      </bpmn2:script>
+    </bpmn2:scriptTask>
+    <bpmn2:serviceTask id="_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76" name="Load Contracts" implementation="Java" operationRef="_LoadContracts_Op" drools:serviceimplementation="Java" drools:serviceinterface="com.sponsoredservices.ContractLoader" drools:serviceoperation="loadContracts">
+      <bpmn2:incoming>_2787A13B-A24B-4B82-8E4C-0BFBA7AF7E57</bpmn2:incoming>
+      <bpmn2:outgoing>_96F9BAD2-8500-45EC-BF7E-296429DA2E08</bpmn2:outgoing>
+      <bpmn2:ioSpecification>
+        <bpmn2:dataOutput id="_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76_contractsOutputX" itemSubjectRef="__F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76_contractsOutputXItem" name="contracts" drools:dtype="java.util.List" />
+        <bpmn2:outputSet>
+          <bpmn2:dataOutputRefs>_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76_contractsOutputX</bpmn2:dataOutputRefs>
+        </bpmn2:outputSet>
+      </bpmn2:ioSpecification>
+      <bpmn2:dataOutputAssociation>
+        <bpmn2:sourceRef>_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76_contractsOutputX</bpmn2:sourceRef>
+        <bpmn2:targetRef>contracts</bpmn2:targetRef>
+      </bpmn2:dataOutputAssociation>
+    </bpmn2:serviceTask>
+    <bpmn2:businessRuleTask id="_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE" name="Evaluate Contracts" implementation="http://www.jboss.org/drools/dmn">
+      <bpmn2:incoming>_96F9BAD2-8500-45EC-BF7E-296429DA2E08</bpmn2:incoming>
+      <bpmn2:outgoing>_5730091A-8DF1-4F01-9397-0BAA5F4ED500</bpmn2:outgoing>
+      <bpmn2:ioSpecification>
+        <bpmn2:dataInput id="_DMN_model" itemSubjectRef="_3C2DFF42-C0C6-4972-8B71-2A80834A550B" name="model" drools:dtype="String" />
+        <bpmn2:dataInput id="_DMN_fileName" itemSubjectRef="_3C2DFF42-C0C6-4972-8B71-2A80834A550B" name="fileName" drools:dtype="String" />
+        <bpmn2:dataInput id="_DMN_namespace" itemSubjectRef="_3C2DFF42-C0C6-4972-8B71-2A80834A550B" name="namespace" drools:dtype="String" />
+        <bpmn2:dataInput id="_DMN_request" itemSubjectRef="__1385319E-20BB-42ED-B323-790B00E2FD55_normalizedRequestOutputXItem" name="request" drools:dtype="com.sponsoredservices.NormalizedEvaluationRequest" />
+        <bpmn2:dataInput id="_DMN_contracts" itemSubjectRef="_contractsItem" name="contracts" drools:dtype="java.util.List" />
+        <bpmn2:dataInput id="_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_userIdInputX" itemSubjectRef="__5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_userIdInputXItem" name="userId" drools:dtype="java.lang.Object" />
+        <bpmn2:dataInput id="_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_decisionInputX" itemSubjectRef="__5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_decisionInputXItem" name="decision" drools:dtype="java.lang.String" />
+        <bpmn2:dataOutput id="_DMN_matchContracts" itemSubjectRef="_contractMatchItem" name="matchContracts" drools:dtype="Boolean" />
+        <bpmn2:inputSet>
+          <bpmn2:dataInputRefs>_DMN_model</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>_DMN_fileName</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>_DMN_namespace</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>_DMN_request</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>_DMN_contracts</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_userIdInputX</bpmn2:dataInputRefs>
+          <bpmn2:dataInputRefs>_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_decisionInputX</bpmn2:dataInputRefs>
+        </bpmn2:inputSet>
+        <bpmn2:outputSet>
+          <bpmn2:dataOutputRefs>_DMN_matchContracts</bpmn2:dataOutputRefs>
+        </bpmn2:outputSet>
+      </bpmn2:ioSpecification>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>_DMN_model</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">Test Decision 1.2</bpmn2:from>
+          <bpmn2:to>_DMN_model</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>_DMN_fileName</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">contract-evaluator.dmn</bpmn2:from>
+          <bpmn2:to>_DMN_fileName</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:targetRef>_DMN_namespace</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">http://test.org/dmn</bpmn2:from>
+          <bpmn2:to>_DMN_namespace</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:sourceRef>normalizedRequest</bpmn2:sourceRef>
+        <bpmn2:targetRef>_DMN_request</bpmn2:targetRef>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation>
+        <bpmn2:sourceRef>contracts</bpmn2:sourceRef>
+        <bpmn2:targetRef>_DMN_contracts</bpmn2:targetRef>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation id="DataInputAssociation_0xtyolg">
+        <bpmn2:sourceRef>result</bpmn2:sourceRef>
+        <bpmn2:targetRef>_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_userIdInputX</bpmn2:targetRef>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataInputAssociation id="DataInputAssociation_1mc6q61">
+        <bpmn2:targetRef>_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_decisionInputX</bpmn2:targetRef>
+        <bpmn2:assignment>
+          <bpmn2:from xsi:type="bpmn2:tFormalExpression">Decision_1</bpmn2:from>
+          <bpmn2:to xsi:type="bpmn2:tFormalExpression">_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE_decisionInputX</bpmn2:to>
+        </bpmn2:assignment>
+      </bpmn2:dataInputAssociation>
+      <bpmn2:dataOutputAssociation>
+        <bpmn2:sourceRef>_DMN_matchContracts</bpmn2:sourceRef>
+        <bpmn2:targetRef>contractMatch</bpmn2:targetRef>
+      </bpmn2:dataOutputAssociation>
+    </bpmn2:businessRuleTask>
+    <bpmn2:sequenceFlow id="_9EFD4033-DF7A-4CF0-999E-24469D073F97" sourceRef="_918068F6-DD93-479E-A410-A1EF887D03BB" targetRef="_1385319E-20BB-42ED-B323-790B00E2FD55" />
+    <bpmn2:sequenceFlow id="_2787A13B-A24B-4B82-8E4C-0BFBA7AF7E57" sourceRef="_1385319E-20BB-42ED-B323-790B00E2FD55" targetRef="_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76" />
+    <bpmn2:sequenceFlow id="_96F9BAD2-8500-45EC-BF7E-296429DA2E08" sourceRef="_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76" targetRef="_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE" />
+    <bpmn2:sequenceFlow id="_5730091A-8DF1-4F01-9397-0BAA5F4ED500" sourceRef="_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE" targetRef="_5D85643B-3E47-4253-A4F6-E511AEBF7AF8" />
+    <bpmn2:sequenceFlow id="_E536D328-906A-4436-9FDB-7613077A5BC8" sourceRef="_5D85643B-3E47-4253-A4F6-E511AEBF7AF8" targetRef="_C497DA48-4857-4417-A73A-2E54D4FCD6C3">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">Boolean.TRUE.equals(contractMatch)</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="_42386C68-B94F-4019-AD88-C09328415F8C" sourceRef="_5D85643B-3E47-4253-A4F6-E511AEBF7AF8" targetRef="_5E58092A-2AC8-441C-8A12-A55FB5C071FB">
+      <bpmn2:conditionExpression xsi:type="bpmn2:tFormalExpression">Boolean.FALSE.equals(contractMatch)</bpmn2:conditionExpression>
+    </bpmn2:sequenceFlow>
+    <bpmn2:sequenceFlow id="_656374EF-A393-4127-9587-06CEEDCC66A5" sourceRef="_C497DA48-4857-4417-A73A-2E54D4FCD6C3" targetRef="_526D2F5E-1EA8-4E3A-96EA-43A4587B3BA8" />
+    <bpmn2:sequenceFlow id="_05E9CA57-A4EB-4434-9C77-1B962CA063E1" sourceRef="_5E58092A-2AC8-441C-8A12-A55FB5C071FB" targetRef="_526D2F5E-1EA8-4E3A-96EA-43A4587B3BA8" />
+    <bpmn2:sequenceFlow id="_9BABC628-0980-4901-BD7A-BAB9E73D4326" sourceRef="_526D2F5E-1EA8-4E3A-96EA-43A4587B3BA8" targetRef="_DB2B2C32-E59F-4D63-8880-1A242676A09A" />
+  </bpmn2:process>
+  <bpmndi:BPMNDiagram id="_E1A254C4-F03E-45C3-980D-8310175B6CA1">
+    <bpmndi:BPMNPlane id="_E4BC5D8C-5832-4455-92F5-431CB28B3BA7" bpmnElement="sponsorship_evaluation">
+      <bpmndi:BPMNShape id="shape_start" bpmnElement="_918068F6-DD93-479E-A410-A1EF887D03BB">
+        <dc:Bounds x="153" y="302" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_end" bpmnElement="_DB2B2C32-E59F-4D63-8880-1A242676A09A">
+        <dc:Bounds x="2660" y="280" width="56" height="56" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_gateway_diverge" bpmnElement="_5D85643B-3E47-4253-A4F6-E511AEBF7AF8" isMarkerVisible="true">
+        <dc:Bounds x="1430" y="300" width="60" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_gateway_converge" bpmnElement="_526D2F5E-1EA8-4E3A-96EA-43A4587B3BA8" isMarkerVisible="true">
+        <dc:Bounds x="2480" y="280" width="60" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_normalize" bpmnElement="_1385319E-20BB-42ED-B323-790B00E2FD55">
+        <dc:Bounds x="289" y="279" width="154" height="102" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_build_sponsored" bpmnElement="_C497DA48-4857-4417-A73A-2E54D4FCD6C3">
+        <dc:Bounds x="2100" y="140" width="154" height="102" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_build_non" bpmnElement="_5E58092A-2AC8-441C-8A12-A55FB5C071FB">
+        <dc:Bounds x="2100" y="360" width="154" height="102" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_load" bpmnElement="_F4E65E86-5E51-48FB-A8D7-3D66FA4CFB76">
+        <dc:Bounds x="631" y="279" width="154" height="102" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="shape_dmn" bpmnElement="_5C78B0B6-5C8A-4B1E-A05F-98D95CE791AE">
+        <dc:Bounds x="1060" y="280" width="180" height="100" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="edge_start_to_normalize" bpmnElement="_9EFD4033-DF7A-4CF0-999E-24469D073F97">
+        <di:waypoint x="209" y="330" />
+        <di:waypoint x="289" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_normalize_to_load" bpmnElement="_2787A13B-A24B-4B82-8E4C-0BFBA7AF7E57">
+        <di:waypoint x="443" y="330" />
+        <di:waypoint x="631" y="330" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_load_to_dmn" bpmnElement="_96F9BAD2-8500-45EC-BF7E-296429DA2E08">
+        <di:waypoint x="785" y="338" />
+        <di:waypoint x="1060" y="338" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_dmn_to_gateway" bpmnElement="_5730091A-8DF1-4F01-9397-0BAA5F4ED500">
+        <di:waypoint x="1240" y="331" />
+        <di:waypoint x="1431" y="329" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_gateway_to_sponsored" bpmnElement="_E536D328-906A-4436-9FDB-7613077A5BC8">
+        <di:waypoint x="1460" y="300" />
+        <di:waypoint x="1460" y="191" />
+        <di:waypoint x="2100" y="191" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_gateway_to_non" bpmnElement="_42386C68-B94F-4019-AD88-C09328415F8C">
+        <di:waypoint x="1460" y="360" />
+        <di:waypoint x="1460" y="420" />
+        <di:waypoint x="2100" y="420" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_sponsored_to_converge" bpmnElement="_656374EF-A393-4127-9587-06CEEDCC66A5">
+        <di:waypoint x="2260" y="191" />
+        <di:waypoint x="2510" y="191" />
+        <di:waypoint x="2510" y="280" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_non_to_converge" bpmnElement="_05E9CA57-A4EB-4434-9C77-1B962CA063E1">
+        <di:waypoint x="2254" y="420" />
+        <di:waypoint x="2510" y="420" />
+        <di:waypoint x="2510" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="edge_converge_to_end" bpmnElement="_9BABC628-0980-4901-BD7A-BAB9E73D4326">
+        <di:waypoint x="2540" y="310" />
+        <di:waypoint x="2660" y="308" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn2:definitions>

@@ -678,7 +678,7 @@ function getElementPayloadFields(element: BpmnElement): ModdleElement[] {
   const bo = element?.businessObject;
   if (!bo) return [];
 
-  const extensionElements = bo.extensionElements;
+  const extensionElements = (bo as unknown as { extensionElements?: { values?: ModdleElement[] } }).extensionElements;
   if (!extensionElements) return [];
 
   const values = (extensionElements as unknown as { values?: ModdleElement[] }).values || [];

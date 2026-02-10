@@ -8,13 +8,10 @@
  * - dataInputAssociation with assignments for values
  */
 
-// @ts-expect-error - no type definitions available
 import { TextFieldEntry, SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
-// @ts-expect-error - no type definitions available
 import { html } from 'htm/preact';
-// @ts-expect-error - no type definitions available
 import { useState } from '@bpmn-io/properties-panel/preact/hooks';
 
 import { DMN_IMPLEMENTATION_URI, DMN_DATA_INPUTS } from './moddle-descriptor';
@@ -75,6 +72,7 @@ interface BusinessObject extends ModdleElement {
 
 interface BpmnElement {
   businessObject?: BusinessObject;
+  id?: string;
 }
 
 interface Definitions extends ModdleElement {
@@ -428,7 +426,45 @@ function setDataInputValue(element: BpmnElement, inputName: string, value: strin
   const ioSpec = bo.ioSpecification;
   if (ioSpec) {
     const dataInputs = ioSpec.dataInputs || [];
-    const dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
+    let dataInput = dataInputs.find((di: DataInput) => di.name === inputName);
+
+    // If data input doesn't exist yet, create it and add to the existing ioSpec
+    if (!dataInput) {
+      const taskId = bo.id;
+      const inputId = `${taskId}_${inputName}InputX`;
+      const itemDefId = `_${inputId}Item`;
+      const definitions = getDefinitions(element);
+      const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.String', bpmnFactory);
+
+      dataInput = bpmnFactory.create('bpmn:DataInput', {
+        id: inputId,
+        name: inputName,
+        itemSubjectRef: itemDef
+      }) as DataInput;
+      dataInput.set?.('drools:dtype', 'java.lang.String');
+      dataInput.$parent = ioSpec;
+
+      if (!ioSpec.dataInputs) {
+        ioSpec.dataInputs = [];
+      }
+      ioSpec.dataInputs.push(dataInput);
+
+      // Add to inputSet
+      const inputSet = ioSpec.inputSets?.[0];
+      if (inputSet) {
+        if (!(inputSet as any).dataInputRefs) {
+          (inputSet as any).dataInputRefs = [];
+        }
+        (inputSet as any).dataInputRefs.push(dataInput);
+      }
+
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: bo,
+        properties: { ioSpecification: ioSpec }
+      });
+    }
+
     if (dataInput) {
       const fromExpression = bpmnFactory.create('bpmn:FormalExpression', { body: value });
       const toExpression = bpmnFactory.create('bpmn:FormalExpression', { body: dataInput.id });
@@ -1055,12 +1091,11 @@ function DmnFileSelect(props: { element: BpmnElement; id: string }) {
     id,
     element,
     label: translate('DMN File'),
-    description: translate('Select the DMN file containing the decision'),
     getValue,
     setValue,
     getOptions,
     debounce
-  });
+  } as any);
 }
 
 // Decision Select component
@@ -1115,12 +1150,11 @@ function DecisionSelect(props: { element: BpmnElement; id: string }) {
     id,
     element,
     label: translate('Decision'),
-    description: translate('Select the decision to invoke'),
     getValue,
     setValue,
     getOptions,
     debounce
-  });
+  } as any);
 }
 
 // DMN Namespace component (read-only, auto-populated)
@@ -1141,12 +1175,11 @@ function DmnNamespace(props: { element: BpmnElement; id: string }) {
     id,
     element,
     label: translate('DMN Namespace'),
-    description: translate('Namespace of the DMN model (auto-populated)'),
     getValue,
     setValue,
-    debounce,
-    disabled: true
-  });
+    disabled: true,
+    debounce
+  } as any);
 }
 
 // Available type options for DMN inputs
@@ -1413,32 +1446,32 @@ interface Modeling {
   updateProperties: (element: BpmnElement, properties: Record<string, unknown>) => void;
 }
 
+// Cache for dynamically created components to ensure stable identity
+const dmnInputComponents = new Map<string, any>();
+const dmnOutputComponents = new Map<string, any>();
+
 // DMN Input Mapping component - maps a single DMN input to a process variable
-function createDmnInputMappingComponent(inputName: string) {
-  return function DmnInputMapping(props: { element: BpmnElement; id: string }) {
+function getDmnInputMappingComponent(inputName: string) {
+  if (dmnInputComponents.has(inputName)) {
+    return dmnInputComponents.get(inputName);
+  }
+
+  const component = function DmnInputMapping(props: { element: BpmnElement; id: string }) {
     const { element, id } = props;
     const commandStack = useService('commandStack') as CommandStack;
     const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
     const modeling = useService('modeling') as Modeling;
     const translate = useService('translate') as (text: string) => string;
 
+    const debounce = useService('debounceInput') as <T>(fn: T) => T;
+
     const getValue = () => {
-      const value = getDmnInputMapping(element, inputName);
-      // Filter out invalid stored values
-      if (value === 'undefined' || value === 'null') {
-        return '';
-      }
-      return value;
+      return getDmnInputMapping(element, inputName);
     };
 
     const setValue = (value: string) => {
-      // Strict validation: only set if we have a valid, non-empty string
-      // that is not the literal string "undefined"
       if (value && typeof value === 'string' && value !== 'undefined' && value !== 'null' && value.trim() !== '') {
         setDmnInputMapping(element, inputName, value, bpmnFactory, commandStack);
-
-        // Trigger a change notification by updating a property through modeling
-        // This ensures the commandStack.changed event fires properly
         const bo = element.businessObject;
         if (bo) {
           modeling.updateProperties(element, { name: bo.name || bo.id });
@@ -1447,21 +1480,13 @@ function createDmnInputMappingComponent(inputName: string) {
     };
 
     const getOptions = () => {
-      const options = [
-        { value: '', label: translate('-- Select Variable --') }
-      ];
-
+      const options = [{ value: '', label: translate('-- Select Variable --') }];
       const variables = getAvailableProcessVariables(element);
       for (const v of variables) {
-        // Only add valid variable names
         if (v.name && v.name !== 'undefined') {
-          options.push({
-            value: v.name,
-            label: v.name
-          });
+          options.push({ value: v.name, label: v.name });
         }
       }
-
       return options;
     };
 
@@ -1471,9 +1496,13 @@ function createDmnInputMappingComponent(inputName: string) {
       label: `${inputName}`,
       getValue,
       setValue,
-      getOptions
-    });
+      getOptions,
+      debounce
+    } as any);
   };
+
+  dmnInputComponents.set(inputName, component);
+  return component;
 }
 
 // Create entries for Business Rule Task
@@ -1484,7 +1513,7 @@ function BusinessRuleTaskEntries(props: { element: BpmnElement }): PropertyEntry
     return [];
   }
 
-  return [
+  const entries: PropertyEntry[] = [
     {
       id: 'dmnFile',
       component: DmnFileSelect,
@@ -1494,18 +1523,22 @@ function BusinessRuleTaskEntries(props: { element: BpmnElement }): PropertyEntry
       id: 'createDmn',
       component: CreateDmnToggle,
       isEdited: () => false
-    },
-    {
-      id: 'dmnDecision',
-      component: DecisionSelect,
-      isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.DECISION)
-    },
-    {
-      id: 'dmnNamespace',
-      component: DmnNamespace,
-      isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE)
     }
   ];
+
+  entries.push({
+    id: 'dmnDecision',
+    component: DecisionSelect,
+    isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.DECISION)
+  });
+
+  entries.push({
+    id: 'dmnNamespace',
+    component: DmnNamespace,
+    isEdited: () => !!getDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE)
+  });
+
+  return entries;
 }
 
 // Create entries for DMN Input Mappings
@@ -1535,35 +1568,34 @@ function DmnInputMappingEntries(props: { element: BpmnElement }): PropertyEntry[
   // Create an entry for each DMN input
   return selectedFile.inputData.map(input => ({
     id: `dmnInput_${input.name}`,
-    component: createDmnInputMappingComponent(input.name),
+    component: getDmnInputMappingComponent(input.name),
     isEdited: () => !!getDmnInputMapping(element, input.name)
   }));
 }
 
 // DMN Output Mapping component - maps a single DMN output to a process variable
-function createDmnOutputMappingComponent(outputName: string, dmnVariableName: string) {
-  return function DmnOutputMapping(props: { element: BpmnElement; id: string }) {
+function getDmnOutputMappingComponent(outputName: string, dmnVariableName: string) {
+  const cacheKey = `${outputName}_${dmnVariableName}`;
+  if (dmnOutputComponents.has(cacheKey)) {
+    return dmnOutputComponents.get(cacheKey);
+  }
+
+  const component = function DmnOutputMapping(props: { element: BpmnElement; id: string }) {
     const { element, id } = props;
     const commandStack = useService('commandStack') as CommandStack;
     const bpmnFactory = useService('bpmnFactory') as BpmnFactory;
     const modeling = useService('modeling') as Modeling;
     const translate = useService('translate') as (text: string) => string;
 
+    const debounce = useService('debounceInput') as <T>(fn: T) => T;
+
     const getValue = () => {
-      const value = getDmnOutputMapping(element, dmnVariableName);
-      // Filter out invalid stored values
-      if (value === 'undefined' || value === 'null') {
-        return '';
-      }
-      return value;
+      return getDmnOutputMapping(element, dmnVariableName);
     };
 
     const setValue = (value: string) => {
-      // Strict validation: only set if we have a valid, non-empty string
       if (value && typeof value === 'string' && value !== 'undefined' && value !== 'null' && value.trim() !== '') {
         setDmnOutputMapping(element, dmnVariableName, value, bpmnFactory, commandStack);
-
-        // Trigger a change notification by updating a property through modeling
         const bo = element.businessObject;
         if (bo) {
           modeling.updateProperties(element, { name: bo.name || bo.id });
@@ -1572,21 +1604,13 @@ function createDmnOutputMappingComponent(outputName: string, dmnVariableName: st
     };
 
     const getOptions = () => {
-      const options = [
-        { value: '', label: translate('-- Select Variable --') }
-      ];
-
+      const options = [{ value: '', label: translate('-- Select Variable --') }];
       const variables = getAvailableProcessVariables(element);
       for (const v of variables) {
-        // Only add valid variable names
         if (v.name && v.name !== 'undefined') {
-          options.push({
-            value: v.name,
-            label: v.name
-          });
+          options.push({ value: v.name, label: v.name });
         }
       }
-
       return options;
     };
 
@@ -1594,12 +1618,15 @@ function createDmnOutputMappingComponent(outputName: string, dmnVariableName: st
       id,
       element,
       label: `${outputName}`,
-      description: translate(`Maps DMN output "${dmnVariableName}" to a process variable`),
       getValue,
       setValue,
-      getOptions
-    });
+      getOptions,
+      debounce
+    } as any);
   };
+
+  dmnOutputComponents.set(cacheKey, component);
+  return component;
 }
 
 // Create entries for DMN Output Mappings
@@ -1629,6 +1656,7 @@ function DmnOutputMappingEntries(props: { element: BpmnElement }): PropertyEntry
 
   // Find output for the selected decision
   const decisionOutput = selectedFile.outputData.find(o => o.decisionId === currentDecision);
+
   if (!decisionOutput) {
     return [];
   }
@@ -1636,7 +1664,7 @@ function DmnOutputMappingEntries(props: { element: BpmnElement }): PropertyEntry
   // Create an entry for the decision output
   return [{
     id: `dmnOutput_${decisionOutput.variableName}`,
-    component: createDmnOutputMappingComponent(decisionOutput.decisionName, decisionOutput.variableName),
+    component: getDmnOutputMappingComponent(decisionOutput.decisionName, decisionOutput.variableName),
     isEdited: () => !!getDmnOutputMapping(element, decisionOutput.variableName)
   }];
 }
@@ -1664,7 +1692,10 @@ export default class BusinessRuleTaskPropertiesProvider {
     eventBus.on('selection.changed', (event: SelectionChangedEvent) => {
       const selected = event.newSelection?.[0];
       if (selected && isBusinessRuleTask(selected)) {
-        requestDmnFiles();
+        // Debounce or only request if we don't have files yet
+        if (availableDmnFiles.length === 0) {
+          requestDmnFiles();
+        }
       }
     });
 
