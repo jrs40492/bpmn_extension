@@ -8,30 +8,46 @@
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
         <inputExpression id="InputExpression_1" typeRef="boolean">
-          <text>drugResponse.drug != null</text>
+          <text>httpStatus</text>
         </inputExpression>
       </input>
       <output id="Output_1" name="decision" typeRef="string" />
       <rule id="Rule_1">
         <inputEntry id="InputEntry_1">
-          <text>true</text>
+          <text>"404"</text>
         </inputEntry>
         <outputEntry id="OutputEntry_1">
-          <text>"OK"</text>
+          <text>"NOT_FOUND"</text>
         </outputEntry>
       </rule>
       <rule id="DecisionRule_1oa49x7">
         <inputEntry id="UnaryTests_0rm7228">
-          <text>false</text>
+          <text>"410"</text>
         </inputEntry>
         <outputEntry id="LiteralExpression_08npv29">
-          <text>"NOT_FOUND"</text>
+          <text>"INACTIVE"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0snquke">
+        <inputEntry id="UnaryTests_0ccwhxh">
+          <text>"500"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1mqrkfn">
+          <text>"SERVER_ERROR"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0la5pg2">
+        <inputEntry id="UnaryTests_0h9j27q">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0o0vk8f">
+          <text>"ERROR"</text>
         </outputEntry>
       </rule>
     </decisionTable>
   </decision>
-  <inputData id="InputData_0kn62gf" name="drugResponse">
-    <variable id="InputData_0kn62gf_variable" name="drugResponse" typeRef="Any" />
+  <inputData id="InputData_0kn62gf" name="httpStatus">
+    <variable id="InputData_0kn62gf_variable" name="httpStatus" typeRef="string" />
   </inputData>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram id="DMNDiagram_1">
