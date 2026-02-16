@@ -22,6 +22,10 @@
     "diagram",
     "modeler"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jrs40492/bamoe"
+  },
   "main": "./dist/extension/extension.js",
   "contributes": {
     "customEditors": [
