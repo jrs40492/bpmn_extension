@@ -2,15 +2,10 @@
  * Gateway Direction Extension
  *
  * Adds gateway direction property to the properties panel for gateways.
- * This allows users to specify if a gateway is Converging, Diverging, Mixed, or Unspecified.
+ * This allows users to specify if a gateway is Converging, Diverging, or Unspecified.
  */
 
 import { is } from 'bpmn-js/lib/util/ModelUtil';
-
-// Type definitions for properties panel components
-import type { SelectEntry as SelectEntryFn } from '@bpmn-io/properties-panel';
-// @ts-expect-error - no type definitions available
-import type { useService as useServiceFn } from 'bpmn-js-properties-panel';
 
 import { SelectEntry } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
@@ -37,7 +32,7 @@ interface ModdleElement {
 }
 
 interface GatewayBusinessObject extends ModdleElement {
-  gatewayDirection?: 'Unspecified' | 'Converging' | 'Diverging' | 'Mixed';
+  gatewayDirection?: 'Unspecified' | 'Converging' | 'Diverging';
 }
 
 interface BpmnElement {
@@ -100,8 +95,7 @@ function GatewayDirectionSelect(props: { element: BpmnElement; id: string }) {
   const getOptions = () => [
     { value: 'Unspecified', label: translate('Unspecified') },
     { value: 'Converging', label: translate('Converging (joining)') },
-    { value: 'Diverging', label: translate('Diverging (splitting)') },
-    { value: 'Mixed', label: translate('Mixed (both)') }
+    { value: 'Diverging', label: translate('Diverging (splitting)') }
   ];
 
   return SelectEntry({
@@ -165,10 +159,8 @@ class GatewayDirectionPropertiesProvider {
         const incoming = (bo as unknown as { incoming?: unknown[] })?.incoming || [];
         const outgoing = (bo as unknown as { outgoing?: unknown[] })?.outgoing || [];
 
-        let direction: 'Diverging' | 'Converging' | 'Mixed' | 'Unspecified' = 'Diverging';
-        if (incoming.length > 1 && outgoing.length > 1) {
-          direction = 'Mixed';
-        } else if (incoming.length > 1) {
+        let direction: 'Diverging' | 'Converging' | 'Unspecified' = 'Diverging';
+        if (incoming.length > 1) {
           direction = 'Converging';
         } else if (outgoing.length > 1) {
           direction = 'Diverging';
