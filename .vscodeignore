@@ -1,0 +1,17 @@
+src/**
+test/**
+test_files/**
+node_modules/**
+.vscode/**
+.github/**
+.idea/**
+.claude/**
+*.ts
+tsconfig*.json
+rollup.config.mjs
+.eslintrc.json
+.bpmnlintrc
+CLAUDE.md
+DMN_README.md
+WARP.md
+.gitignore
