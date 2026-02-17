@@ -7,7 +7,7 @@
     </informationRequirement>
     <decisionTable id="DecisionTable_1" hitPolicy="FIRST">
       <input id="Input_1">
-        <inputExpression id="InputExpression_1" typeRef="boolean">
+        <inputExpression id="InputExpression_1" typeRef="string">
           <text>httpStatus</text>
         </inputExpression>
       </input>

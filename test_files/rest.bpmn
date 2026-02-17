@@ -21,6 +21,7 @@
   <bpmn:itemDefinition id="_Activity_1im8ao1_drugResponseInputXItem" structureRef="java.lang.Object"/>
   <bpmn:error id="Error_http_410" name="HTTP 410" errorCode="410"/>
   <bpmn:error id="Error_http_500" name="HTTP 500" errorCode="500"/>
+  <bpmn:itemDefinition id="_countItem" structureRef="java.lang.Integer"/>
   <bpmn:process id="drugs" name="" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
@@ -28,6 +29,7 @@
         <bamoe:variable name="drugResponse"/>
         <bamoe:variable name="decision"/>
         <bamoe:variable name="httpStatus"/>
+        <bamoe:variable name="count" type="integer"/>
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="ddid" itemSubjectRef="_ddidItem" name="ddid"/>
@@ -36,6 +38,7 @@
     <bpmn:property id="restResult" itemSubjectRef="_restResultItem" name="restResult"/>
     <bpmn:property id="decision" itemSubjectRef="_decisionItem" name="decision"/>
     <bpmn:property id="httpStatus" itemSubjectRef="_httpStatusItem" name="httpStatus"/>
+    <bpmn:property id="count" itemSubjectRef="_countItem" name="count"/>
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_12vdxhy</bpmn:outgoing>
     </bpmn:startEvent>
@@ -54,7 +57,7 @@
 </bpmn:script>
     </bpmn:scriptTask>
     <bpmn:sequenceFlow id="Flow_12vdxhy" sourceRef="StartEvent_1" targetRef="Activity_0as8h27"/>
-    <bpmn:exclusiveGateway id="Gateway_1dpe896" name="Step 4 Route" gatewayDirection="Diverging">
+    <bpmn:exclusiveGateway id="Gateway_1dpe896" name="Step 4 Gateway" gatewayDirection="Diverging">
       <bpmn:incoming>Flow_04zlnva</bpmn:incoming>
       <bpmn:outgoing>Flow_1du2ysb</bpmn:outgoing>
       <bpmn:outgoing>Flow_191lbsq</bpmn:outgoing>
@@ -137,7 +140,7 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <bpmn:targetRef>decision</bpmn:targetRef>
       </bpmn:dataOutputAssociation>
     </bpmn:businessRuleTask>
-    <bpmn:task id="Activity_1qduwyy" name="REST API Call" drools:taskName="Rest">
+    <bpmn:task id="Activity_1qduwyy" name="Step 2 Find Drug" drools:taskName="Rest">
       <bpmn:incoming>Flow_0ja75ql</bpmn:incoming>
       <bpmn:outgoing>Flow_0hhgm0x</bpmn:outgoing>
       <bpmn:ioSpecification>
@@ -279,32 +282,25 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
           <dc:Bounds x="168" y="233" width="24" height="14"/>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1ix2kn3_di" bpmnElement="Activity_0as8h27">
-        <dc:Bounds x="290" y="170" width="100" height="80"/>
-        <bpmndi:BPMNLabel/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1wkzhfc_di" bpmnElement="Activity_02jwcaw">
-        <dc:Bounds x="290" y="320" width="100" height="80"/>
-        <bpmndi:BPMNLabel/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1qduwyy_di" bpmnElement="Activity_1qduwyy">
-        <dc:Bounds x="440" y="170" width="100" height="80"/>
-        <bpmndi:BPMNLabel/>
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_0yw1ol6_di" bpmnElement="Event_0yw1ol6">
-        <dc:Bounds x="622" y="192" width="36" height="36"/>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_1lf3s38_di" bpmnElement="Event_1lf3s38">
         <dc:Bounds x="732" y="342" width="36" height="36"/>
         <bpmndi:BPMNLabel>
           <dc:Bounds x="740" y="385" width="20" height="14"/>
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ix2kn3_di" bpmnElement="Activity_0as8h27">
+        <dc:Bounds x="290" y="170" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1dpe896_di" bpmnElement="Gateway_1dpe896" isMarkerVisible="true">
         <dc:Bounds x="615" y="335" width="50" height="50"/>
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="608" y="305" width="65" height="14"/>
+          <dc:Bounds x="600" y="313" width="79" height="14"/>
         </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1wkzhfc_di" bpmnElement="Activity_02jwcaw">
+        <dc:Bounds x="290" y="320" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0v3vnls_di" bpmnElement="Event_0n168m6">
         <dc:Bounds x="622" y="472" width="36" height="36"/>
@@ -316,6 +312,13 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
         <dc:Bounds x="440" y="320" width="100" height="80"/>
         <bpmndi:BPMNLabel/>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1qduwyy_di" bpmnElement="Activity_1qduwyy">
+        <dc:Bounds x="440" y="170" width="100" height="80"/>
+        <bpmndi:BPMNLabel/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0yw1ol6_di" bpmnElement="Event_0yw1ol6">
+        <dc:Bounds x="622" y="192" width="36" height="36"/>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_0srppmb_di" bpmnElement="Event_0dyounr">
         <dc:Bounds x="472" y="232" width="36" height="36"/>
       </bpmndi:BPMNShape>
@@ -325,6 +328,18 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmndi:BPMNEdge id="Flow_12vdxhy_di" bpmnElement="Flow_12vdxhy">
         <di:waypoint x="198" y="210"/>
         <di:waypoint x="290" y="210"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1du2ysb_di" bpmnElement="Flow_1du2ysb">
+        <di:waypoint x="665" y="360"/>
+        <di:waypoint x="732" y="360"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_191lbsq_di" bpmnElement="Flow_191lbsq">
+        <di:waypoint x="640" y="385"/>
+        <di:waypoint x="640" y="472"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04zlnva_di" bpmnElement="Flow_04zlnva">
+        <di:waypoint x="540" y="360"/>
+        <di:waypoint x="615" y="360"/>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_0ja75ql_di" bpmnElement="Flow_0ja75ql">
         <di:waypoint x="390" y="210"/>
@@ -341,18 +356,6 @@ kcontext.setVariable("count", current - 1);</bpmn:script>
       <bpmndi:BPMNEdge id="Association_0scc7df_di" bpmnElement="Association_0scc7df">
         <di:waypoint x="340" y="268"/>
         <di:waypoint x="340" y="320"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_1du2ysb_di" bpmnElement="Flow_1du2ysb">
-        <di:waypoint x="665" y="360"/>
-        <di:waypoint x="732" y="360"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_04zlnva_di" bpmnElement="Flow_04zlnva">
-        <di:waypoint x="540" y="360"/>
-        <di:waypoint x="615" y="360"/>
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_191lbsq_di" bpmnElement="Flow_191lbsq">
-        <di:waypoint x="640" y="385"/>
-        <di:waypoint x="640" y="472"/>
       </bpmndi:BPMNEdge>
     <bpmndi:BPMNShape id="Event_0dyounr_script_404_di" bpmnElement="Event_0dyounr_script_404"><dc:Bounds x="406" y="254" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1c2so64_to_target_di" bpmnElement="Flow_1c2so64_to_target"><di:waypoint x="490" y="268"/><di:waypoint x="490" y="320"/></bpmndi:BPMNEdge><bpmndi:BPMNShape id="Event_0dyounr_script_410_di" bpmnElement="Event_0dyounr_script_410"><dc:Bounds x="472" y="232" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1c2so64_err_410_to_target_di" bpmnElement="Flow_1c2so64_err_410_to_target"><di:waypoint x="490" y="268"/><di:waypoint x="490" y="320"/></bpmndi:BPMNEdge><bpmndi:BPMNShape id="Event_0dyounr_err_410_di" bpmnElement="Event_0dyounr_err_410"><dc:Bounds x="472" y="232" width="36" height="36"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1c2so64_err_410_di" bpmnElement="Flow_1c2so64_err_410"><di:waypoint x="490" y="268"/><di:waypoint x="490" y="320"/></bpmndi:BPMNEdge><bpmndi:BPMNShape id="Event_0dyounr_script_500_di" bpmnElement="Event_0dyounr_script_500"><dc:Bounds x="472" y="232" width="100" height="80"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1c2so64_err_500_to_target_di" bpmnElement="Flow_1c2so64_err_500_to_target"><di:waypoint x="490" y="268"/><di:waypoint x="490" y="320"/></bpmndi:BPMNEdge><bpmndi:BPMNShape id="Event_0dyounr_err_500_di" bpmnElement="Event_0dyounr_err_500"><dc:Bounds x="472" y="232" width="36" height="36"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Flow_1c2so64_err_500_di" bpmnElement="Flow_1c2so64_err_500"><di:waypoint x="490" y="268"/><di:waypoint x="490" y="320"/></bpmndi:BPMNEdge><bpmndi:BPMNShape id="Event_0dyounr_converge_di" bpmnElement="Event_0dyounr_converge" isMarkerVisible="true"><dc:Bounds x="431" y="294" width="50" height="50"/></bpmndi:BPMNShape><bpmndi:BPMNEdge id="Event_0dyounr_converge_out_di" bpmnElement="Event_0dyounr_converge_out"><di:waypoint x="490" y="268"/><di:waypoint x="490" y="320"/></bpmndi:BPMNEdge></bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

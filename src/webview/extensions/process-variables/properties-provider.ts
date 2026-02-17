@@ -41,6 +41,8 @@ function getJavaType(type: string): string {
   switch (type) {
     case 'string':
       return 'java.lang.String';
+    case 'integer':
+      return 'java.lang.Integer';
     case 'number':
       return 'java.lang.Double';
     case 'boolean':
@@ -411,7 +413,8 @@ function VariableType(props: { id: string; variable: any; element: any }) {
 
   const getOptions = () => [
     { value: 'string', label: translate('String') },
-    { value: 'number', label: translate('Number') },
+    { value: 'integer', label: translate('Integer') },
+    { value: 'number', label: translate('Decimal') },
     { value: 'boolean', label: translate('Boolean') },
     { value: 'object', label: translate('Object') },
     { value: 'array', label: translate('Array') }

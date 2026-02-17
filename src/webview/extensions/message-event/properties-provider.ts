@@ -511,6 +511,8 @@ function getJavaType(type: string): string {
   switch (type) {
     case 'string':
       return 'java.lang.String';
+    case 'integer':
+      return 'java.lang.Integer';
     case 'number':
       return 'java.lang.Double';
     case 'boolean':
