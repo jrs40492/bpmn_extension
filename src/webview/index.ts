@@ -324,6 +324,7 @@ async function init(): Promise<void> {
   const templatesPanel = initTemplatesPanel(async (xml) => {
     skipNextChange = true;
     await importDiagram(modeler, xml);
+    skipNextChange = false;
     canvas.zoom('fit-viewport');
     // Trigger change to save the new diagram
     const newXml = await exportDiagram(modeler);
@@ -354,6 +355,7 @@ async function init(): Promise<void> {
     async (xml) => {
       skipNextChange = true;
       await importDiagram(modeler, xml);
+      skipNextChange = false;
       const newXml = await exportDiagram(modeler);
       postMessage(vscode, { type: 'change', xml: newXml });
     },
@@ -477,6 +479,7 @@ async function init(): Promise<void> {
         try {
           skipNextChange = true;
           await importDiagram(modeler, message.xml);
+          skipNextChange = false;
 
           // Fit to viewport on initial load
           const canvas = modeler.get('canvas');
@@ -500,6 +503,7 @@ async function init(): Promise<void> {
 
           skipNextChange = true;
           await importDiagram(modeler, message.xml);
+          skipNextChange = false;
 
           // Restore zoom and viewport position after import
           canvas.zoom(currentZoom);
