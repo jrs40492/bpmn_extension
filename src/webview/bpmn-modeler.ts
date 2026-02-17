@@ -62,6 +62,9 @@ import errorBoundaryModule, { errorBoundaryDescriptor } from './extensions/error
 // Custom event colors extension
 import eventColorsModule from './extensions/event-colors';
 
+// Custom label colors extension (dark mode text visibility)
+import labelColorsModule from './extensions/label-colors';
+
 // Custom properties panel colors extension
 import propertiesPanelColorsModule from './extensions/properties-panel-colors';
 
@@ -200,6 +203,7 @@ export function createModeler(
     processVariablesModule,
     messageEventModule,
     eventColorsModule,
+    labelColorsModule,
     errorBoundaryModule,
     compensationTaskModule,
     tokenSimulationModule,
@@ -295,6 +299,9 @@ export async function exportDiagram(modeler: Modeler): Promise<string> {
 
   // Add process variable mappings for REST tasks that use {variableName} placeholders
   xml = addRestTaskVariableMappings(xml);
+
+  // Remove orphaned bpmn:error elements not referenced by any errorEventDefinition
+  xml = removeOrphanedErrorElements(xml);
 
   return xml;
 }
@@ -666,6 +673,63 @@ function addRestTaskVariableMappings(xml: string): string {
 }
 
 /**
+ * Remove orphaned bpmn:error elements from definitions that are not referenced
+ * by any errorEventDefinition in the document.
+ *
+ * When multi-error boundary events are expanded on export, ensureErrorElement()
+ * creates bpmn:error elements. On reimport, collapse removes cloned events but
+ * leaves the error definitions. If the boundary event is later deleted, those
+ * error elements remain as orphans.
+ */
+function removeOrphanedErrorElements(xml: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xml, 'application/xml');
+
+  const parseError = doc.querySelector('parsererror');
+  if (parseError) {
+    console.warn('Failed to parse XML for orphaned error cleanup:', parseError.textContent);
+    return xml;
+  }
+
+  const definitions = doc.documentElement;
+
+  // Collect all errorRef values from every errorEventDefinition in the document
+  const referencedErrorIds = new Set<string>();
+  const errorEventDefs = doc.querySelectorAll('errorEventDefinition');
+  for (const eed of errorEventDefs) {
+    const errorRef = eed.getAttribute('errorRef');
+    if (errorRef) {
+      referencedErrorIds.add(errorRef);
+    }
+  }
+
+  // Find and remove bpmn:error elements whose id is not in the referenced set
+  let modified = false;
+  const toRemove: Element[] = [];
+
+  for (const child of definitions.children) {
+    if (child.localName === 'error') {
+      const id = child.getAttribute('id');
+      if (id && !referencedErrorIds.has(id)) {
+        toRemove.push(child);
+      }
+    }
+  }
+
+  for (const el of toRemove) {
+    definitions.removeChild(el);
+    modified = true;
+  }
+
+  if (modified) {
+    const serializer = new XMLSerializer();
+    return serializer.serializeToString(doc);
+  }
+
+  return xml;
+}
+
+/**
  * Fix BPMN element casing to match BPMN 2.0 XSD requirements
  * Converts uppercase element names to lowercase (e.g., Task -> task)
  */
@@ -794,6 +858,11 @@ function expandMultiErrorBoundaryEvents(xml: string): string {
     let firstErrorId = ensureErrorElement(doc, definitions, process, firstCode, BPMN_NS);
     errEvtDef.setAttribute('errorRef', firstErrorId);
 
+    // Determine if we need a converge gateway (multiple codes with targetVariable)
+    const needsConvergeGateway = targetVariable && codes.length > 1;
+    // The target for script tasks: either the converge gateway or the original target
+    const scriptFlowTarget = needsConvergeGateway ? `${originalId}_converge` : targetRef;
+
     // If targetVariable is set, insert a script task on the original (first code) path
     if (targetVariable && originalFlow && targetRef) {
       const scriptTaskId = `${originalId}_script_${firstCode}`;
@@ -833,15 +902,15 @@ function expandMultiErrorBoundaryEvents(xml: string): string {
         }
       }
 
-      // Create new flow from script task to original target
+      // Create new flow from script task to the target (converge gateway or original target)
       const newFlow = doc.createElementNS(BPMN_NS, 'bpmn:sequenceFlow');
       newFlow.setAttribute('id', scriptFlowId);
       newFlow.setAttribute('sourceRef', scriptTaskId);
-      newFlow.setAttribute('targetRef', targetRef);
+      newFlow.setAttribute('targetRef', scriptFlowTarget);
       process.appendChild(newFlow);
 
-      // Add incoming reference on the target for the new flow
-      if (originalTarget) {
+      // If not using converge gateway, add incoming reference on the original target
+      if (!needsConvergeGateway && originalTarget) {
         const newIncoming = doc.createElementNS(BPMN_NS, 'bpmn:incoming');
         newIncoming.textContent = scriptFlowId;
         const firstNonFlow = findFirstNonFlowChild(originalTarget);
@@ -877,7 +946,7 @@ function expandMultiErrorBoundaryEvents(xml: string): string {
         bpmnPlane.appendChild(scriptShape);
       }
 
-      // Add DI edge for the new flow (script task -> target)
+      // Add DI edge for the new flow (script task -> target or gateway)
       const originalEdge = findBPMNEdge(bpmnPlane, outgoingFlowId);
       if (originalEdge) {
         const newEdge = doc.createElementNS(BPMNDI_NS, 'bpmndi:BPMNEdge');
@@ -947,23 +1016,25 @@ function expandMultiErrorBoundaryEvents(xml: string): string {
         // The cloned boundary event flow will target the script task
         clonedFlowTarget = scriptTaskId;
 
-        // Create flow from script task to original target
+        // Create flow from script task to converge gateway or original target
         const scriptToTargetFlow = doc.createElementNS(BPMN_NS, 'bpmn:sequenceFlow');
         scriptToTargetFlow.setAttribute('id', scriptFlowId);
         scriptToTargetFlow.setAttribute('sourceRef', scriptTaskId);
-        scriptToTargetFlow.setAttribute('targetRef', targetRef);
+        scriptToTargetFlow.setAttribute('targetRef', scriptFlowTarget);
         process.appendChild(scriptToTargetFlow);
 
-        // Add incoming reference on the target for the script flow
-        const targetElement = findProcessElement(process, targetRef);
-        if (targetElement) {
-          const newIncoming = doc.createElementNS(BPMN_NS, 'bpmn:incoming');
-          newIncoming.textContent = scriptFlowId;
-          const firstNonFlow = findFirstNonFlowChild(targetElement);
-          if (firstNonFlow) {
-            targetElement.insertBefore(newIncoming, firstNonFlow);
-          } else {
-            targetElement.appendChild(newIncoming);
+        // If not using converge gateway, add incoming reference on the target
+        if (!needsConvergeGateway) {
+          const targetElement = findProcessElement(process, targetRef);
+          if (targetElement) {
+            const newIncoming = doc.createElementNS(BPMN_NS, 'bpmn:incoming');
+            newIncoming.textContent = scriptFlowId;
+            const firstNonFlow = findFirstNonFlowChild(targetElement);
+            if (firstNonFlow) {
+              targetElement.insertBefore(newIncoming, firstNonFlow);
+            } else {
+              targetElement.appendChild(newIncoming);
+            }
           }
         }
 
@@ -1092,6 +1163,100 @@ function expandMultiErrorBoundaryEvents(xml: string): string {
       }
 
       modified = true;
+    }
+
+    // After creating all script tasks and cloned events, create the converge gateway
+    if (needsConvergeGateway && targetRef) {
+      const gatewayId = `${originalId}_converge`;
+      const gatewayOutFlowId = `${originalId}_converge_out`;
+
+      // Collect all script task _to_target flow IDs as incoming to the gateway
+      const gatewayIncomingFlowIds: string[] = [];
+      gatewayIncomingFlowIds.push(`${outgoingFlowId}_to_target`); // first code's script flow
+      for (let i = 1; i < codes.length; i++) {
+        const clonedFlowId = `${outgoingFlowId}_err_${codes[i]}`;
+        gatewayIncomingFlowIds.push(`${clonedFlowId}_to_target`);
+      }
+
+      // Create the converging exclusive gateway
+      const gateway = doc.createElementNS(BPMN_NS, 'bpmn:exclusiveGateway');
+      gateway.setAttribute('id', gatewayId);
+      gateway.setAttribute('gatewayDirection', 'Converging');
+
+      for (const flowId of gatewayIncomingFlowIds) {
+        const inEl = doc.createElementNS(BPMN_NS, 'bpmn:incoming');
+        inEl.textContent = flowId;
+        gateway.appendChild(inEl);
+      }
+
+      const gwOutgoing = doc.createElementNS(BPMN_NS, 'bpmn:outgoing');
+      gwOutgoing.textContent = gatewayOutFlowId;
+      gateway.appendChild(gwOutgoing);
+
+      process.appendChild(gateway);
+
+      // Create outgoing flow from gateway to original target
+      const gatewayOutFlow = doc.createElementNS(BPMN_NS, 'bpmn:sequenceFlow');
+      gatewayOutFlow.setAttribute('id', gatewayOutFlowId);
+      gatewayOutFlow.setAttribute('sourceRef', gatewayId);
+      gatewayOutFlow.setAttribute('targetRef', targetRef);
+      process.appendChild(gatewayOutFlow);
+
+      // Add incoming reference on the original target for the gateway flow
+      const originalTarget = findProcessElement(process, targetRef);
+      if (originalTarget) {
+        const gwIncoming = doc.createElementNS(BPMN_NS, 'bpmn:incoming');
+        gwIncoming.textContent = gatewayOutFlowId;
+        const firstNonFlow = findFirstNonFlowChild(originalTarget);
+        if (firstNonFlow) {
+          originalTarget.insertBefore(gwIncoming, firstNonFlow);
+        } else {
+          originalTarget.appendChild(gwIncoming);
+        }
+      }
+
+      // Add DI for the converge gateway (position between script tasks and target)
+      const originalShape = findBPMNShape(bpmnPlane, originalId);
+      const targetShape = findBPMNShape(bpmnPlane, targetRef);
+      if (originalShape) {
+        const origBounds = originalShape.querySelector('Bounds');
+        const targetBounds = targetShape?.querySelector('Bounds');
+        const ox = parseFloat(origBounds?.getAttribute('x') || '0');
+        const oy = parseFloat(origBounds?.getAttribute('y') || '0');
+        const tx = targetBounds ? parseFloat(targetBounds.getAttribute('x') || '0') : ox;
+        const ty = targetBounds ? parseFloat(targetBounds.getAttribute('y') || '0') : oy + 120;
+        // Position gateway between script tasks and target
+        const gwX = (ox + tx) / 2 - 25;
+        const gwY = (oy + 36 + ty) / 2;
+
+        const gwShape = doc.createElementNS(BPMNDI_NS, 'bpmndi:BPMNShape');
+        gwShape.setAttribute('id', `${gatewayId}_di`);
+        gwShape.setAttribute('bpmnElement', gatewayId);
+        gwShape.setAttribute('isMarkerVisible', 'true');
+        const bounds = doc.createElementNS(DC_NS, 'dc:Bounds');
+        bounds.setAttribute('x', String(gwX));
+        bounds.setAttribute('y', String(gwY));
+        bounds.setAttribute('width', '50');
+        bounds.setAttribute('height', '50');
+        gwShape.appendChild(bounds);
+        bpmnPlane.appendChild(gwShape);
+      }
+
+      // Add DI edge for the gateway outgoing flow
+      const originalEdge = findBPMNEdge(bpmnPlane, outgoingFlowId);
+      if (originalEdge) {
+        const gwEdge = doc.createElementNS(BPMNDI_NS, 'bpmndi:BPMNEdge');
+        gwEdge.setAttribute('id', `${gatewayOutFlowId}_di`);
+        gwEdge.setAttribute('bpmnElement', gatewayOutFlowId);
+        const waypoints = originalEdge.querySelectorAll('waypoint');
+        for (const wp of waypoints) {
+          const newWp = doc.createElementNS(DI_NS, 'di:waypoint');
+          newWp.setAttribute('x', wp.getAttribute('x') || '0');
+          newWp.setAttribute('y', wp.getAttribute('y') || '0');
+          gwEdge.appendChild(newWp);
+        }
+        bpmnPlane.appendChild(gwEdge);
+      }
     }
   }
 
@@ -1309,28 +1474,46 @@ function collapseMultiErrorBoundaryEvents(xml: string): string {
       scriptFlowIds.push(toTargetFlowId);
     }
 
+    // Look for auto-generated converge gateway
+    const convergeGatewayId = `${primaryId}_converge`;
+    const convergeGateway = findProcessElement(process, convergeGatewayId);
+    const convergeOutFlowId = `${primaryId}_converge_out`;
+
     // If there are script tasks, we need to rewire the original flow back to the original target
     if (scriptTaskIds.length > 0 && primaryFlowId) {
       // Find where the script tasks point to (the real target)
+      // With converge gateway: script → flow → gateway → flow → real target
+      // Without converge gateway: script → flow → real target
       let realTargetRef = '';
-      for (const stId of scriptTaskIds) {
-        for (const child of process.children) {
-          if (child.getAttribute('id') === stId) {
-            const stOutgoing = child.querySelector('outgoing');
-            if (stOutgoing?.textContent) {
-              const stFlowId = stOutgoing.textContent.trim();
-              // Find the actual flow to get the real target
-              for (const flow of process.querySelectorAll('sequenceFlow')) {
-                if (flow.getAttribute('id') === stFlowId) {
-                  realTargetRef = flow.getAttribute('targetRef') || '';
-                  break;
-                }
-              }
-            }
-            if (realTargetRef) break;
+
+      if (convergeGateway) {
+        // Follow the converge gateway's outgoing flow to find the real target
+        for (const flow of process.querySelectorAll('sequenceFlow')) {
+          if (flow.getAttribute('id') === convergeOutFlowId) {
+            realTargetRef = flow.getAttribute('targetRef') || '';
+            break;
           }
         }
-        if (realTargetRef) break;
+      } else {
+        // No converge gateway - follow script task outgoing flows directly
+        for (const stId of scriptTaskIds) {
+          for (const child of process.children) {
+            if (child.getAttribute('id') === stId) {
+              const stOutgoing = child.querySelector('outgoing');
+              if (stOutgoing?.textContent) {
+                const stFlowId = stOutgoing.textContent.trim();
+                for (const flow of process.querySelectorAll('sequenceFlow')) {
+                  if (flow.getAttribute('id') === stFlowId) {
+                    realTargetRef = flow.getAttribute('targetRef') || '';
+                    break;
+                  }
+                }
+              }
+              if (realTargetRef) break;
+            }
+          }
+          if (realTargetRef) break;
+        }
       }
 
       // Retarget the original flow back to the real target
@@ -1344,6 +1527,14 @@ function collapseMultiErrorBoundaryEvents(xml: string): string {
         // Add incoming reference for the original flow on the target
         const targetEl = findProcessElement(process, realTargetRef);
         if (targetEl) {
+          // Remove the converge gateway's outgoing flow incoming reference if present
+          if (convergeGateway) {
+            for (const incoming of Array.from(targetEl.querySelectorAll('incoming'))) {
+              if (incoming.textContent?.trim() === convergeOutFlowId) {
+                targetEl.removeChild(incoming);
+              }
+            }
+          }
           const hasIncoming = Array.from(targetEl.querySelectorAll('incoming')).some(
             el => el.textContent?.trim() === primaryFlowId
           );
@@ -1361,7 +1552,19 @@ function collapseMultiErrorBoundaryEvents(xml: string): string {
       }
     }
 
-    const hasClonedOrScripts = clonedEvents.length > 0 || scriptTaskIds.length > 0;
+    // Remove the converge gateway and its outgoing flow
+    if (convergeGateway) {
+      process.removeChild(convergeGateway);
+      // Remove the gateway's outgoing sequence flow
+      for (const flow of Array.from(process.querySelectorAll('sequenceFlow'))) {
+        if (flow.getAttribute('id') === convergeOutFlowId) {
+          process.removeChild(flow);
+          break;
+        }
+      }
+    }
+
+    const hasClonedOrScripts = clonedEvents.length > 0 || scriptTaskIds.length > 0 || convergeGateway;
     if (!hasClonedOrScripts) continue;
 
     // Remove cloned boundary events
@@ -1417,7 +1620,7 @@ function collapseMultiErrorBoundaryEvents(xml: string): string {
       }
     }
 
-    // Remove cloned and script task DI elements
+    // Remove cloned, script task, and converge gateway DI elements
     if (bpmnPlane) {
       const diElementsToRemove: Element[] = [];
       const idsToRemoveDI = new Set<string>();
@@ -1432,6 +1635,11 @@ function collapseMultiErrorBoundaryEvents(xml: string): string {
       }
       for (const sfId of scriptFlowIds) {
         idsToRemoveDI.add(sfId);
+      }
+      // Add converge gateway and its outgoing flow
+      if (convergeGateway) {
+        idsToRemoveDI.add(convergeGatewayId);
+        idsToRemoveDI.add(convergeOutFlowId);
       }
 
       for (const child of bpmnPlane.children) {
