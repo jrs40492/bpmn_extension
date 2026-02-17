@@ -1012,6 +1012,53 @@ html, body {
   display: block !important;
 }
 
+/* Variable ComboBox - inline create new variable */
+.bio-properties-panel .variable-combobox-create {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.bio-properties-panel .variable-combobox-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border: 1px solid var(--vscode-focusBorder, #007fd4);
+  border-radius: 2px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.bio-properties-panel .variable-combobox-input:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.bio-properties-panel .variable-combobox-btn {
+  background: transparent;
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.bio-properties-panel .variable-combobox-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.bio-properties-panel .variable-combobox-btn.confirm {
+  color: var(--vscode-testing-iconPassed, #73c991);
+}
+
+.bio-properties-panel .variable-combobox-btn.cancel {
+  color: var(--vscode-testing-iconFailed, #f48771);
+}
+
 .bio-properties-panel .create-dmn-form-input {
   width: 100% !important;
   padding: 5px 8px !important;

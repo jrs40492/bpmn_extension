@@ -987,6 +987,19 @@ let onCreateDmnResult: ((result: { success: boolean; file?: DmnFileInfo; error?:
 // Function to handle DMN creation result (called from webview message handler)
 export function handleCreateDmnFileResult(result: { success: boolean; file?: DmnFileInfo; error?: string }): void {
   console.log('[Business Rule Task] Received createDmnFileResult:', result);
+
+  // Immediately add the new file to availableDmnFiles so that the
+  // onCreated callback can find it (the separate 'dmnFiles' message
+  // with the full refreshed list arrives later and would be too late).
+  if (result.success && result.file) {
+    const alreadyExists = availableDmnFiles.some(
+      f => f.name === result.file!.name || f.modelName === result.file!.modelName
+    );
+    if (!alreadyExists) {
+      availableDmnFiles = [...availableDmnFiles, result.file];
+    }
+  }
+
   if (onCreateDmnResult) {
     onCreateDmnResult(result);
   }
@@ -1218,6 +1231,70 @@ function CreateDmnForm(props: { element: BpmnElement; id: string; onCreated: (mo
     setInputs(newInputs);
   };
 
+  const handleCreateVariable = (index: number, varName: string) => {
+    if (!varName) return;
+    // Create bpmn:Property for BAMOE compatibility
+    ensureProcessProperty(element, varName, bpmnFactory);
+
+    // Also create bamoe:Variable so it shows in the Process Variables panel
+    const bo = element.businessObject;
+    if (bo) {
+      let process: ModdleElement | undefined = bo.$parent;
+      while (process && process.$type !== 'bpmn:Process') {
+        process = process.$parent;
+      }
+      if (process) {
+        const commands: Array<{ cmd: string; context: Record<string, unknown> }> = [];
+
+        // Ensure extensionElements exists on the process
+        let extensionElements = (process as any).extensionElements;
+        if (!extensionElements) {
+          extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+          extensionElements.$parent = process;
+          (process as any).extensionElements = extensionElements;
+        }
+
+        // Ensure ProcessVariables container exists
+        let processVariables = extensionElements.values?.find(
+          (ext: ModdleElement) => ext.$type === 'bamoe:ProcessVariables'
+        );
+        if (!processVariables) {
+          processVariables = bpmnFactory.create('bamoe:ProcessVariables', { variables: [] });
+          processVariables.$parent = extensionElements;
+          if (!extensionElements.values) {
+            extensionElements.values = [];
+          }
+          extensionElements.values.push(processVariables);
+        }
+
+        // Check if variable already exists
+        const existing = (processVariables.variables || []).find(
+          (v: ModdleElement) => v.name === varName
+        );
+        if (!existing) {
+          const newVariable = bpmnFactory.create('bamoe:Variable', {
+            name: varName,
+            type: 'string',
+            required: false
+          });
+          newVariable.$parent = processVariables;
+          if (!processVariables.variables) {
+            processVariables.variables = [];
+          }
+          processVariables.variables.push(newVariable);
+
+          // Use commandStack to notify the UI of the change
+          commandStack.execute('element.updateProperties', {
+            element,
+            properties: { name: bo.name || bo.id }
+          });
+        }
+      }
+    }
+
+    handleInputChange(index, 'name', varName);
+  };
+
   const handleSubmit = () => {
     // Validate
     if (!modelName.trim()) {
@@ -1225,7 +1302,7 @@ function CreateDmnForm(props: { element: BpmnElement; id: string; onCreated: (mo
       return;
     }
 
-    const validInputs = inputs.filter(i => i.name.trim());
+    const validInputs = inputs.filter(i => i.name.trim() && i.name !== '__creating__');
     if (validInputs.length === 0) {
       setError(translate('At least one input with a name is required'));
       return;
@@ -1319,15 +1396,63 @@ function CreateDmnForm(props: { element: BpmnElement; id: string; onCreated: (mo
         <label class="create-dmn-form-label">${translate('Inputs')}</label>
         ${inputs.map((input, index) => html`
           <div style=${inputRowStyle} key=${index}>
-            <input
-              type="text"
-              class="create-dmn-form-input"
-              style=${{ flex: 1 }}
-              value=${input.name}
-              placeholder=${translate('Input name')}
-              onInput=${(e: Event) => handleInputChange(index, 'name', (e.target as HTMLInputElement).value)}
-              disabled=${isSubmitting}
-            />
+            ${input.name === '__creating__' ? html`
+              <div class="variable-combobox-create" style=${{ flex: 1 }}>
+                <input
+                  type="text"
+                  class="variable-combobox-input"
+                  placeholder=${translate('New variable name')}
+                  onKeyDown=${(e: KeyboardEvent) => {
+                    if (e.key === 'Enter') {
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (val) { handleCreateVariable(index, val); }
+                    } else if (e.key === 'Escape') {
+                      handleInputChange(index, 'name', '');
+                    }
+                  }}
+                  ref=${(el: HTMLInputElement | null) => el && setTimeout(() => el.focus(), 0)}
+                  disabled=${isSubmitting}
+                />
+                <button
+                  type="button"
+                  class="variable-combobox-btn confirm"
+                  onClick=${(e: Event) => {
+                    const inp = (e.target as HTMLElement).parentElement?.querySelector('input') as HTMLInputElement;
+                    const val = inp?.value.trim();
+                    if (val) { handleCreateVariable(index, val); }
+                  }}
+                  title=${translate('Confirm')}
+                >\u2713</button>
+                <button
+                  type="button"
+                  class="variable-combobox-btn cancel"
+                  onClick=${() => handleInputChange(index, 'name', '')}
+                  title=${translate('Cancel')}
+                >\u2717</button>
+              </div>
+            ` : html`
+              <select
+                class="create-dmn-form-select"
+                style=${{ flex: 1 }}
+                value=${input.name}
+                onChange=${(e: Event) => {
+                  const val = (e.target as HTMLSelectElement).value;
+                  if (val === '__new__') {
+                    handleInputChange(index, 'name', '__creating__');
+                  } else {
+                    handleInputChange(index, 'name', val);
+                  }
+                }}
+                disabled=${isSubmitting}
+              >
+                <option value="">${translate('-- Select Variable --')}</option>
+                ${getAvailableProcessVariables(element)
+                  .filter(v => v.name && v.name !== 'undefined')
+                  .map(v => html`<option key=${v.name} value=${v.name}>${v.name}</option>`)}
+                <option disabled>────────────</option>
+                <option value="__new__">${translate('+ Create new variable...')}</option>
+              </select>
+            `}
             <select
               class="create-dmn-form-select"
               value=${input.typeRef}
@@ -1391,7 +1516,6 @@ function CreateDmnToggle(props: { element: BpmnElement; id: string }) {
     setShowForm(false);
 
     // Auto-select the new DMN in the dropdown
-    // This will be handled by setting the model value
     if (modelName) {
       // Migrate legacy config if present
       migrateLegacyConfig(element, bpmnFactory, commandStack);
@@ -1399,7 +1523,7 @@ function CreateDmnToggle(props: { element: BpmnElement; id: string }) {
       // Ensure ioSpecification exists
       ensureIoSpecification(element, bpmnFactory, commandStack);
 
-      // Find the newly created file to get its namespace
+      // Find the newly created file to get its namespace and decisions
       const newFile = availableDmnFiles.find(f => f.modelName === modelName);
 
       // Set the model value
@@ -1410,8 +1534,12 @@ function CreateDmnToggle(props: { element: BpmnElement; id: string }) {
         setDataInputValue(element, DMN_DATA_INPUTS.NAMESPACE, newFile.namespace, bpmnFactory, commandStack);
       }
 
-      // Clear decision (user will select after opening the DMN)
-      setDataInputValue(element, DMN_DATA_INPUTS.DECISION, '', bpmnFactory, commandStack);
+      // Auto-select the first decision if available
+      if (newFile?.decisions && newFile.decisions.length > 0) {
+        setDataInputValue(element, DMN_DATA_INPUTS.DECISION, newFile.decisions[0], bpmnFactory, commandStack);
+      } else {
+        setDataInputValue(element, DMN_DATA_INPUTS.DECISION, '', bpmnFactory, commandStack);
+      }
     }
   };
 
