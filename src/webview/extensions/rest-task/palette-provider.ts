@@ -50,11 +50,10 @@ interface ModdleElement {
  * - AcceptHeader: Sets the Accept HTTP header for the request
  * - AcceptCharset: Sets the Accept-Charset header
  * - ResultClass: Java class to deserialize JSON response into (e.g., "java.util.Map")
- * - HandleResponseErrors: Whether to throw exception on HTTP errors (default: true)
- * - Headers: Custom headers as JSON object
+* - Headers: Custom headers as JSON object
  */
 export const REST_PARAMS = {
-  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass', 'HandleResponseErrors'],
+  inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],
   // Note: jBPM RESTWorkItemHandler uses 'Status' (not 'StatusCode') and it's a String type
   outputs: ['Result', 'Status', 'StatusMsg']
 } as const;
@@ -71,8 +70,7 @@ const DEFAULT_CONFIG: Record<string, string> = {
   Content: '',
   ConnectTimeout: '30000',
   ReadTimeout: '30000',
-  ResultClass: '',
-  HandleResponseErrors: 'false'
+  ResultClass: ''
 };
 
 export default class RestTaskPaletteProvider {
