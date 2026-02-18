@@ -158,9 +158,29 @@ interface EventBus {
   off(event: string, callback: (event: unknown) => void): void;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Connection {
+  waypoints: Point[];
+  source: unknown;
+  target: unknown;
+}
+
+interface ConnectionDocking {
+  getCroppedWaypoints(connection: Connection): Point[];
+}
+
+interface GraphicsFactory {
+  update(type: string, element: unknown, gfx: SVGElement): void;
+}
+
 interface ElementRegistry {
   getAll(): unknown[];
   get(id: string): unknown;
+  getGraphics(element: unknown): SVGElement;
 }
 
 interface Selection {
@@ -184,6 +204,8 @@ export interface Modeler extends BpmnModelerInstance {
   get(name: 'selection'): Selection;
   get(name: 'toggleMode'): ToggleMode;
   get(name: 'modeling'): Modeling;
+  get(name: 'connectionDocking'): ConnectionDocking;
+  get(name: 'graphicsFactory'): GraphicsFactory;
   get<T>(name: string): T;
 }
 
@@ -275,6 +297,44 @@ export async function importDiagram(modeler: Modeler, xml: string): Promise<void
 
   if (result.warnings && result.warnings.length > 0) {
     console.warn('BPMN import warnings:', result.warnings);
+  }
+
+  cropImportedConnections(modeler);
+}
+
+/**
+ * Crop imported connection waypoints to shape boundaries.
+ *
+ * External editors (e.g., KIE/jBPM) store center-to-center waypoints in the
+ * BPMN DI, which is valid per the spec. bpmn-js's CroppingConnectionDocking
+ * only crops during modeling operations, not during importXML. This function
+ * applies the same cropping after import so arrows connect at shape edges
+ * instead of passing through node centers.
+ */
+function cropImportedConnections(modeler: Modeler): void {
+  const elementRegistry = modeler.get('elementRegistry');
+  const connectionDocking = modeler.get('connectionDocking');
+  const graphicsFactory = modeler.get('graphicsFactory');
+
+  const elements = elementRegistry.getAll();
+
+  for (const element of elements) {
+    const connection = element as unknown as Connection;
+    if (!connection.waypoints) {
+      continue;
+    }
+
+    try {
+      const croppedWaypoints = connectionDocking.getCroppedWaypoints(connection);
+      connection.waypoints = croppedWaypoints;
+      const gfx = elementRegistry.getGraphics(element);
+      if (gfx) {
+        graphicsFactory.update('connection', element, gfx);
+      }
+    } catch (e) {
+      // Some connections (e.g., cross-pool data associations) may fail to crop
+      console.warn('Failed to crop connection waypoints:', e);
+    }
   }
 }
 
