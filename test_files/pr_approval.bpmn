@@ -3,7 +3,7 @@
   <itemDefinition id="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" structureRef="String" />
   <itemDefinition id="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" structureRef="com.cmm.pr.PullRequest" />
   <itemDefinition id="_CC839138-83FC-4DF8-AF02-B11C573BAC96" structureRef="Boolean" />
-  <process id="pr_approval" name="pr_approval" drools:packageName="com.cmm.pr">
+  <process id="pr_approval" name="pr_approval" isExecutable="true" drools:packageName="com.cmm.pr">
     <extensionElements />
     <property id="_749ECA72-79B4-4DD6-83F8-E26EFABBD165" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request">
       <extensionElements />
@@ -276,17 +276,17 @@
       <bpmndi:BPMNShape id="_21D22C8C-6CD4-41CF-9B70-A59EBFA377CB" bpmnElement="_6274BC04-9F57-4DA3-A50D-0F6B4AFD737E">
         <dc:Bounds x="-60" y="240" width="180" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="_CFF2BACC-C823-4873-AE6E-988A9C8DCC9F" bpmnElement="_377CD61D-F046-401B-BFAD-38341DE5A985">
-        <dc:Bounds x="580" y="80" width="180" height="100" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="_9D3E2DC3-4C2D-47AF-9029-43A0AE5975BB" bpmnElement="_CD00C815-11D5-4951-8235-FCB3EE9C7CD6">
         <dc:Bounds x="-60" y="80" width="180" height="100" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="_8E68CEBB-8698-42F7-92E6-EF69C6C00492" bpmnElement="_94ECE7DF-1B3D-4CEB-9D45-E23AF1D01512">
-        <dc:Bounds x="640" y="145" width="60" height="60" />
+      <bpmndi:BPMNShape id="_CFF2BACC-C823-4873-AE6E-988A9C8DCC9F" bpmnElement="_377CD61D-F046-401B-BFAD-38341DE5A985">
+        <dc:Bounds x="580" y="80" width="180" height="100" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="_E490A7B8-DCE6-4EAD-A9D9-D18A1CA580C8" bpmnElement="_F429DD97-A50B-4170-B473-1F7CFA434D9A">
         <dc:Bounds x="0" y="145" width="60" height="60" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="_8E68CEBB-8698-42F7-92E6-EF69C6C00492" bpmnElement="_94ECE7DF-1B3D-4CEB-9D45-E23AF1D01512">
+        <dc:Bounds x="640" y="145" width="60" height="60" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="_8E2A3FEA-8119-4FB6-B5EE-143845B94218-AUTO-SOURCE-AUTO-TARGET" bpmnElement="_02F5789E-0E20-4838-B144-B913214D0E48" sourceElement="_5F03C11E-3D62-4F24-936D-1C9E5AC4A899" targetElement="_9D3E2DC3-4C2D-47AF-9029-43A0AE5975BB">
         <di:waypoint x="-120" y="130" />
