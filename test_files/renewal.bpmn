@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:msgevt="http://bamoe.io/schema/message-event" xmlns:kafka="http://bamoe.io/schema/kafka" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:bamoe="http://bamoe.io/schema/process" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:msgevt="http://bamoe.io/schema/message-event" id="Definitions_empty" targetNamespace="http://bpmn.io/schema/bpmn">
   <bpmn:itemDefinition id="_Event_0tyznr4_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Message_Event_0tyznr4_Item" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_0tyznr4_InputItem" structureRef="java.lang.String" />
@@ -13,11 +13,15 @@
   <bpmn:message id="Message_Event_1pq2x0u" name="priorAuthTopic" itemRef="_Message_Event_1pq2x0u_Item" />
   <bpmn:itemDefinition id="_Event_1pq2x0u_OutputItem" structureRef="java.lang.Object" />
   <bpmn:itemDefinition id="_Event_1pq2x0u_userIdItem" structureRef="java.lang.String" />
+  <bpmn:itemDefinition id="_Message_Event_15cwfko_Item" structureRef="java.lang.Object" />
+  <bpmn:message id="Message_Event_15cwfko" name="message_Event_15cwfko" itemRef="_Message_Event_15cwfko_Item" />
+  <bpmn:itemDefinition id="_Event_15cwfko_OutputItem" structureRef="java.lang.Object" />
   <bpmn:process id="renewal" name="renewal" isExecutable="true">
     <bpmn:extensionElements>
       <bamoe:processVariables>
         <bamoe:variable name="userId" />
         <bamoe:variable name="hasUserId" type="boolean" required="true" defaultValue="false" />
+        <bamoe:variable name="test" />
       </bamoe:processVariables>
     </bpmn:extensionElements>
     <bpmn:property id="userId" itemSubjectRef="_userIdItem" name="userId" />
@@ -25,6 +29,8 @@
     <bpmn:property id="message_Event_0tyznr4" name="message_Event_0tyznr4" />
     <bpmn:property id="message_Event_1n6xats" name="message_Event_1n6xats" />
     <bpmn:property id="message_Event_1pq2x0u" name="message_Event_1pq2x0u" />
+    <bpmn:property id="message_Event_15cwfko" itemSubjectRef="_message_Event_15cwfkoItem" name="message_Event_15cwfko" />
+    <bpmn:property id="test" itemSubjectRef="_testItem" name="test" />
     <bpmn:endEvent id="Event_0b78j8f">
       <bpmn:incoming>Flow_14t4myq</bpmn:incoming>
     </bpmn:endEvent>
@@ -78,7 +84,7 @@
       <bpmn:dataInputAssociation id="DataInputAssociation_02evvy7">
         <bpmn:targetRef>Activity_05r7j6b_decisionInputX</bpmn:targetRef>
         <bpmn:assignment>
-          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_020986q</bpmn:from>
+          <bpmn:from xsi:type="bpmn:tFormalExpression">Decision_0lj4elf</bpmn:from>
           <bpmn:to xsi:type="bpmn:tFormalExpression">Activity_05r7j6b_decisionInputX</bpmn:to>
         </bpmn:assignment>
       </bpmn:dataInputAssociation>
@@ -155,6 +161,7 @@
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_099pxwt" sourceRef="Event_1pq2x0u" targetRef="Activity_05r7j6b" />
   </bpmn:process>
+  <bpmn:itemDefinition id="_testItem" structureRef="java.lang.String" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="renewal">
       <bpmndi:BPMNShape id="Event_0b78j8f_di" bpmnElement="Event_0b78j8f">

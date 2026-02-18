@@ -390,7 +390,7 @@ function RestTaskEntries(props: { element: BpmnElement }): PropertyEntry[] {
         const varName = getResultVariableName(element);
         return !!varName && varName !== 'restResult';
       }
-    }
+    },
   ];
 }
 

@@ -497,22 +497,6 @@ html, body {
   stroke-width: 2px !important;
 }
 
-/* Label styling for dark themes */
-/* Internal labels (text inside task/activity shapes with white backgrounds) - dark color */
-.djs-element.djs-shape .djs-visual .djs-label {
-  fill: #1e1e1e !important;
-}
-
-/* External labels (events, gateways, etc. - separate label elements on dark canvas) - light color */
-.djs-element.djs-label .djs-label {
-  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
-/* Connection labels (sequence flow names on dark canvas) - light color */
-.djs-connection .djs-label {
-  fill: var(--vscode-editor-foreground, #d4d4d4) !important;
-}
-
 /* Error/warning overlays */
 .bpmn-lint-error {
   stroke: var(--vscode-errorForeground, #f48771) !important;
@@ -1026,6 +1010,53 @@ html, body {
   color: var(--vscode-foreground, #cccccc) !important;
   margin-bottom: 4px !important;
   display: block !important;
+}
+
+/* Variable ComboBox - inline create new variable */
+.bio-properties-panel .variable-combobox-create {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.bio-properties-panel .variable-combobox-input {
+  flex: 1;
+  padding: 5px 8px;
+  font-size: 12px;
+  background: var(--vscode-input-background, #3c3c3c);
+  color: var(--vscode-input-foreground, #cccccc);
+  border: 1px solid var(--vscode-focusBorder, #007fd4);
+  border-radius: 2px;
+  box-sizing: border-box;
+  min-width: 0;
+}
+
+.bio-properties-panel .variable-combobox-input:focus {
+  outline: none;
+  border-color: var(--vscode-focusBorder, #007fd4);
+}
+
+.bio-properties-panel .variable-combobox-btn {
+  background: transparent;
+  border: 1px solid var(--vscode-input-border, #3c3c3c);
+  border-radius: 2px;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  line-height: 1;
+  color: var(--vscode-foreground, #cccccc);
+}
+
+.bio-properties-panel .variable-combobox-btn:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(90, 93, 94, 0.31));
+}
+
+.bio-properties-panel .variable-combobox-btn.confirm {
+  color: var(--vscode-testing-iconPassed, #73c991);
+}
+
+.bio-properties-panel .variable-combobox-btn.cancel {
+  color: var(--vscode-testing-iconFailed, #f48771);
 }
 
 .bio-properties-panel .create-dmn-form-input {

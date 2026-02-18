@@ -50,8 +50,7 @@ interface ModdleElement {
  * - AcceptHeader: Sets the Accept HTTP header for the request
  * - AcceptCharset: Sets the Accept-Charset header
  * - ResultClass: Java class to deserialize JSON response into (e.g., "java.util.Map")
- * - HandleResponseErrors: Whether to throw exception on HTTP errors (default: true)
- * - Headers: Custom headers as JSON object
+* - Headers: Custom headers as JSON object
  */
 export const REST_PARAMS = {
   inputs: ['Url', 'Method', 'ContentType', 'AcceptHeader', 'Content', 'ConnectTimeout', 'ReadTimeout', 'ResultClass'],

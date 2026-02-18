@@ -16,34 +16,45 @@ npm version major   # 0.1.0 -> 1.0.0
 
 This updates `package.json` and creates a git commit + tag automatically.
 
-### 2. Build and package
+### 2. Set the VERSION variable
+
+```bash
+VERSION=$(node -p "require('./package.json').version")
+```
+
+This reads the version from `package.json` so it can be used in subsequent steps.
+
+### 3. Build and package
 
 ```bash
 npm install
 npm run package
 ```
 
-This produces a file named `bamoe-<version>.vsix`.
+This produces a file named `bamoe-$VERSION.vsix`.
 
-### 3. Create the GitHub Release
+### 4. Write release notes
 
-```bash
-gh release create v<version> bamoe-<version>.vsix \
-  --title "BAMOE v<version>" \
-  --notes "Release notes here..."
-```
-
-For example:
+Create a file at `release_notes/$VERSION.md` with the changes for this release:
 
 ```bash
-gh release create v0.2.0 bamoe-0.2.0.vsix \
-  --title "BAMOE v0.2.0" \
-  --notes "## What's Changed
+cat > release_notes/$VERSION.md << 'EOF'
+## What's Changed
+
 - Added feature X
-- Fixed bug Y"
+- Fixed bug Y
+EOF
 ```
 
-### 4. Push
+### 5. Create the GitHub Release
+
+```bash
+gh release create v$VERSION bamoe-$VERSION.vsix \
+  --title "BAMOE v$VERSION" \
+  --notes-file release_notes/$VERSION.md
+```
+
+### 6. Push
 
 ```bash
 git push origin main --tags
@@ -53,15 +64,16 @@ git push origin main --tags
 
 ```bash
 # Check the release exists and has the .vsix attached
-gh release view v<version>
+gh release view v$VERSION
 
 # Download and test locally
-gh release download v<version>
-code --install-extension bamoe-<version>.vsix
+gh release download v$VERSION
+code --install-extension bamoe-$VERSION.vsix
 ```
 
 ## Notes
 
 - The `.vsix` file is excluded from git via `.gitignore`
+- Release notes are stored in `release_notes/` and committed to the repo
 - Always test the packaged `.vsix` in a clean VS Code window before publishing
 - Use `--draft` with `gh release create` if you want to review before making it public
