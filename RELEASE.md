@@ -35,29 +35,26 @@ This produces a file named `bamoe-$VERSION.vsix`.
 
 ### 4. Write release notes
 
-Create a file at `release_notes/$VERSION.md` with the changes for this release:
+Create a release notes file and add your changes:
 
 ```bash
-cat > release_notes/$VERSION.md << 'EOF'
-## What's Changed
-
-- Added feature X
-- Fixed bug Y
-EOF
+touch release_notes/$VERSION.md
 ```
 
-### 5. Create the GitHub Release
+Then open `release_notes/$VERSION.md` and write the release notes for this version.
+
+### 5. Push
+
+```bash
+git push origin main --tags
+```
+
+### 6. Create the GitHub Release
 
 ```bash
 gh release create v$VERSION bamoe-$VERSION.vsix \
   --title "BAMOE v$VERSION" \
   --notes-file release_notes/$VERSION.md
-```
-
-### 6. Push
-
-```bash
-git push origin main --tags
 ```
 
 ## Verifying a Release
