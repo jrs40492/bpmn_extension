@@ -674,21 +674,6 @@ html, body {
   fill: #1890ff !important;
 }
 
-/* Gateways - Gold */
-[data-element-id^="Gateway"] .djs-visual > polygon,
-[data-element-id*="Gateway"] .djs-visual > polygon,
-[data-element-id^="ExclusiveGateway"] .djs-visual > polygon,
-[data-element-id^="ParallelGateway"] .djs-visual > polygon,
-[data-element-id^="InclusiveGateway"] .djs-visual > polygon {
-  stroke: #faad14 !important;
-}
-
-/* Gateway markers */
-[data-element-id*="Gateway"] .djs-visual > path {
-  stroke: #faad14 !important;
-  fill: #faad14 !important;
-}
-
 /* Subprocess - Purple border */
 [data-element-id^="SubProcess"] .djs-visual > rect,
 [data-element-id*="SubProcess"] .djs-visual > rect {

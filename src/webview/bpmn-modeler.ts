@@ -65,6 +65,9 @@ import errorBoundaryModule, { errorBoundaryDescriptor } from './extensions/error
 // Custom event colors extension
 import eventColorsModule from './extensions/event-colors';
 
+// Custom gateway colors extension
+import gatewayColorsModule from './extensions/gateway-colors';
+
 // Custom label colors extension (dark mode text visibility)
 import labelColorsModule from './extensions/label-colors';
 
@@ -229,6 +232,7 @@ export function createModeler(
     processVariablesModule,
     messageEventModule,
     eventColorsModule,
+    gatewayColorsModule,
     labelColorsModule,
     errorBoundaryModule,
     compensationTaskModule,
