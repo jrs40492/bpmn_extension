@@ -10,6 +10,9 @@ export interface FormField {
   dtype: string;
   variable?: string;
   defaultValue?: string;
+  fieldKind?: 'flat' | 'object' | 'array';
+  arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+  objectFields?: FormField[];
 }
 
 interface HtmlInputInfo {
@@ -145,9 +148,144 @@ function groupFields(fields: FormField[]): { flat: FormField[]; groups: FieldGro
 }
 
 /**
+ * Render an expanded object field as a fieldset with sub-fields.
+ */
+function renderExpandedObject(field: FormField, readonly: boolean, parentPrefix?: string): string {
+  const legend = toLabel(field.name);
+  const prefix = parentPrefix ? `${parentPrefix}.${field.name}` : field.name;
+  const subFields = (field.objectFields || []).map(sub => {
+    const subField: FormField = {
+      ...sub,
+      name: `${prefix}.${sub.name}`
+    };
+    return renderField(subField, readonly);
+  }).join('\n');
+
+  return `      <fieldset class="nested-fieldset">
+        <legend>${escapeHtml(legend)}</legend>
+${subFields}
+      </fieldset>`;
+}
+
+/**
+ * Render a single sub-field input inside an array card template.
+ * Uses data-field attributes instead of id/name for template cloning.
+ */
+function renderCardInput(itemField: { name: string; dtype: string; defaultValue?: string }, readonly: boolean): string {
+  const info = getHtmlInputType(itemField.dtype);
+  const label = toLabel(itemField.name);
+  const readonlyAttr = readonly ? ' readonly' : '';
+  const disabledAttr = readonly && info.type === 'checkbox' ? ' disabled' : '';
+
+  if (info.type === 'checkbox') {
+    return `          <div class="form-field checkbox-field">
+            <label>
+              <input type="checkbox" data-field="${escapeHtml(itemField.name)}"${disabledAttr} />
+              ${escapeHtml(label)}
+            </label>
+          </div>`;
+  }
+
+  const stepAttr = info.step ? ` step="${info.step}"` : '';
+  return `          <div class="form-field">
+            <label>${escapeHtml(label)}</label>
+            <input type="${info.type}" data-field="${escapeHtml(itemField.name)}"${stepAttr}${readonlyAttr} />
+          </div>`;
+}
+
+/**
+ * Render an array card list with a template, default items, and add/remove buttons.
+ */
+function renderArrayCardList(field: FormField, readonly: boolean, parentPrefix?: string): string {
+  const itemFields = field.arrayItemFields || [];
+  const fullName = parentPrefix ? `${parentPrefix}.${field.name}` : field.name;
+  const containerId = `array-${fullName}`;
+  const templateId = `template-${fullName}`;
+  const label = toLabel(field.name);
+
+  // Build template card HTML
+  const templateInputs = itemFields.map(f => renderCardInput(f, readonly)).join('\n');
+  const removeBtn = readonly ? '' : `\n          <button type="button" class="card-remove-btn" onclick="this.closest('.array-card').remove(); renumberCards('${escapeHtml(containerId)}')">&times;</button>`;
+
+  const templateHtml = `      <template id="${escapeHtml(templateId)}">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>${removeBtn}
+          </div>
+${templateInputs}
+        </div>
+      </template>`;
+
+  // Build default item cards
+  let defaultItems: unknown[] = [];
+  if (field.defaultValue) {
+    try {
+      const parsed = JSON.parse(field.defaultValue);
+      if (Array.isArray(parsed)) defaultItems = parsed;
+    } catch {
+      // ignore
+    }
+  }
+
+  const defaultCards = defaultItems.map((item, idx) => {
+    const obj = (item && typeof item === 'object' && !Array.isArray(item)) ? item as Record<string, unknown> : {};
+    const cardInputs = itemFields.map(f => {
+      const val = obj[f.name];
+      const info = getHtmlInputType(f.dtype);
+      const readonlyAttr = readonly ? ' readonly' : '';
+      const disabledAttr = readonly && info.type === 'checkbox' ? ' disabled' : '';
+
+      if (info.type === 'checkbox') {
+        const checked = val ? ' checked' : '';
+        return `          <div class="form-field checkbox-field">
+            <label>
+              <input type="checkbox" data-field="${escapeHtml(f.name)}"${checked}${disabledAttr} />
+              ${escapeHtml(toLabel(f.name))}
+            </label>
+          </div>`;
+      }
+
+      const stepAttr = info.step ? ` step="${info.step}"` : '';
+      const valueAttr = val !== undefined && val !== null ? ` value="${escapeHtml(String(val))}"` : '';
+      return `          <div class="form-field">
+            <label>${escapeHtml(toLabel(f.name))}</label>
+            <input type="${info.type}" data-field="${escapeHtml(f.name)}"${stepAttr}${valueAttr}${readonlyAttr} />
+          </div>`;
+    }).join('\n');
+
+    const cardRemoveBtn = readonly ? '' : `\n          <button type="button" class="card-remove-btn" onclick="this.closest('.array-card').remove(); renumberCards('${escapeHtml(containerId)}')">&times;</button>`;
+
+    return `        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#${idx + 1}</span>${cardRemoveBtn}
+          </div>
+${cardInputs}
+        </div>`;
+  }).join('\n');
+
+  const addBtn = readonly ? '' : `\n      <button type="button" class="array-add-btn" onclick="addArrayCard('${escapeHtml(containerId)}', '${escapeHtml(templateId)}')">+ Add Item</button>`;
+
+  return `      <fieldset class="nested-fieldset">
+        <legend>${escapeHtml(label)}</legend>
+${templateHtml}
+        <div class="array-list-container" id="${escapeHtml(containerId)}">
+${defaultCards}
+        </div>${addBtn}
+      </fieldset>`;
+}
+
+/**
  * Render a single form field as HTML.
  */
-function renderField(field: FormField, readonly: boolean): string {
+function renderField(field: FormField, readonly: boolean, parentPrefix?: string): string {
+  // Dispatch expanded object/array fields
+  if (field.fieldKind === 'object' && field.objectFields) {
+    return renderExpandedObject(field, readonly, parentPrefix);
+  }
+  if (field.fieldKind === 'array' && field.arrayItemFields) {
+    return renderArrayCardList(field, readonly, parentPrefix);
+  }
+
   const info = getHtmlInputType(field.dtype);
   const label = toLabel(field.name.includes('.') ? field.name.split('.').pop()! : field.name);
   const id = field.name;
@@ -263,6 +401,14 @@ ${outputFields}
     .form-field textarea[readonly] { background: #f0f0f0; color: #666; }
     .checkbox-field label { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9em; cursor: pointer; }
     .checkbox-field input[type="checkbox"] { width: 18px; height: 18px; }
+    .array-list-container { display: flex; flex-direction: column; gap: 10px; }
+    .array-card { border: 1px solid #ddd; border-radius: 4px; padding: 12px; background: #fff; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .card-index { font-weight: 600; font-size: 0.85em; color: #666; }
+    .card-remove-btn { background: none; border: 1px solid #ddd; border-radius: 3px; color: #999; cursor: pointer; font-size: 1.1em; line-height: 1; padding: 2px 6px; }
+    .card-remove-btn:hover { color: #c00; border-color: #c00; }
+    .array-add-btn { margin-top: 8px; padding: 6px 14px; background: #f0f0f0; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; font-size: 0.9em; color: #555; }
+    .array-add-btn:hover { background: #e8e8e8; border-color: #aaa; }
   </style>
 </head>
 <body>
@@ -272,6 +418,26 @@ ${inputFieldset}
 ${outputFieldset}
   </form>
   <script>
+    /* Array card utility functions */
+    function addArrayCard(containerId, templateId) {
+      var container = document.getElementById(containerId);
+      var template = document.getElementById(templateId);
+      if (!container || !template) return;
+      var clone = template.content.cloneNode(true);
+      container.appendChild(clone);
+      renumberCards(containerId);
+    }
+
+    function renumberCards(containerId) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var cards = container.querySelectorAll('.array-card');
+      for (var i = 0; i < cards.length; i++) {
+        var idx = cards[i].querySelector('.card-index');
+        if (idx) idx.textContent = '#' + (i + 1);
+      }
+    }
+
     /* Kogito form lifecycle integration */
     function setFormData(data) {
       if (!data) return;
@@ -341,13 +507,89 @@ function buildDefaultLiteral(field: FormField): string | undefined {
   return `"${field.defaultValue.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
+/**
+ * Generate set-data JS for array fields, populating cards from data.
+ */
+function generateSetArrayField(field: FormField, accessor: string, indent: string): string[] {
+  const lines: string[] = [];
+  const fullName = field.name;
+  const containerId = `array-${fullName}`;
+  const templateId = `template-${fullName}`;
+  const itemFields = field.arrayItemFields || [];
+
+  lines.push(`${indent}(function() {`);
+  lines.push(`${indent}  var arr = ${accessor};`);
+  lines.push(`${indent}  if (!Array.isArray(arr)) return;`);
+  lines.push(`${indent}  var container = document.getElementById("${containerId}");`);
+  lines.push(`${indent}  var template = document.getElementById("${templateId}");`);
+  lines.push(`${indent}  if (!container || !template) return;`);
+  lines.push(`${indent}  container.innerHTML = "";`);
+  lines.push(`${indent}  for (var i = 0; i < arr.length; i++) {`);
+  lines.push(`${indent}    var clone = template.content.cloneNode(true);`);
+  lines.push(`${indent}    var card = clone.querySelector(".array-card");`);
+  lines.push(`${indent}    var item = arr[i] || {};`);
+  for (const sub of itemFields) {
+    const info = getHtmlInputType(sub.dtype);
+    if (info.type === 'checkbox') {
+      lines.push(`${indent}    var cb = card.querySelector('[data-field="${sub.name}"]'); if (cb) cb.checked = !!item["${sub.name}"];`);
+    } else {
+      lines.push(`${indent}    var inp = card.querySelector('[data-field="${sub.name}"]'); if (inp) inp.value = item["${sub.name}"] != null ? item["${sub.name}"] : "";`);
+    }
+  }
+  lines.push(`${indent}    container.appendChild(clone);`);
+  lines.push(`${indent}  }`);
+  lines.push(`${indent}  renumberCards("${containerId}");`);
+  lines.push(`${indent})();`);
+  return lines;
+}
+
+/**
+ * Generate set-data JS for expanded object fields, recursing into sub-fields.
+ */
+function generateSetObjectField(field: FormField, accessor: string, indent: string): string[] {
+  const lines: string[] = [];
+  const objectFields = field.objectFields || [];
+  lines.push(`${indent}if (${accessor} !== undefined && ${accessor} !== null) {`);
+  for (const sub of objectFields) {
+    const subAccessor = `${accessor}["${sub.name}"]`;
+    if (sub.fieldKind === 'array' && sub.arrayItemFields) {
+      const subWithFullName: FormField = { ...sub, name: `${field.name}.${sub.name}` };
+      lines.push(...generateSetArrayField(subWithFullName, subAccessor, `${indent}  `));
+    } else if (sub.fieldKind === 'object' && sub.objectFields) {
+      const subWithFullName: FormField = { ...sub, name: `${field.name}.${sub.name}` };
+      lines.push(...generateSetObjectField(subWithFullName, subAccessor, `${indent}  `));
+    } else {
+      const subId = `${field.name}.${sub.name}`;
+      const info = getHtmlInputType(sub.dtype);
+      if (info.type === 'checkbox') {
+        lines.push(`${indent}  if (${subAccessor} !== undefined) document.getElementById("${subId}").checked = !!${subAccessor};`);
+      } else {
+        lines.push(`${indent}  if (${subAccessor} !== undefined) document.getElementById("${subId}").value = ${subAccessor} ?? "";`);
+      }
+    }
+  }
+  lines.push(`${indent}}`);
+  return lines;
+}
+
 function generateSetFormDataBody(fields: FormField[]): string {
   const lines: string[] = [];
 
   for (const field of fields) {
+    const accessor = buildDataAccessor(field);
+
+    // Handle expanded object/array fieldKinds
+    if (field.fieldKind === 'array' && field.arrayItemFields) {
+      lines.push(...generateSetArrayField(field, accessor, '      '));
+      continue;
+    }
+    if (field.fieldKind === 'object' && field.objectFields) {
+      lines.push(...generateSetObjectField(field, accessor, '      '));
+      continue;
+    }
+
     const info = getHtmlInputType(field.dtype);
     const id = field.name;
-    const accessor = buildDataAccessor(field);
     const defaultLit = buildDefaultLiteral(field);
 
     if (info.type === 'checkbox') {
@@ -377,11 +619,86 @@ function generateSetFormDataBody(fields: FormField[]): string {
 /**
  * Generate the getFormData function body, handling nested paths.
  */
+/**
+ * Generate get-data JS for array fields, reading card inputs into an array.
+ */
+function generateGetArrayField(field: FormField, assignPath: string, indent: string): string[] {
+  const lines: string[] = [];
+  const fullName = field.name;
+  const containerId = `array-${fullName}`;
+  const itemFields = field.arrayItemFields || [];
+
+  lines.push(`${indent}(function() {`);
+  lines.push(`${indent}  var container = document.getElementById("${containerId}");`);
+  lines.push(`${indent}  if (!container) return;`);
+  lines.push(`${indent}  var cards = container.querySelectorAll(".array-card");`);
+  lines.push(`${indent}  var result = [];`);
+  lines.push(`${indent}  for (var i = 0; i < cards.length; i++) {`);
+  lines.push(`${indent}    var item = {};`);
+  for (const sub of itemFields) {
+    const info = getHtmlInputType(sub.dtype);
+    if (info.type === 'checkbox') {
+      lines.push(`${indent}    var cb = cards[i].querySelector('[data-field="${sub.name}"]'); if (cb) item["${sub.name}"] = cb.checked;`);
+    } else if (info.type === 'number') {
+      lines.push(`${indent}    var inp = cards[i].querySelector('[data-field="${sub.name}"]'); if (inp) item["${sub.name}"] = Number(inp.value);`);
+    } else {
+      lines.push(`${indent}    var inp = cards[i].querySelector('[data-field="${sub.name}"]'); if (inp) item["${sub.name}"] = inp.value;`);
+    }
+  }
+  lines.push(`${indent}    result.push(item);`);
+  lines.push(`${indent}  }`);
+  lines.push(`${indent}  ${assignPath} = result;`);
+  lines.push(`${indent})();`);
+  return lines;
+}
+
+/**
+ * Generate get-data JS for expanded object fields, recursing into sub-fields.
+ */
+function generateGetObjectField(field: FormField, assignPath: string, indent: string): string[] {
+  const lines: string[] = [];
+  const objectFields = field.objectFields || [];
+  lines.push(`${indent}${assignPath} = {};`);
+  for (const sub of objectFields) {
+    const subAssign = `${assignPath}["${sub.name}"]`;
+    if (sub.fieldKind === 'array' && sub.arrayItemFields) {
+      const subWithFullName: FormField = { ...sub, name: `${field.name}.${sub.name}` };
+      lines.push(...generateGetArrayField(subWithFullName, subAssign, indent));
+    } else if (sub.fieldKind === 'object' && sub.objectFields) {
+      const subWithFullName: FormField = { ...sub, name: `${field.name}.${sub.name}` };
+      lines.push(...generateGetObjectField(subWithFullName, subAssign, indent));
+    } else {
+      const subId = `${field.name}.${sub.name}`;
+      const info = getHtmlInputType(sub.dtype);
+      if (info.type === 'checkbox') {
+        lines.push(`${indent}${subAssign} = document.getElementById("${subId}").checked;`);
+      } else if (info.type === 'number') {
+        lines.push(`${indent}${subAssign} = Number(document.getElementById("${subId}").value);`);
+      } else {
+        lines.push(`${indent}${subAssign} = document.getElementById("${subId}").value;`);
+      }
+    }
+  }
+  return lines;
+}
+
 function generateGetFormDataBody(fields: FormField[]): string {
   const lines: string[] = [];
   const initializedPrefixes = new Set<string>();
 
   for (const field of fields) {
+    // Handle expanded object/array fieldKinds
+    if (field.fieldKind === 'array' && field.arrayItemFields) {
+      const assignPath = propAccess('formData', field.name);
+      lines.push(...generateGetArrayField(field, assignPath, '      '));
+      continue;
+    }
+    if (field.fieldKind === 'object' && field.objectFields) {
+      const assignPath = propAccess('formData', field.name);
+      lines.push(...generateGetObjectField(field, assignPath, '      '));
+      continue;
+    }
+
     const info = getHtmlInputType(field.dtype);
     const id = field.name;
 
@@ -453,8 +770,41 @@ function dtypeToJsonSchemaType(dtype: string): string {
 }
 
 /**
+ * Build a JSON Schema property for a FormField, handling array/object fieldKinds recursively.
+ */
+function fieldToJsonSchema(field: FormField): Record<string, unknown> {
+  if (field.fieldKind === 'array' && field.arrayItemFields) {
+    const itemProperties: Record<string, { type: string }> = {};
+    for (const sub of field.arrayItemFields) {
+      itemProperties[sub.name] = { type: dtypeToJsonSchemaType(sub.dtype) };
+    }
+    return {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: itemProperties
+      }
+    };
+  }
+
+  if (field.fieldKind === 'object' && field.objectFields) {
+    const subProperties: Record<string, unknown> = {};
+    for (const sub of field.objectFields) {
+      subProperties[sub.name] = fieldToJsonSchema(sub);
+    }
+    return {
+      type: 'object',
+      properties: subProperties
+    };
+  }
+
+  return { type: dtypeToJsonSchemaType(field.dtype) };
+}
+
+/**
  * Generate the JSON config (schema + no external resources) for a user task form.
  * Supports dot-notation fields by generating $defs for grouped types.
+ * Supports expanded object/array fields with nested schemas.
  */
 export function generateFormConfig(
   inputs: FormField[],
@@ -480,9 +830,9 @@ export function generateFormConfig(
     properties[group.prefix] = { $ref: `#/$defs/${defName}` };
   }
 
-  // Add flat fields
+  // Add flat fields (including expanded object/array fields)
   for (const field of flat) {
-    properties[field.name] = { type: dtypeToJsonSchemaType(field.dtype) };
+    properties[field.name] = fieldToJsonSchema(field);
   }
 
   const schema: Record<string, unknown> = {

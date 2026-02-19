@@ -20,6 +20,14 @@
     .form-field textarea[readonly] { background: #f0f0f0; color: #666; }
     .checkbox-field label { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9em; cursor: pointer; }
     .checkbox-field input[type="checkbox"] { width: 18px; height: 18px; }
+    .array-list-container { display: flex; flex-direction: column; gap: 10px; }
+    .array-card { border: 1px solid #ddd; border-radius: 4px; padding: 12px; background: #fff; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .card-index { font-weight: 600; font-size: 0.85em; color: #666; }
+    .card-remove-btn { background: none; border: 1px solid #ddd; border-radius: 3px; color: #999; cursor: pointer; font-size: 1.1em; line-height: 1; padding: 2px 6px; }
+    .card-remove-btn:hover { color: #c00; border-color: #c00; }
+    .array-add-btn { margin-top: 8px; padding: 6px 14px; background: #f0f0f0; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; font-size: 0.9em; color: #555; }
+    .array-add-btn:hover { background: #e8e8e8; border-color: #aaa; }
   </style>
 </head>
 <body>
@@ -31,25 +39,113 @@
         <label for="Author">Author</label>
         <input type="text" id="Author" name="Author" value="testvalu" readonly />
       </div>
+      <fieldset class="nested-fieldset">
+        <legend>Pull request</legend>
       <div class="form-field">
-        <label for="test field">Test field</label>
-        <input type="text" id="test field" name="test field" value="abc" readonly />
+        <label for="pull_request.url">Url</label>
+        <input type="text" id="pull_request.url" name="pull_request.url" value="https://github.com/org/repo/pull/42" readonly />
       </div>
+      <fieldset class="nested-fieldset">
+        <legend>Pull request.reviews</legend>
+      <template id="template-pull_request.reviews">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>
+          </div>
+          <div class="form-field">
+            <label>Title</label>
+            <input type="text" data-field="title" readonly />
+          </div>
+        </div>
+      </template>
+        <div class="array-list-container" id="array-pull_request.reviews">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>
+          </div>
+          <div class="form-field">
+            <label>Title</label>
+            <input type="text" data-field="title" value="Looks good" readonly />
+          </div>
+        </div>
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#2</span>
+          </div>
+          <div class="form-field">
+            <label>Title</label>
+            <input type="text" data-field="title" value="Needs changes" readonly />
+          </div>
+        </div>
+        </div>
+      </fieldset>
+      </fieldset>
     </fieldset>
 
   </form>
   <script>
+    /* Array card utility functions */
+    function addArrayCard(containerId, templateId) {
+      var container = document.getElementById(containerId);
+      var template = document.getElementById(templateId);
+      if (!container || !template) return;
+      var clone = template.content.cloneNode(true);
+      container.appendChild(clone);
+      renumberCards(containerId);
+    }
+
+    function renumberCards(containerId) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var cards = container.querySelectorAll('.array-card');
+      for (var i = 0; i < cards.length; i++) {
+        var idx = cards[i].querySelector('.card-index');
+        if (idx) idx.textContent = '#' + (i + 1);
+      }
+    }
+
     /* Kogito form lifecycle integration */
     function setFormData(data) {
       if (!data) return;
       document.getElementById("Author").value = data.Author ?? "testvalu";
-      document.getElementById("test field").value = data?.test ?? "abc";
+      if (data?.test !== undefined && data?.test !== null) {
+        if (data?.test["url"] !== undefined) document.getElementById("pull_request.url").value = data?.test["url"] ?? "";
+        (function() {
+          var arr = data?.test["reviews"];
+          if (!Array.isArray(arr)) return;
+          var container = document.getElementById("array-pull_request.reviews");
+          var template = document.getElementById("template-pull_request.reviews");
+          if (!container || !template) return;
+          container.innerHTML = "";
+          for (var i = 0; i < arr.length; i++) {
+            var clone = template.content.cloneNode(true);
+            var card = clone.querySelector(".array-card");
+            var item = arr[i] || {};
+            var inp = card.querySelector('[data-field="title"]'); if (inp) inp.value = item["title"] != null ? item["title"] : "";
+            container.appendChild(clone);
+          }
+          renumberCards("array-pull_request.reviews");
+        )();
+      }
     }
 
     function getFormData() {
       var formData = {};
       formData.Author = document.getElementById("Author").value;
-      formData["test field"] = document.getElementById("test field").value;
+      formData.pull_request = {};
+      formData.pull_request["url"] = document.getElementById("pull_request.url").value;
+      (function() {
+        var container = document.getElementById("array-pull_request.reviews");
+        if (!container) return;
+        var cards = container.querySelectorAll(".array-card");
+        var result = [];
+        for (var i = 0; i < cards.length; i++) {
+          var item = {};
+          var inp = cards[i].querySelector('[data-field="title"]'); if (inp) item["title"] = inp.value;
+          result.push(item);
+        }
+        formData.pull_request["reviews"] = result;
+      )();
       return formData;
     }
 

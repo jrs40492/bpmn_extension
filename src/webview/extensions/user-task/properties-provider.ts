@@ -1262,6 +1262,127 @@ function FormFieldsGroup(props: { element: BpmnElement; injector: { get: (name: 
 // Form Generation Components
 // ============================================================================
 
+// ============================================================================
+// JSON Expansion Helpers (for complex defaultValue objects/arrays)
+// ============================================================================
+
+interface ExpandedField {
+  name: string;
+  dtype: string;
+  variable?: string;
+  defaultValue?: string;
+  fieldKind?: 'flat' | 'object' | 'array';
+  arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+  objectFields?: ExpandedField[];
+}
+
+/**
+ * Infer a Java dtype from a JS value's typeof.
+ */
+function inferDtype(value: unknown): string {
+  if (typeof value === 'string') return 'java.lang.String';
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? 'java.lang.Integer' : 'java.lang.Double';
+  }
+  if (typeof value === 'boolean') return 'java.lang.Boolean';
+  return 'java.lang.Object';
+}
+
+/**
+ * Infer array item field schema from the first element of an array.
+ * Returns an empty array if the array is empty or items are primitives.
+ */
+function inferArrayItemFields(arr: unknown[]): Array<{ name: string; dtype: string; defaultValue?: string }> {
+  if (arr.length === 0) return [];
+  const first = arr[0];
+  if (first === null || typeof first !== 'object' || Array.isArray(first)) return [];
+
+  const obj = first as Record<string, unknown>;
+  return Object.keys(obj).map(key => ({
+    name: key,
+    dtype: inferDtype(obj[key])
+  }));
+}
+
+/**
+ * Expand a field with an object-typed defaultValue into structured sub-fields.
+ * If the defaultValue is not valid JSON or not an object, pass through unchanged.
+ */
+function expandObjectField(field: { name: string; dtype: string; variable?: string; defaultValue?: string }): ExpandedField {
+  if (!field.defaultValue) return field;
+
+  // Only expand object-typed fields
+  const normalized = field.dtype.replace(/^java\.lang\./, '').toLowerCase();
+  if (normalized !== 'object') return field;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(field.defaultValue);
+  } catch {
+    return field;
+  }
+
+  if (parsed === null || typeof parsed !== 'object') return field;
+
+  if (Array.isArray(parsed)) {
+    // Top-level array
+    const itemFields = inferArrayItemFields(parsed);
+    if (itemFields.length === 0) return field; // primitives or empty → keep as textarea
+    return {
+      ...field,
+      fieldKind: 'array',
+      arrayItemFields: itemFields
+    };
+  }
+
+  // Plain object — expand properties
+  const obj = parsed as Record<string, unknown>;
+  const objectFields: ExpandedField[] = [];
+
+  for (const key of Object.keys(obj)) {
+    const val = obj[key];
+
+    if (Array.isArray(val)) {
+      const itemFields = inferArrayItemFields(val);
+      if (itemFields.length > 0) {
+        objectFields.push({
+          name: key,
+          dtype: 'java.lang.Object',
+          defaultValue: JSON.stringify(val),
+          fieldKind: 'array',
+          arrayItemFields: itemFields
+        });
+      } else {
+        objectFields.push({
+          name: key,
+          dtype: 'java.lang.Object',
+          defaultValue: JSON.stringify(val)
+        });
+      }
+    } else if (val !== null && typeof val === 'object') {
+      // Nested object — recurse
+      const nested = expandObjectField({
+        name: key,
+        dtype: 'java.lang.Object',
+        defaultValue: JSON.stringify(val)
+      });
+      objectFields.push(nested);
+    } else {
+      objectFields.push({
+        name: key,
+        dtype: inferDtype(val),
+        defaultValue: val !== null && val !== undefined ? String(val) : undefined
+      });
+    }
+  }
+
+  return {
+    ...field,
+    fieldKind: 'object',
+    objectFields
+  };
+}
+
 /**
  * Collect input/output field info and send a generateUserTaskForm message.
  * If form fields are defined (utform:FormDefinition), use those.
@@ -1329,14 +1450,18 @@ function requestGenerateForm(element: BpmnElement): void {
     }).filter(f => f.name);
   }
 
+  // Expand complex JSON defaultValues into structured sub-fields
+  const expandedInputs = inputs.map(expandObjectField);
+  const expandedOutputs = outputs.map(expandObjectField);
+
   const vscode = (window as unknown as { vscodeApi?: { postMessage: (msg: unknown) => void } }).vscodeApi;
   if (vscode) {
     vscode.postMessage({
       type: 'generateUserTaskForm',
       taskId,
       taskName,
-      inputs,
-      outputs
+      inputs: expandedInputs,
+      outputs: expandedOutputs
     });
   }
 }
