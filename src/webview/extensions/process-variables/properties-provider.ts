@@ -56,6 +56,100 @@ function getJavaType(type: string): string {
   }
 }
 
+// Map Java type (structureRef) back to our type system
+function getTypeFromJava(structureRef: string | undefined): string {
+  if (!structureRef) return 'string';
+  switch (structureRef) {
+    case 'String':
+    case 'java.lang.String':
+      return 'string';
+    case 'Integer':
+    case 'java.lang.Integer':
+      return 'integer';
+    case 'Double':
+    case 'Float':
+    case 'java.lang.Double':
+    case 'java.lang.Float':
+      return 'number';
+    case 'Boolean':
+    case 'java.lang.Boolean':
+      return 'boolean';
+    case 'java.util.List':
+      return 'array';
+    default:
+      return 'object';
+  }
+}
+
+// Sync bpmn:Property elements into bamoe:ProcessVariables so they display in the panel
+function syncBpmnPropertiesToVariables(element: any, injector: any): void {
+  const bo = getBusinessObject(element);
+  if (!bo) return;
+
+  const bpmnProperties = bo.properties || [];
+  if (bpmnProperties.length === 0) return;
+
+  const bpmnFactory = injector.get('bpmnFactory');
+  const commandStack = injector.get('commandStack');
+
+  // Ensure extensionElements exists
+  let extensionElements = bo.extensionElements;
+  if (!extensionElements) {
+    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+    extensionElements.$parent = bo;
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: { extensionElements }
+    });
+  }
+
+  // Ensure ProcessVariables container exists
+  let processVariables = getProcessVariables(element);
+  if (!processVariables) {
+    processVariables = bpmnFactory.create('bamoe:ProcessVariables', { variables: [] });
+    processVariables.$parent = extensionElements;
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: extensionElements,
+      properties: {
+        values: [...(extensionElements.values || []), processVariables]
+      }
+    });
+  }
+
+  // Find bpmn:Property entries that don't have a corresponding bamoe:Variable
+  const existingVariables = processVariables.variables || [];
+  const existingNames = new Set(existingVariables.map((v: any) => v.name));
+  const newVariables: any[] = [];
+
+  for (const prop of bpmnProperties) {
+    const name = prop.name || prop.id;
+    if (!name || existingNames.has(name)) continue;
+
+    const structureRef = prop.itemSubjectRef?.structureRef;
+    const type = getTypeFromJava(structureRef);
+
+    const variable = bpmnFactory.create('bamoe:Variable', {
+      name,
+      type,
+      required: false
+    });
+    variable.$parent = processVariables;
+    newVariables.push(variable);
+  }
+
+  if (newVariables.length > 0) {
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: processVariables,
+      properties: {
+        variables: [...existingVariables, ...newVariables]
+      }
+    });
+  }
+}
+
 // Get definitions (root element) from a business object
 function getDefinitions(bo: any): any {
   let definitions = bo.$parent;
@@ -520,6 +614,9 @@ function ProcessVariablesGroup(props: { element: any; injector: any }) {
   const bpmnFactory = injector.get('bpmnFactory');
   const commandStack = injector.get('commandStack');
   const translate = injector.get('translate');
+
+  // Sync any existing bpmn:Property elements into bamoe:ProcessVariables
+  syncBpmnPropertiesToVariables(element, injector);
 
   const variables = getVariables(element);
 
