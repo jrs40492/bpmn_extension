@@ -52,6 +52,11 @@ export const processVariablesDescriptor = {
           name: 'description',
           type: 'String',
           isAttr: true
+        },
+        {
+          name: 'customType',
+          type: 'String',
+          isAttr: true
         }
       ]
     },
