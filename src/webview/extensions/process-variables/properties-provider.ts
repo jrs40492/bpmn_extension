@@ -81,47 +81,46 @@ function getTypeFromJava(structureRef: string | undefined): string {
   }
 }
 
-// Sync bpmn:Property elements into bamoe:ProcessVariables so they display in the panel
-function syncBpmnPropertiesToVariables(element: any, injector: any): void {
+// Track which elements have already been synced to avoid redundant work on re-renders
+const syncedElements = new WeakSet();
+
+// Sync bpmn:Property elements into bamoe:ProcessVariables so they display in the panel.
+// Uses direct model mutations (not commandStack) because this is an internal consistency
+// operation — it mirrors data that already exists in the XML. Direct mutations avoid
+// polluting the undo stack, triggering re-render loops, and marking the document dirty.
+function syncBpmnPropertiesToVariables(element: any, bpmnFactory: any): void {
   const bo = getBusinessObject(element);
   if (!bo) return;
+
+  // Only sync once per element to avoid redundant work on re-renders
+  if (syncedElements.has(bo)) return;
+  syncedElements.add(bo);
 
   const bpmnProperties = bo.properties || [];
   if (bpmnProperties.length === 0) return;
 
-  const bpmnFactory = injector.get('bpmnFactory');
-  const commandStack = injector.get('commandStack');
-
-  // Ensure extensionElements exists
+  // Ensure extensionElements exists (direct mutation)
   let extensionElements = bo.extensionElements;
   if (!extensionElements) {
     extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
     extensionElements.$parent = bo;
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: bo,
-      properties: { extensionElements }
-    });
+    bo.extensionElements = extensionElements;
   }
 
-  // Ensure ProcessVariables container exists
+  // Ensure ProcessVariables container exists (direct mutation)
   let processVariables = getProcessVariables(element);
   if (!processVariables) {
     processVariables = bpmnFactory.create('bamoe:ProcessVariables', { variables: [] });
     processVariables.$parent = extensionElements;
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: extensionElements,
-      properties: {
-        values: [...(extensionElements.values || []), processVariables]
-      }
-    });
+    if (!extensionElements.values) {
+      extensionElements.values = [];
+    }
+    extensionElements.values.push(processVariables);
   }
 
   // Find bpmn:Property entries that don't have a corresponding bamoe:Variable
   const existingVariables = processVariables.variables || [];
   const existingNames = new Set(existingVariables.map((v: any) => v.name));
-  const newVariables: any[] = [];
 
   for (const prop of bpmnProperties) {
     const name = prop.name || prop.id;
@@ -136,17 +135,11 @@ function syncBpmnPropertiesToVariables(element: any, injector: any): void {
       required: false
     });
     variable.$parent = processVariables;
-    newVariables.push(variable);
-  }
 
-  if (newVariables.length > 0) {
-    commandStack.execute('element.updateModdleProperties', {
-      element,
-      moddleElement: processVariables,
-      properties: {
-        variables: [...existingVariables, ...newVariables]
-      }
-    });
+    if (!processVariables.variables) {
+      processVariables.variables = [];
+    }
+    processVariables.variables.push(variable);
   }
 }
 
@@ -616,7 +609,7 @@ function ProcessVariablesGroup(props: { element: any; injector: any }) {
   const translate = injector.get('translate');
 
   // Sync any existing bpmn:Property elements into bamoe:ProcessVariables
-  syncBpmnPropertiesToVariables(element, injector);
+  syncBpmnPropertiesToVariables(element, bpmnFactory);
 
   const variables = getVariables(element);
 

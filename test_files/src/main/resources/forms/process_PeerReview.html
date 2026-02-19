@@ -31,29 +31,25 @@
         <label for="Author">Author</label>
         <input type="text" id="Author" name="Author" value="testvalu" readonly />
       </div>
-    </fieldset>
-    <fieldset>
-      <legend>Outputs</legend>
-      <div class="form-field checkbox-field">
-        <label>
-          <input type="checkbox" id="test field" name="test field" checked />
-          Test field
-        </label>
+      <div class="form-field">
+        <label for="test field">Test field</label>
+        <input type="text" id="test field" name="test field" value="abc" readonly />
       </div>
     </fieldset>
+
   </form>
   <script>
     /* Kogito form lifecycle integration */
     function setFormData(data) {
       if (!data) return;
       document.getElementById("Author").value = data.Author ?? "testvalu";
-      document.getElementById("test field").checked = data["test field"] !== undefined ? !!data["test field"] : true;
+      document.getElementById("test field").value = data?.test ?? "abc";
     }
 
     function getFormData() {
       var formData = {};
       formData.Author = document.getElementById("Author").value;
-      formData["test field"] = document.getElementById("test field").checked;
+      formData["test field"] = document.getElementById("test field").value;
       return formData;
     }
 

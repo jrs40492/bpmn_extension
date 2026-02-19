@@ -1,10 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:utform="http://bamoe.io/schema/user-task-form" id="_73B29CBC-4BAA-4960-B5A2-F2C5BE62173B" name="BPMN_30B1B41D-CB04-4D1B-A017-52C7C0F2A8CB" namespace="https://kie.org/bpmn/_002F418D-7392-4D08-91EA-55FB5BF0C9E7">
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:utform="http://bamoe.io/schema/user-task-form" xmlns:bamoe="http://bamoe.io/schema/process" id="_73B29CBC-4BAA-4960-B5A2-F2C5BE62173B" name="BPMN_30B1B41D-CB04-4D1B-A017-52C7C0F2A8CB" namespace="https://kie.org/bpmn/_002F418D-7392-4D08-91EA-55FB5BF0C9E7">
   <itemDefinition id="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" structureRef="String" />
   <itemDefinition id="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" structureRef="com.cmm.pr.PullRequest" />
   <itemDefinition id="_CC839138-83FC-4DF8-AF02-B11C573BAC96" structureRef="Boolean" />
+  <itemDefinition id="_testItem" structureRef="java.lang.String" />
   <process id="pr_approval" name="pr_approval" isExecutable="true" drools:packageName="com.cmm.pr">
-    <extensionElements />
+    <extensionElements>
+      <bamoe:processVariables>
+        <bamoe:variable name="pull_request" type="object" />
+        <bamoe:variable name="peer_reviewer" />
+        <bamoe:variable name="em_reviewer" />
+        <bamoe:variable name="peer_approved" type="boolean" />
+        <bamoe:variable name="em_approved" type="boolean" />
+        <bamoe:variable name="test" defaultValue="abc" />
+      </bamoe:processVariables>
+    </extensionElements>
     <property id="_749ECA72-79B4-4DD6-83F8-E26EFABBD165" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request">
       <extensionElements />
     </property>
@@ -20,6 +30,7 @@
     <property id="_BC2CA90D-5736-4FAC-9AC4-2AA54A9E5EAD" itemSubjectRef="_CC839138-83FC-4DF8-AF02-B11C573BAC96" name="em_approved">
       <extensionElements />
     </property>
+    <property id="test" itemSubjectRef="_testItem" name="test" />
     <startEvent id="_9F7005AD-7DF8-48C5-8D88-A1C890A48498">
       <outgoing>_02F5789E-0E20-4838-B144-B913214D0E48</outgoing>
     </startEvent>
@@ -106,7 +117,7 @@
       <extensionElements>
         <utform:formDefinition>
           <utform:formField name="Author" defaultValue="testvalu" />
-          <utform:formField name="test field" defaultValue="abc" />
+          <utform:formField name="test field" variable="test" />
         </utform:formDefinition>
       </extensionElements>
       <incoming>_02F5789E-0E20-4838-B144-B913214D0E48</incoming>

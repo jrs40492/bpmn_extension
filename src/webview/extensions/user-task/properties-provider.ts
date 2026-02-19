@@ -953,24 +953,58 @@ function FormFieldDefaultValueEntry(props: { id: string; field: ModdleElement; e
 }
 
 /**
- * Get process variables from the parent bpmn:Process element.
- * Reads bpmn:Property children from the process.
+ * Walk up from an element's business object to find the parent bpmn:Process.
  */
-function getProcessVariableNames(element: BpmnElement): string[] {
+function findParentProcess(element: BpmnElement): ModdleElement | undefined {
   const bo = getBusinessObject(element);
-  if (!bo) return [];
+  if (!bo) return undefined;
 
-  // Walk up to find the process
   let parent = bo.$parent;
   while (parent && parent.$type !== 'bpmn:Process') {
     parent = parent.$parent;
   }
+  return parent;
+}
+
+/**
+ * Get process variables from the parent bpmn:Process element.
+ * Reads bpmn:Property children from the process.
+ */
+function getProcessVariableNames(element: BpmnElement): string[] {
+  const parent = findParentProcess(element);
   if (!parent) return [];
 
   const properties = (parent.properties || []) as ModdleElement[];
   return properties
     .map(p => (p.name as string) || '')
     .filter(name => !!name);
+}
+
+/**
+ * Get a map of process variable name → defaultValue from bamoe:ProcessVariables.
+ * Used to resolve default values when a form field binds to a process variable.
+ */
+function getProcessVariableDefaults(element: BpmnElement): Map<string, string> {
+  const result = new Map<string, string>();
+  const process = findParentProcess(element);
+  if (!process) return result;
+
+  const extElements = process.extensionElements as ModdleElement | undefined;
+  if (!extElements) return result;
+
+  const values = ((extElements as any).values || []) as ModdleElement[];
+  const processVars = values.find(v => v.$type === 'bamoe:ProcessVariables');
+  if (!processVars) return result;
+
+  const variables = (processVars.variables || []) as ModdleElement[];
+  for (const v of variables) {
+    const name = v.name as string | undefined;
+    const defaultValue = v.defaultValue as string | undefined;
+    if (name && defaultValue) {
+      result.set(name, defaultValue);
+    }
+  }
+  return result;
 }
 
 /**
@@ -1248,13 +1282,22 @@ function requestGenerateForm(element: BpmnElement): void {
 
   if (formFields.length > 0) {
     // Use user-defined form fields
+    const varDefaults = getProcessVariableDefaults(element);
+
+    const resolveDefault = (f: ModdleElement): string | undefined => {
+      const fieldDefault = (f.defaultValue as string) || undefined;
+      if (fieldDefault) return fieldDefault;
+      const varName = (f.variable as string) || undefined;
+      return varName ? varDefaults.get(varName) : undefined;
+    };
+
     inputs = formFields
       .filter(f => (f.section || 'input') === 'input')
       .map(f => ({
         name: (f.name as string) || '',
         dtype: formTypeToDtype((f.type as string) || 'string'),
         variable: (f.variable as string) || undefined,
-        defaultValue: (f.defaultValue as string) || undefined
+        defaultValue: resolveDefault(f)
       }))
       .filter(f => f.name);
     outputs = formFields
@@ -1263,7 +1306,7 @@ function requestGenerateForm(element: BpmnElement): void {
         name: (f.name as string) || '',
         dtype: formTypeToDtype((f.type as string) || 'string'),
         variable: (f.variable as string) || undefined,
-        defaultValue: (f.defaultValue as string) || undefined
+        defaultValue: resolveDefault(f)
       }))
       .filter(f => f.name);
   } else {
