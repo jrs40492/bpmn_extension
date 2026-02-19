@@ -2,7 +2,7 @@
   "name": "bamoe",
   "displayName": "BAMOE - BPMN & DMN Editor",
   "description": "Visual BPMN 2.0 and DMN 1.6 editors for VS Code with validation support",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "bamoe",
   "license": "MIT",
   "engines": {
