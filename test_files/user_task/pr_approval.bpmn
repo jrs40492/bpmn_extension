@@ -3,7 +3,6 @@
   <itemDefinition id="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" structureRef="String" />
   <itemDefinition id="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" structureRef="com.cmm.pr.PullRequest" />
   <itemDefinition id="_CC839138-83FC-4DF8-AF02-B11C573BAC96" structureRef="Boolean" />
-  <itemDefinition id="_testItem" structureRef="java.lang.Object" />
   <process id="pr_approval" name="pr_approval" isExecutable="true" drools:packageName="com.cmm.pr">
     <extensionElements>
       <bamoe:processVariables>
@@ -12,7 +11,6 @@
         <bamoe:variable name="em_reviewer" />
         <bamoe:variable name="peer_approved" type="boolean" />
         <bamoe:variable name="em_approved" type="boolean" />
-        <bamoe:variable name="test" type="object" defaultValue="{&#34;url&#34;:&#34;https://github.com/org/repo/pull/42&#34;,&#34;reviews&#34;:[{&#34;title&#34;:&#34;Looks good&#34;},{&#34;title&#34;:&#34;Needs changes&#34;}]}" />
       </bamoe:processVariables>
     </extensionElements>
     <property id="_749ECA72-79B4-4DD6-83F8-E26EFABBD165" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request">
@@ -30,7 +28,6 @@
     <property id="_BC2CA90D-5736-4FAC-9AC4-2AA54A9E5EAD" itemSubjectRef="_CC839138-83FC-4DF8-AF02-B11C573BAC96" name="em_approved">
       <extensionElements />
     </property>
-    <property id="test" itemSubjectRef="_testItem" name="test" />
     <startEvent id="_9F7005AD-7DF8-48C5-8D88-A1C890A48498">
       <outgoing>_02F5789E-0E20-4838-B144-B913214D0E48</outgoing>
     </startEvent>
@@ -116,8 +113,7 @@
     <userTask id="_CD00C815-11D5-4951-8235-FCB3EE9C7CD6" name="Peer Review Task">
       <extensionElements>
         <utform:formDefinition>
-          <utform:formField name="Author" defaultValue="testvalu" />
-          <utform:formField name="pull_request" type="object" variable="test" />
+          <utform:formField name="pull_request" type="object" variable="pull_request" />
         </utform:formDefinition>
       </extensionElements>
       <incoming>_02F5789E-0E20-4838-B144-B913214D0E48</incoming>

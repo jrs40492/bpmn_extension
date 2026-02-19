@@ -36,50 +36,9 @@
     <fieldset>
       <legend>Inputs</legend>
       <div class="form-field">
-        <label for="Author">Author</label>
-        <input type="text" id="Author" name="Author" value="testvalu" readonly />
+        <label for="pull_request">Pull request</label>
+        <textarea id="pull_request" name="pull_request" rows="4" readonly></textarea>
       </div>
-      <fieldset class="nested-fieldset">
-        <legend>Pull request</legend>
-      <div class="form-field">
-        <label for="pull_request.url">Url</label>
-        <input type="text" id="pull_request.url" name="pull_request.url" value="https://github.com/org/repo/pull/42" readonly />
-      </div>
-      <fieldset class="nested-fieldset">
-        <legend>Pull request.reviews</legend>
-      <template id="template-pull_request.reviews">
-        <div class="array-card">
-          <div class="card-header">
-            <span class="card-index">#1</span>
-          </div>
-          <div class="form-field">
-            <label>Title</label>
-            <input type="text" data-field="title" readonly />
-          </div>
-        </div>
-      </template>
-        <div class="array-list-container" id="array-pull_request.reviews">
-        <div class="array-card">
-          <div class="card-header">
-            <span class="card-index">#1</span>
-          </div>
-          <div class="form-field">
-            <label>Title</label>
-            <input type="text" data-field="title" value="Looks good" readonly />
-          </div>
-        </div>
-        <div class="array-card">
-          <div class="card-header">
-            <span class="card-index">#2</span>
-          </div>
-          <div class="form-field">
-            <label>Title</label>
-            <input type="text" data-field="title" value="Needs changes" readonly />
-          </div>
-        </div>
-        </div>
-      </fieldset>
-      </fieldset>
     </fieldset>
 
   </form>
@@ -107,45 +66,12 @@
     /* Kogito form lifecycle integration */
     function setFormData(data) {
       if (!data) return;
-      document.getElementById("Author").value = data.Author ?? "testvalu";
-      if (data?.test !== undefined && data?.test !== null) {
-        if (data?.test["url"] !== undefined) document.getElementById("pull_request.url").value = data?.test["url"] ?? "";
-        (function() {
-          var arr = data?.test["reviews"];
-          if (!Array.isArray(arr)) return;
-          var container = document.getElementById("array-pull_request.reviews");
-          var template = document.getElementById("template-pull_request.reviews");
-          if (!container || !template) return;
-          container.innerHTML = "";
-          for (var i = 0; i < arr.length; i++) {
-            var clone = template.content.cloneNode(true);
-            var card = clone.querySelector(".array-card");
-            var item = arr[i] || {};
-            var inp = card.querySelector('[data-field="title"]'); if (inp) inp.value = item["title"] != null ? item["title"] : "";
-            container.appendChild(clone);
-          }
-          renumberCards("array-pull_request.reviews");
-        )();
-      }
+      if (data?.pull_request !== undefined) document.getElementById("pull_request").value = typeof data?.pull_request === "object" ? JSON.stringify(data?.pull_request, null, 2) : (data?.pull_request ?? "");
     }
 
     function getFormData() {
       var formData = {};
-      formData.Author = document.getElementById("Author").value;
-      formData.pull_request = {};
-      formData.pull_request["url"] = document.getElementById("pull_request.url").value;
-      (function() {
-        var container = document.getElementById("array-pull_request.reviews");
-        if (!container) return;
-        var cards = container.querySelectorAll(".array-card");
-        var result = [];
-        for (var i = 0; i < cards.length; i++) {
-          var item = {};
-          var inp = cards[i].querySelector('[data-field="title"]'); if (inp) item["title"] = inp.value;
-          result.push(item);
-        }
-        formData.pull_request["reviews"] = result;
-      )();
+      try { formData.pull_request = JSON.parse(document.getElementById("pull_request").value); } catch(e) { formData.pull_request = document.getElementById("pull_request").value; }
       return formData;
     }
 
