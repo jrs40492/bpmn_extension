@@ -8,9 +8,10 @@
  */
 
 // @ts-expect-error - no type definitions available
-import { TextFieldEntry, CheckboxEntry, ListGroup } from '@bpmn-io/properties-panel';
+import { TextFieldEntry, CheckboxEntry, SelectEntry, ListGroup } from '@bpmn-io/properties-panel';
 // @ts-expect-error - no type definitions available
 import { useService } from 'bpmn-js-properties-panel';
+import { html } from 'htm/preact';
 
 // Standard jBPM config field names stored via assignment-based dataInputAssociation
 const JBPM_CONFIG_FIELDS = ['TaskName', 'ActorId', 'GroupId', 'CreatedBy', 'Skippable', 'Priority', 'Comment', 'Description', 'Content', 'NotStartedReassign', 'NotCompletedReassign', 'NotStartedNotify', 'NotCompletedNotify'];
@@ -713,6 +714,646 @@ function createAddInputMappingHandler(
 }
 
 // ============================================================================
+// Form Fields (utform:FormDefinition) Components
+// ============================================================================
+
+/**
+ * Get the utform:FormDefinition from extensionElements
+ */
+function getFormDefinition(element: BpmnElement): ModdleElement | undefined {
+  const bo = getBusinessObject(element);
+  if (!bo) return undefined;
+  const extElements = bo.extensionElements as ModdleElement | undefined;
+  if (!extElements) return undefined;
+  const values = ((extElements as any).values || []) as ModdleElement[];
+  return values.find(v => v.$type === 'utform:FormDefinition');
+}
+
+/**
+ * Ensure extensionElements and FormDefinition exist on the element
+ */
+function ensureFormDefinition(
+  element: BpmnElement,
+  bpmnFactory: { create: (type: string, attrs?: Record<string, unknown>) => ModdleElement },
+  commandStack: { execute: (cmd: string, ctx: Record<string, unknown>) => void }
+): ModdleElement {
+  const bo = getBusinessObject(element)!;
+
+  // Ensure extensionElements exists
+  let extensionElements = bo.extensionElements as ModdleElement | undefined;
+  if (!extensionElements) {
+    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: { extensionElements }
+    });
+  }
+
+  // Check if FormDefinition already exists
+  let formDef = getFormDefinition(element);
+  if (!formDef) {
+    formDef = bpmnFactory.create('utform:FormDefinition', { fields: [] });
+    formDef.$parent = extensionElements;
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: extensionElements,
+      properties: {
+        values: [...((extensionElements.values || []) as ModdleElement[]), formDef]
+      }
+    });
+  }
+
+  return formDef;
+}
+
+/**
+ * Get form fields from the FormDefinition
+ */
+function getFormFields(element: BpmnElement): ModdleElement[] {
+  const formDef = getFormDefinition(element);
+  if (!formDef) return [];
+  return (formDef.fields || []) as ModdleElement[];
+}
+
+/**
+ * Map drools:dtype to form field type
+ */
+function dtypeToFormType(dtype: string): string {
+  const normalized = dtype.replace(/^java\.lang\./, '').toLowerCase();
+  switch (normalized) {
+    case 'string':
+      return 'string';
+    case 'boolean':
+      return 'boolean';
+    case 'integer':
+    case 'int':
+    case 'long':
+      return 'integer';
+    case 'double':
+    case 'float':
+    case 'number':
+      return 'number';
+    default:
+      return 'object';
+  }
+}
+
+/**
+ * Map form field type to drools:dtype for form generation
+ */
+function formTypeToDtype(type: string): string {
+  switch (type) {
+    case 'string':
+      return 'java.lang.String';
+    case 'boolean':
+      return 'java.lang.Boolean';
+    case 'integer':
+      return 'java.lang.Integer';
+    case 'number':
+      return 'java.lang.Double';
+    case 'object':
+      return 'java.lang.Object';
+    default:
+      return 'java.lang.Object';
+  }
+}
+
+// Form field type options for SelectEntry
+const FORM_FIELD_TYPES = [
+  { value: 'string', label: 'String' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'integer', label: 'Integer' },
+  { value: 'number', label: 'Number' },
+  { value: 'object', label: 'Object' }
+];
+
+// Form field section options for SelectEntry
+const FORM_FIELD_SECTIONS = [
+  { value: 'input', label: 'Input (read-only)' },
+  { value: 'output', label: 'Output (editable)' }
+];
+
+/**
+ * Form Field Name entry
+ */
+function FormFieldNameEntry(props: { id: string; field: ModdleElement; element: BpmnElement }) {
+  const { id, field, element } = props;
+  const translate = useService('translate');
+  const debounce = useService('debounceInput');
+  const commandStack = useService('commandStack');
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('Name'),
+    description: translate('Supports dot-notation (e.g. pull_request.author)'),
+    getValue: () => field.name || '',
+    setValue: (value: string) => {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: field,
+        properties: { name: value }
+      });
+    },
+    debounce
+  });
+}
+
+/**
+ * Form Field Type entry
+ */
+function FormFieldTypeEntry(props: { id: string; field: ModdleElement; element: BpmnElement }) {
+  const { id, field, element } = props;
+  const translate = useService('translate');
+  const commandStack = useService('commandStack');
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Type'),
+    getValue: () => String(field.type || 'string'),
+    setValue: (value: string) => {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: field,
+        properties: { type: value }
+      });
+    },
+    getOptions: () => FORM_FIELD_TYPES.map(t => ({ value: t.value, label: translate(t.label) }))
+  });
+}
+
+/**
+ * Form Field Section entry
+ */
+function FormFieldSectionEntry(props: { id: string; field: ModdleElement; element: BpmnElement }) {
+  const { id, field, element } = props;
+  const translate = useService('translate');
+  const commandStack = useService('commandStack');
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Section'),
+    getValue: () => String(field.section || 'input'),
+    setValue: (value: string) => {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: field,
+        properties: { section: value }
+      });
+    },
+    getOptions: () => FORM_FIELD_SECTIONS.map(s => ({ value: s.value, label: translate(s.label) }))
+  });
+}
+
+/**
+ * Form Field Default Value entry
+ */
+function FormFieldDefaultValueEntry(props: { id: string; field: ModdleElement; element: BpmnElement }) {
+  const { id, field, element } = props;
+  const translate = useService('translate');
+  const debounce = useService('debounceInput');
+  const commandStack = useService('commandStack');
+  const fieldType = (field.type as string) || 'string';
+
+  if (fieldType === 'boolean') {
+    return CheckboxEntry({
+      id,
+      element,
+      label: translate('Default Value'),
+      getValue: () => (field.defaultValue as string) === 'true',
+      setValue: (value: boolean) => {
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: field,
+          properties: { defaultValue: value ? 'true' : 'false' }
+        });
+      }
+    });
+  }
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('Default Value'),
+    description: translate('Hardcoded default when no data is available'),
+    getValue: () => (field.defaultValue as string) || '',
+    setValue: (value: string) => {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: field,
+        properties: { defaultValue: value || undefined }
+      });
+    },
+    debounce
+  });
+}
+
+/**
+ * Get process variables from the parent bpmn:Process element.
+ * Reads bpmn:Property children from the process.
+ */
+function getProcessVariableNames(element: BpmnElement): string[] {
+  const bo = getBusinessObject(element);
+  if (!bo) return [];
+
+  // Walk up to find the process
+  let parent = bo.$parent;
+  while (parent && parent.$type !== 'bpmn:Process') {
+    parent = parent.$parent;
+  }
+  if (!parent) return [];
+
+  const properties = (parent.properties || []) as ModdleElement[];
+  return properties
+    .map(p => (p.name as string) || '')
+    .filter(name => !!name);
+}
+
+/**
+ * Form Field Process Variable entry
+ */
+function FormFieldVariableEntry(props: { id: string; field: ModdleElement; element: BpmnElement }) {
+  const { id, field, element } = props;
+  const translate = useService('translate');
+  const commandStack = useService('commandStack');
+
+  return SelectEntry({
+    id,
+    element,
+    label: translate('Process Variable'),
+    description: translate('Bind to a process variable for data reading'),
+    getValue: () => (field.variable as string) || '',
+    setValue: (value: string) => {
+      commandStack.execute('element.updateModdleProperties', {
+        element,
+        moddleElement: field,
+        properties: { variable: value || undefined }
+      });
+    },
+    getOptions: () => {
+      const varNames = getProcessVariableNames(element);
+      const options = [{ value: '', label: translate('(none)') }];
+      for (const name of varNames) {
+        options.push({ value: name, label: name });
+      }
+      return options;
+    }
+  });
+}
+
+/**
+ * Form Field entry component - renders fields for a single form field
+ */
+function FormFieldEntry(props: { idPrefix: string; field: ModdleElement; element: BpmnElement }) {
+  const { idPrefix, field, element } = props;
+
+  return [
+    {
+      id: `${idPrefix}-name`,
+      component: FormFieldNameEntry,
+      field,
+      element
+    },
+    {
+      id: `${idPrefix}-type`,
+      component: FormFieldTypeEntry,
+      field,
+      element
+    },
+    {
+      id: `${idPrefix}-section`,
+      component: FormFieldSectionEntry,
+      field,
+      element
+    },
+    {
+      id: `${idPrefix}-variable`,
+      component: FormFieldVariableEntry,
+      field,
+      element
+    },
+    {
+      id: `${idPrefix}-defaultValue`,
+      component: FormFieldDefaultValueEntry,
+      field,
+      element
+    }
+  ];
+}
+
+/**
+ * Create handler to add a new form field
+ */
+function createAddFormFieldHandler(
+  bpmnFactory: { create: (type: string, attrs?: Record<string, unknown>) => ModdleElement },
+  commandStack: { execute: (cmd: string, ctx: Record<string, unknown>) => void },
+  element: BpmnElement
+) {
+  return function(event: Event) {
+    event.stopPropagation();
+
+    const formDef = ensureFormDefinition(element, bpmnFactory, commandStack);
+
+    const newField = bpmnFactory.create('utform:FormField', {
+      name: '',
+      type: 'string',
+      section: 'input'
+    });
+    newField.$parent = formDef;
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: formDef,
+      properties: {
+        fields: [...((formDef.fields || []) as ModdleElement[]), newField]
+      }
+    });
+  };
+}
+
+/**
+ * Create handler to remove a form field
+ */
+function createRemoveFormFieldHandler(
+  commandStack: { execute: (cmd: string, ctx: Record<string, unknown>) => void },
+  element: BpmnElement,
+  field: ModdleElement
+) {
+  return function(event: Event) {
+    event.stopPropagation();
+
+    const formDef = getFormDefinition(element);
+    if (!formDef) return;
+
+    const newFields = ((formDef.fields || []) as ModdleElement[]).filter(f => f !== field);
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: formDef,
+      properties: { fields: newFields }
+    });
+  };
+}
+
+/**
+ * Import from I/O Mappings button component
+ */
+function ImportFromIOMappingsButton(props: { element: BpmnElement; id: string }) {
+  const { element } = props;
+  const translate = useService('translate');
+  const bpmnFactory = useService('bpmnFactory');
+  const commandStack = useService('commandStack');
+
+  const bo = getBusinessObject(element)!;
+  const inputMappings = getInputMappings(bo);
+  const outputMappings = getOutputMappings(bo);
+  const hasMappings = inputMappings.length > 0 || outputMappings.length > 0;
+  const formFields = getFormFields(element);
+  const hasFormFields = formFields.length > 0;
+
+  if (!hasMappings || hasFormFields) return null;
+
+  const buttonStyle = {
+    width: '100%',
+    padding: '4px 8px',
+    background: 'var(--vscode-button-secondaryBackground, #3a3d41)',
+    color: 'var(--vscode-button-secondaryForeground, #ccc)',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    fontSize: '11px'
+  };
+
+  const handleImport = () => {
+    const formDef = ensureFormDefinition(element, bpmnFactory, commandStack);
+    const fields: ModdleElement[] = [];
+
+    // Import inputs
+    for (const m of inputMappings) {
+      if (!m.inputName) continue;
+      const targetRef = m.assoc.targetRef as ModdleElement | undefined;
+      const dtype = (targetRef as any)?.get?.('drools:dtype') || 'java.lang.Object';
+      const field = bpmnFactory.create('utform:FormField', {
+        name: m.inputName,
+        type: dtypeToFormType(String(dtype)),
+        section: 'input'
+      });
+      field.$parent = formDef;
+      fields.push(field);
+    }
+
+    // Import outputs
+    for (const m of outputMappings) {
+      if (!m.outputName) continue;
+      const sourceRefs = (m.assoc.sourceRef || []) as (ModdleElement | string)[];
+      let dtype = 'java.lang.Object';
+      if (sourceRefs.length > 0 && typeof sourceRefs[0] !== 'string') {
+        dtype = (sourceRefs[0] as any)?.get?.('drools:dtype') || 'java.lang.Object';
+      }
+      const field = bpmnFactory.create('utform:FormField', {
+        name: m.outputName,
+        type: dtypeToFormType(String(dtype)),
+        section: 'output'
+      });
+      field.$parent = formDef;
+      fields.push(field);
+    }
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: formDef,
+      properties: {
+        fields: [...((formDef.fields || []) as ModdleElement[]), ...fields]
+      }
+    });
+  };
+
+  return html`
+    <div style=${{ padding: '4px 10px' }}>
+      <button
+        type="button"
+        style=${buttonStyle}
+        onClick=${handleImport}
+      >
+        ${translate('Import from I/O Mappings')}
+      </button>
+    </div>
+  `;
+}
+
+/**
+ * Form Fields List Group
+ */
+function FormFieldsGroup(props: { element: BpmnElement; injector: { get: (name: string) => unknown } }) {
+  const { element, injector } = props;
+
+  if (!isUserTask(element)) return null;
+
+  const bpmnFactory = injector.get('bpmnFactory') as { create: (type: string, attrs?: Record<string, unknown>) => ModdleElement };
+  const commandStack = injector.get('commandStack') as { execute: (cmd: string, ctx: Record<string, unknown>) => void };
+  const translate = injector.get('translate') as (text: string) => string;
+
+  const fields = getFormFields(element);
+
+  const items = fields.map((field: ModdleElement, index: number) => {
+    const id = `${getBusinessObject(element)?.id || 'el'}-formField-${index}`;
+    const name = (field.name as string) || '';
+    const type = (field.type as string) || 'string';
+    const section = (field.section as string) || 'input';
+    return {
+      id,
+      label: name || translate('<unnamed>'),
+      entries: FormFieldEntry({
+        idPrefix: id,
+        field,
+        element
+      }),
+      autoFocusEntry: `${id}-name`,
+      remove: createRemoveFormFieldHandler(commandStack, element, field)
+    };
+  });
+
+  return {
+    items,
+    add: createAddFormFieldHandler(bpmnFactory, commandStack, element),
+    label: translate('Form Fields')
+  };
+}
+
+// ============================================================================
+// Form Generation Components
+// ============================================================================
+
+/**
+ * Collect input/output field info and send a generateUserTaskForm message.
+ * If form fields are defined (utform:FormDefinition), use those.
+ * Otherwise, fall back to ioSpecification mappings.
+ */
+function requestGenerateForm(element: BpmnElement): void {
+  const bo = getBusinessObject(element);
+  if (!bo) return;
+
+  const taskName = getConfigValue(bo, 'TaskName') || bo.name || 'UserTask';
+  const taskId = bo.id || 'UserTask';
+
+  const formDef = getFormDefinition(element);
+  const formFields = formDef ? (formDef.fields || []) as ModdleElement[] : [];
+
+  let inputs: Array<{ name: string; dtype: string; variable?: string; defaultValue?: string }>;
+  let outputs: Array<{ name: string; dtype: string; variable?: string; defaultValue?: string }>;
+
+  if (formFields.length > 0) {
+    // Use user-defined form fields
+    inputs = formFields
+      .filter(f => (f.section || 'input') === 'input')
+      .map(f => ({
+        name: (f.name as string) || '',
+        dtype: formTypeToDtype((f.type as string) || 'string'),
+        variable: (f.variable as string) || undefined,
+        defaultValue: (f.defaultValue as string) || undefined
+      }))
+      .filter(f => f.name);
+    outputs = formFields
+      .filter(f => f.section === 'output')
+      .map(f => ({
+        name: (f.name as string) || '',
+        dtype: formTypeToDtype((f.type as string) || 'string'),
+        variable: (f.variable as string) || undefined,
+        defaultValue: (f.defaultValue as string) || undefined
+      }))
+      .filter(f => f.name);
+  } else {
+    // Fall back to ioSpecification mappings
+    const inputMappings = getInputMappings(bo);
+    inputs = inputMappings.map(m => {
+      const targetRef = m.assoc.targetRef as ModdleElement | undefined;
+      const dtype = (targetRef as any)?.get?.('drools:dtype') || 'java.lang.Object';
+      return { name: m.inputName, dtype: String(dtype) };
+    }).filter(f => f.name);
+
+    const outputMappings = getOutputMappings(bo);
+    outputs = outputMappings.map(m => {
+      const sourceRefs = (m.assoc.sourceRef || []) as (ModdleElement | string)[];
+      let dtype = 'java.lang.Object';
+      if (sourceRefs.length > 0 && typeof sourceRefs[0] !== 'string') {
+        dtype = (sourceRefs[0] as any)?.get?.('drools:dtype') || 'java.lang.Object';
+      }
+      return { name: m.outputName, dtype: String(dtype) };
+    }).filter(f => f.name);
+  }
+
+  const vscode = (window as unknown as { vscodeApi?: { postMessage: (msg: unknown) => void } }).vscodeApi;
+  if (vscode) {
+    vscode.postMessage({
+      type: 'generateUserTaskForm',
+      taskId,
+      taskName,
+      inputs,
+      outputs
+    });
+  }
+}
+
+/**
+ * Generate Form button component for properties panel.
+ * Uses htm/preact tagged templates for proper Preact vdom rendering.
+ */
+function GenerateFormButton(props: { element: BpmnElement; id: string }) {
+  const { element } = props;
+  const translate = useService('translate');
+
+  const bo = getBusinessObject(element)!;
+  const formFields = getFormFields(element);
+  const inputMappings = getInputMappings(bo);
+  const outputMappings = getOutputMappings(bo);
+  const hasFields = formFields.length > 0 || inputMappings.length > 0 || outputMappings.length > 0;
+
+  const buttonStyle = {
+    width: '100%',
+    padding: '6px 12px',
+    background: hasFields ? 'var(--vscode-button-background, #0e639c)' : 'var(--vscode-button-secondaryBackground, #3a3d41)',
+    color: hasFields ? 'var(--vscode-button-foreground, #fff)' : 'var(--vscode-button-secondaryForeground, #ccc)',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: hasFields ? 'pointer' : 'not-allowed',
+    fontSize: '12px'
+  };
+
+  const hintStyle = {
+    marginTop: '6px',
+    fontSize: '11px',
+    color: 'var(--vscode-descriptionForeground, #717171)'
+  };
+
+  const sourceLabel = formFields.length > 0
+    ? translate('Using Form Fields definitions')
+    : translate('Using Data I/O mappings');
+
+  return html`
+    <div style=${{ padding: '8px 10px' }}>
+      <button
+        type="button"
+        disabled=${!hasFields}
+        style=${buttonStyle}
+        onClick=${() => hasFields && requestGenerateForm(element)}
+      >
+        ${translate('Generate Form')}
+      </button>
+      ${!hasFields && html`
+        <div style=${hintStyle}>${translate('Add Form Fields or Data I/O mappings first')}</div>
+      `}
+      ${hasFields && html`
+        <div style=${hintStyle}>${sourceLabel}</div>
+      `}
+    </div>
+  `;
+}
+
+// ============================================================================
 // Properties Provider Class
 // ============================================================================
 
@@ -755,6 +1396,26 @@ export default class UserTaskPropertiesProvider {
           ...dataIOGroup
         });
       }
+
+      // Add Form Fields as a ListGroup
+      const formFieldsGroup = FormFieldsGroup({ element, injector: this.injector });
+      if (formFieldsGroup) {
+        groups.push({
+          id: 'user-task-form-fields',
+          component: ListGroup,
+          ...formFieldsGroup
+        });
+      }
+
+      // Add Form Generation group
+      groups.push({
+        id: 'user-task-form-generation',
+        label: 'Form Generation',
+        entries: [
+          { id: 'userTask-generateForm', component: GenerateFormButton },
+          { id: 'userTask-importFromIO', component: ImportFromIOMappingsButton }
+        ]
+      });
 
       return groups;
     };

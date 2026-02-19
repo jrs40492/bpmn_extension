@@ -557,6 +557,15 @@ async function init(): Promise<void> {
         // Handle git diff response
         diffPanel.handleGitDiffResponse(message);
         break;
+
+      case 'generateUserTaskFormResult':
+        // Log form generation result (VS Code notification handles user feedback)
+        if (message.success) {
+          console.log('[BAMOE] Form generated:', message.filePath);
+        } else {
+          console.error('[BAMOE] Form generation failed:', message.error);
+        }
+        break;
     }
   });
 

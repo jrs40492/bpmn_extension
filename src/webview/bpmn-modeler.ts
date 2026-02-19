@@ -56,6 +56,9 @@ import businessRuleTaskModule, { businessRuleTaskDescriptor } from './extensions
 // Custom Process Variables extension
 import processVariablesModule, { processVariablesDescriptor } from './extensions/process-variables';
 
+// Custom User Task Form extension (moddle descriptor)
+import { userTaskFormDescriptor } from './extensions/user-task/moddle-descriptor';
+
 // Custom Message Event extension
 import messageEventModule, { messageEventDescriptor } from './extensions/message-event';
 
@@ -264,7 +267,8 @@ export function createModeler(
       bamoe: processVariablesDescriptor,
       drools: droolsDescriptor,
       msgevt: messageEventDescriptor,
-      errbnd: errorBoundaryDescriptor
+      errbnd: errorBoundaryDescriptor,
+      utform: userTaskFormDescriptor
     },
     propertiesPanel: propertiesContainer ? {
       parent: propertiesContainer,

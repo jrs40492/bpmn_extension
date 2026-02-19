@@ -14,6 +14,7 @@ import {
   MessageEventInfo
 } from './commands/generate-message-classes';
 import { getProjectInfo } from './utils/project-utils';
+import { generateFormHtml, generateFormConfig } from './utils/form-generator';
 
 /**
  * Provider for BPMN custom editors.
@@ -175,6 +176,31 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
               ...gitResult
             });
             break;
+
+          case 'generateUserTaskForm':
+            // Generate HTML form and config files for a user task
+            console.log('[BAMOE] Received generateUserTaskForm message:', message.taskName);
+            try {
+              const formResult = await this.generateUserTaskForm(
+                document,
+                message.taskId,
+                message.taskName,
+                message.inputs,
+                message.outputs
+              );
+              this.postMessage(webviewPanel.webview, {
+                type: 'generateUserTaskFormResult',
+                ...formResult
+              });
+            } catch (error) {
+              console.error('[BAMOE] Form generation failed:', error);
+              this.postMessage(webviewPanel.webview, {
+                type: 'generateUserTaskFormResult',
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+            }
+            break;
         }
       }
     );
@@ -295,6 +321,58 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
     }
 
     return { generated };
+  }
+
+  /**
+   * Generate HTML form and config files for a user task
+   */
+  private async generateUserTaskForm(
+    document: vscode.TextDocument,
+    taskId: string,
+    taskName: string,
+    inputs: Array<{ name: string; dtype: string; variable?: string; defaultValue?: string }>,
+    outputs: Array<{ name: string; dtype: string; variable?: string; defaultValue?: string }>
+  ): Promise<{ success: boolean; filePath?: string; error?: string }> {
+    // Extract process ID from the BPMN XML
+    const bpmnXml = document.getText();
+    const processIdMatch = /<bpmn2?:process[^>]*\sid\s*=\s*["']([^"']+)["']/i.exec(bpmnXml);
+    const processId = processIdMatch?.[1] || 'process';
+
+    // Sanitize task name for filename (remove spaces, special chars)
+    const sanitizedTaskName = taskName.replace(/[^a-zA-Z0-9_]/g, '');
+    const baseName = `${processId}_${sanitizedTaskName}`;
+
+    // Determine output directory
+    const projectInfo = await getProjectInfo();
+    let outputDir: vscode.Uri;
+
+    if (projectInfo.projectRoot) {
+      // Maven project: use src/main/resources/forms/
+      outputDir = vscode.Uri.file(
+        path.join(projectInfo.projectRoot, 'src', 'main', 'resources', 'forms')
+      );
+    } else {
+      // Fallback: same directory as the BPMN file
+      outputDir = vscode.Uri.joinPath(document.uri, '..');
+    }
+
+    // Ensure output directory exists
+    await vscode.workspace.fs.createDirectory(outputDir);
+
+    // Generate files
+    const htmlContent = generateFormHtml(taskName, inputs, outputs);
+    const configContent = generateFormConfig(inputs, outputs);
+
+    const htmlUri = vscode.Uri.joinPath(outputDir, `${baseName}.html`);
+    const configUri = vscode.Uri.joinPath(outputDir, `${baseName}.config`);
+
+    await vscode.workspace.fs.writeFile(htmlUri, Buffer.from(htmlContent, 'utf-8'));
+    await vscode.workspace.fs.writeFile(configUri, Buffer.from(configContent, 'utf-8'));
+
+    const relativePath = vscode.workspace.asRelativePath(htmlUri, false);
+    vscode.window.showInformationMessage(`Generated form: ${relativePath}`);
+
+    return { success: true, filePath: relativePath };
   }
 
   /**
