@@ -101,10 +101,6 @@
         </div>
       </fieldset>
       </fieldset>
-      <div class="form-field">
-        <label for="pull_request">Pull request</label>
-        <textarea id="pull_request" name="pull_request" rows="4" readonly></textarea>
-      </div>
     </fieldset>
 
   </form>
@@ -132,7 +128,6 @@
     /* Kogito form lifecycle integration */
     function setFormData(data) {
       if (!data) return;
-      if (data?.pull_request !== undefined) document.getElementById("pull_request").value = typeof data?.pull_request === "object" ? JSON.stringify(data?.pull_request, null, 2) : (data?.pull_request ?? "");
       if (data?.pull_request?.url !== undefined) document.getElementById("pull_request.url").value = data?.pull_request?.url ?? "";
       if (data?.pull_request?.title !== undefined) document.getElementById("pull_request.title").value = data?.pull_request?.title ?? "";
       if (data?.pull_request?.author !== undefined) document.getElementById("pull_request.author").value = data?.pull_request?.author ?? "";
@@ -160,7 +155,6 @@
 
     function getFormData() {
       var formData = {};
-      try { formData.pull_request = JSON.parse(document.getElementById("pull_request").value); } catch(e) { formData.pull_request = document.getElementById("pull_request").value; }
       formData.pull_request = formData.pull_request || {};
       formData.pull_request.url = document.getElementById("pull_request.url").value;
       formData.pull_request.title = document.getElementById("pull_request.title").value;
