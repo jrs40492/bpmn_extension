@@ -25,16 +25,26 @@ interface HtmlInputInfo {
  * Grouped field structure for dot-notation support.
  * Fields like pull_request.author, pull_request.title get grouped under prefix "pull_request".
  */
+interface GroupedField {
+  subName: string;
+  fullName: string;
+  dtype: string;
+  defaultValue?: string;
+  fieldKind?: 'flat' | 'object' | 'array';
+  arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+  objectFields?: FormField[];
+}
+
 interface FieldGroup {
   prefix: string;
-  fields: Array<{ subName: string; fullName: string; dtype: string; defaultValue?: string }>;
+  fields: GroupedField[];
 }
 
 /**
  * Map a drools:dtype (or itemSubjectRef) to an HTML input type.
  */
 export function getHtmlInputType(dtype: string): HtmlInputInfo {
-  const normalized = dtype.replace(/^java\.lang\./, '').toLowerCase();
+  const normalized = dtype.replace(/^java\.(lang|util|time)\./, '').toLowerCase();
 
   switch (normalized) {
     case 'string':
@@ -145,7 +155,15 @@ function groupFields(fields: FormField[]): { flat: FormField[]; groups: FieldGro
         group = { prefix, fields: [] };
         groupMap.set(prefix, group);
       }
-      group.fields.push({ subName, fullName: field.name, dtype: field.dtype, defaultValue: field.defaultValue });
+      group.fields.push({
+        subName,
+        fullName: field.name,
+        dtype: field.dtype,
+        defaultValue: field.defaultValue,
+        fieldKind: field.fieldKind,
+        arrayItemFields: field.arrayItemFields,
+        objectFields: field.objectFields
+      });
     }
   }
 
@@ -330,7 +348,14 @@ function renderField(field: FormField, readonly: boolean, parentPrefix?: string)
 function renderFieldGroup(group: FieldGroup, readonly: boolean): string {
   const legend = toLabel(group.prefix);
   const fieldHtml = group.fields.map(f =>
-    renderField({ name: f.fullName, dtype: f.dtype, defaultValue: f.defaultValue }, readonly)
+    renderField({
+      name: f.fullName,
+      dtype: f.dtype,
+      defaultValue: f.defaultValue,
+      fieldKind: f.fieldKind,
+      arrayItemFields: f.arrayItemFields,
+      objectFields: f.objectFields
+    }, readonly)
   ).join('\n');
 
   return `      <fieldset class="nested-fieldset">
@@ -554,7 +579,7 @@ function generateSetArrayField(field: FormField, accessor: string, indent: strin
   lines.push(`${indent}    container.appendChild(clone);`);
   lines.push(`${indent}  }`);
   lines.push(`${indent}  renumberCards("${containerId}");`);
-  lines.push(`${indent})();`);
+  lines.push(`${indent}})();`);
   return lines;
 }
 
@@ -663,7 +688,7 @@ function generateGetArrayField(field: FormField, assignPath: string, indent: str
   lines.push(`${indent}    result.push(item);`);
   lines.push(`${indent}  }`);
   lines.push(`${indent}  ${assignPath} = result;`);
-  lines.push(`${indent})();`);
+  lines.push(`${indent}})();`);
   return lines;
 }
 
@@ -697,6 +722,31 @@ function generateGetObjectField(field: FormField, assignPath: string, indent: st
   return lines;
 }
 
+/**
+ * Build a nested assignment path for a dot-notation field name.
+ * Ensures parent objects are initialized along the way.
+ * e.g. "pull_request.checks" → initializes formData.pull_request, returns formData.pull_request.checks
+ */
+function buildNestedAssignPath(name: string, initializedPrefixes: Set<string>, lines: string[]): string {
+  if (!name.includes('.')) {
+    return propAccess('formData', name);
+  }
+
+  const parts = name.split('.');
+  const prefix = parts[0];
+  if (!initializedPrefixes.has(prefix)) {
+    const prefixAccess = propAccess('formData', prefix);
+    lines.push(`      ${prefixAccess} = ${prefixAccess} || {};`);
+    initializedPrefixes.add(prefix);
+  }
+
+  let assignPath = 'formData';
+  for (const part of parts) {
+    assignPath = propAccess(assignPath, part);
+  }
+  return assignPath;
+}
+
 function generateGetFormDataBody(fields: FormField[]): string {
   const lines: string[] = [];
   const initializedPrefixes = new Set<string>();
@@ -704,12 +754,12 @@ function generateGetFormDataBody(fields: FormField[]): string {
   for (const field of fields) {
     // Handle expanded object/array fieldKinds
     if (field.fieldKind === 'array' && field.arrayItemFields) {
-      const assignPath = propAccess('formData', field.name);
+      const assignPath = buildNestedAssignPath(field.name, initializedPrefixes, lines);
       lines.push(...generateGetArrayField(field, assignPath, '      '));
       continue;
     }
     if (field.fieldKind === 'object' && field.objectFields) {
-      const assignPath = propAccess('formData', field.name);
+      const assignPath = buildNestedAssignPath(field.name, initializedPrefixes, lines);
       lines.push(...generateGetObjectField(field, assignPath, '      '));
       continue;
     }
@@ -765,7 +815,7 @@ function generateGetFormDataBody(fields: FormField[]): string {
  * Map a dtype to a JSON Schema type string.
  */
 function dtypeToJsonSchemaType(dtype: string): string {
-  const normalized = dtype.replace(/^java\.lang\./, '').replace(/^java\.util\./, '').toLowerCase();
+  const normalized = dtype.replace(/^java\.(lang|util|time)\./, '').toLowerCase();
   switch (normalized) {
     case 'string':
       return 'string';

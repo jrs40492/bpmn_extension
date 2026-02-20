@@ -53,16 +53,53 @@
       </div>
       <div class="form-field">
         <label for="pull_request.created_at">Created at</label>
-        <textarea id="pull_request.created_at" name="pull_request.created_at" rows="4" readonly></textarea>
+        <input type="date" id="pull_request.created_at" name="pull_request.created_at" readonly />
       </div>
       <div class="form-field">
         <label for="pull_request.testing_evidence">Testing evidence</label>
         <input type="text" id="pull_request.testing_evidence" name="pull_request.testing_evidence" readonly />
       </div>
-      <div class="form-field">
-        <label for="pull_request.checks">Checks</label>
-        <textarea id="pull_request.checks" name="pull_request.checks" rows="4" readonly>[{&quot;name&quot;:&quot;&quot;,&quot;status&quot;:&quot;&quot;,&quot;description&quot;:&quot;&quot;}]</textarea>
-      </div>
+      <fieldset class="nested-fieldset">
+        <legend>Pull request.checks</legend>
+      <template id="template-pull_request.checks">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>
+          </div>
+          <div class="form-field">
+            <label>Name</label>
+            <input type="text" data-field="name" readonly />
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <input type="text" data-field="status" readonly />
+          </div>
+          <div class="form-field">
+            <label>Description</label>
+            <input type="text" data-field="description" readonly />
+          </div>
+        </div>
+      </template>
+        <div class="array-list-container" id="array-pull_request.checks">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>
+          </div>
+          <div class="form-field">
+            <label>Name</label>
+            <input type="text" data-field="name" value="" readonly />
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <input type="text" data-field="status" value="" readonly />
+          </div>
+          <div class="form-field">
+            <label>Description</label>
+            <input type="text" data-field="description" value="" readonly />
+          </div>
+        </div>
+        </div>
+      </fieldset>
       </fieldset>
       <div class="form-field">
         <label for="pull_request">Pull request</label>
@@ -99,7 +136,7 @@
       if (data?.pull_request?.url !== undefined) document.getElementById("pull_request.url").value = data?.pull_request?.url ?? "";
       if (data?.pull_request?.title !== undefined) document.getElementById("pull_request.title").value = data?.pull_request?.title ?? "";
       if (data?.pull_request?.author !== undefined) document.getElementById("pull_request.author").value = data?.pull_request?.author ?? "";
-      if (data?.pull_request?.created_at !== undefined) document.getElementById("pull_request.created_at").value = typeof data?.pull_request?.created_at === "object" ? JSON.stringify(data?.pull_request?.created_at, null, 2) : (data?.pull_request?.created_at ?? "");
+      if (data?.pull_request?.created_at !== undefined) document.getElementById("pull_request.created_at").value = data?.pull_request?.created_at ?? "";
       if (data?.pull_request?.testing_evidence !== undefined) document.getElementById("pull_request.testing_evidence").value = data?.pull_request?.testing_evidence ?? "";
       (function() {
         var arr = data?.pull_request?.checks;
@@ -118,7 +155,7 @@
           container.appendChild(clone);
         }
         renumberCards("array-pull_request.checks");
-      )();
+      })();
     }
 
     function getFormData() {
@@ -128,7 +165,7 @@
       formData.pull_request.url = document.getElementById("pull_request.url").value;
       formData.pull_request.title = document.getElementById("pull_request.title").value;
       formData.pull_request.author = document.getElementById("pull_request.author").value;
-      try { formData.pull_request.created_at = JSON.parse(document.getElementById("pull_request.created_at").value); } catch(e) { formData.pull_request.created_at = document.getElementById("pull_request.created_at").value; }
+      formData.pull_request.created_at = document.getElementById("pull_request.created_at").value;
       formData.pull_request.testing_evidence = document.getElementById("pull_request.testing_evidence").value;
       (function() {
         var container = document.getElementById("array-pull_request.checks");
@@ -142,8 +179,8 @@
           var inp = cards[i].querySelector('[data-field="description"]'); if (inp) item["description"] = inp.value;
           result.push(item);
         }
-        formData["pull_request.checks"] = result;
-      )();
+        formData.pull_request.checks = result;
+      })();
       return formData;
     }
 
