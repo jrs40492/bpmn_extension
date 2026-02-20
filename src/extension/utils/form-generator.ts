@@ -49,6 +49,11 @@ export function getHtmlInputType(dtype: string): HtmlInputInfo {
     case 'float':
     case 'number':
       return { type: 'number', step: 'any', inputTag: 'input' };
+    case 'date':
+    case 'localdate':
+      return { type: 'date', inputTag: 'input' };
+    case 'localdatetime':
+      return { type: 'datetime-local', inputTag: 'input' };
     default:
       // Complex object types (e.g. com.example.PullRequest) → textarea for JSON
       return { type: 'text', inputTag: 'textarea' };
@@ -396,6 +401,8 @@ ${outputFields}
     .form-field label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.9em; }
     .form-field input[type="text"],
     .form-field input[type="number"],
+    .form-field input[type="date"],
+    .form-field input[type="datetime-local"],
     .form-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; font-family: inherit; }
     .form-field input[readonly],
     .form-field textarea[readonly] { background: #f0f0f0; color: #666; }
@@ -478,6 +485,14 @@ ${generateGetFormDataBody([...inputs, ...outputs])}
 function buildDataAccessor(field: FormField): string {
   if (field.variable) {
     // Variable binding: read from data?.{variable}
+    // If name has dot-notation and starts with the variable name, strip the prefix
+    // and append remaining path segments. e.g. variable="pull_request", name="pull_request.author"
+    // → data?.pull_request?.author
+    if (field.name.includes('.') && field.name.startsWith(field.variable + '.')) {
+      const remaining = field.name.substring(field.variable.length + 1);
+      const remainingPath = remaining.split('.').map(p => optionalPropAccess(p)).join('');
+      return `data${optionalPropAccess(field.variable)}${remainingPath}`;
+    }
     return `data${optionalPropAccess(field.variable)}`;
   }
 
@@ -750,7 +765,7 @@ function generateGetFormDataBody(fields: FormField[]): string {
  * Map a dtype to a JSON Schema type string.
  */
 function dtypeToJsonSchemaType(dtype: string): string {
-  const normalized = dtype.replace(/^java\.lang\./, '').toLowerCase();
+  const normalized = dtype.replace(/^java\.lang\./, '').replace(/^java\.util\./, '').toLowerCase();
   switch (normalized) {
     case 'string':
       return 'string';
@@ -764,6 +779,10 @@ function dtypeToJsonSchemaType(dtype: string): string {
     case 'float':
     case 'number':
       return 'number';
+    case 'date':
+    case 'localdate':
+    case 'localdatetime':
+      return 'string';
     default:
       return 'object';
   }

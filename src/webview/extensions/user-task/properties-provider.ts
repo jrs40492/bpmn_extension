@@ -781,7 +781,7 @@ function getFormFields(element: BpmnElement): ModdleElement[] {
  * Map drools:dtype to form field type
  */
 function dtypeToFormType(dtype: string): string {
-  const normalized = dtype.replace(/^java\.lang\./, '').toLowerCase();
+  const normalized = dtype.replace(/^java\.lang\./, '').replace(/^java\.util\./, '').toLowerCase();
   switch (normalized) {
     case 'string':
       return 'string';
@@ -795,6 +795,12 @@ function dtypeToFormType(dtype: string): string {
     case 'float':
     case 'number':
       return 'number';
+    case 'date':
+    case 'localdate':
+    case 'localdatetime':
+    case 'java.time.localdate':
+    case 'java.time.localdatetime':
+      return 'date';
     default:
       return 'object';
   }
@@ -813,6 +819,8 @@ function formTypeToDtype(type: string): string {
       return 'java.lang.Integer';
     case 'number':
       return 'java.lang.Double';
+    case 'date':
+      return 'java.util.Date';
     case 'object':
       return 'java.lang.Object';
     default:
@@ -826,6 +834,7 @@ const FORM_FIELD_TYPES = [
   { value: 'boolean', label: 'Boolean' },
   { value: 'integer', label: 'Integer' },
   { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
   { value: 'object', label: 'Object' }
 ];
 
@@ -1219,6 +1228,375 @@ function ImportFromIOMappingsButton(props: { element: BpmnElement; id: string })
   `;
 }
 
+// ============================================================================
+// Expand Variable to Form Fields
+// ============================================================================
+
+/**
+ * Get process variables with their types from bamoe:ProcessVariables.
+ */
+function getProcessVariablesWithTypes(element: BpmnElement): Array<{ name: string; type: string }> {
+  const process = findParentProcess(element);
+  if (!process) return [];
+
+  const extElements = process.extensionElements as ModdleElement | undefined;
+  if (!extElements) return [];
+
+  const values = ((extElements as any).values || []) as ModdleElement[];
+  const processVars = values.find(v => v.$type === 'bamoe:ProcessVariables');
+  if (!processVars) return [];
+
+  const variables = (processVars.variables || []) as ModdleElement[];
+  return variables
+    .filter(v => v.name)
+    .map(v => ({
+      name: (v.name as string),
+      type: (v.type as string) || 'object'
+    }));
+}
+
+/**
+ * Normalize a user-provided type string to a FormField type.
+ */
+function normalizeSchemaType(typeStr: string): string {
+  const lower = typeStr.toLowerCase().trim();
+  switch (lower) {
+    case 'string':
+    case 'str':
+    case 'text':
+    case 'date':
+    case 'datetime':
+      return 'date';
+    case 'boolean':
+    case 'bool':
+      return 'boolean';
+    case 'integer':
+    case 'int':
+    case 'long':
+      return 'integer';
+    case 'number':
+    case 'float':
+    case 'double':
+    case 'decimal':
+      return 'number';
+    default:
+      return 'string';
+  }
+}
+
+/**
+ * Validate a schema value recursively.
+ * Accepts: "type" strings, nested objects {key: value}, arrays with one object element.
+ */
+function validateSchemaValue(value: unknown, path: string): string | null {
+  if (typeof value === 'string') return null;
+
+  if (Array.isArray(value)) {
+    if (value.length !== 1) return `"${path}": arrays must have exactly one template object element`;
+    const item = value[0];
+    if (item === null || typeof item !== 'object' || Array.isArray(item)) {
+      return `"${path}": array template element must be an object`;
+    }
+    return validateSchemaObject(item as Record<string, unknown>, `${path}[]`);
+  }
+
+  if (value !== null && typeof value === 'object') {
+    return validateSchemaObject(value as Record<string, unknown>, path);
+  }
+
+  return `"${path}": value must be a type string, nested object, or array`;
+}
+
+/**
+ * Validate a schema object recursively.
+ */
+function validateSchemaObject(obj: Record<string, unknown>, path: string): string | null {
+  for (const [key, value] of Object.entries(obj)) {
+    if (!key) return `${path}: keys must be non-empty strings`;
+    const err = validateSchemaValue(value, path ? `${path}.${key}` : key);
+    if (err) return err;
+  }
+  return null;
+}
+
+/**
+ * Validate that text is a JSON object with type values (supports nesting).
+ * Returns null on success, or an error message string.
+ */
+function validateKeyTypeSchema(text: string): string | null {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return 'Invalid JSON';
+  }
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return 'Must be a JSON object (e.g. {"key": "type"})';
+  }
+  return validateSchemaObject(parsed as Record<string, unknown>, '');
+}
+
+/**
+ * Build a typed default value for a given type string (used for array template objects).
+ */
+function defaultValueForType(typeStr: string): unknown {
+  const t = normalizeSchemaType(typeStr);
+  switch (t) {
+    case 'boolean': return false;
+    case 'integer': return 0;
+    case 'number': return 0;
+    default: return '';
+  }
+}
+
+/**
+ * Build a template object from a schema object, with typed zero-values.
+ * Used to create defaultValue JSON for array fields so expandObjectField can infer types.
+ */
+function buildTemplateObject(schema: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (typeof value === 'string') {
+      result[key] = defaultValueForType(value);
+    } else if (Array.isArray(value) && value.length === 1 && typeof value[0] === 'object') {
+      result[key] = [buildTemplateObject(value[0] as Record<string, unknown>)];
+    } else if (value !== null && typeof value === 'object') {
+      result[key] = buildTemplateObject(value as Record<string, unknown>);
+    }
+  }
+  return result;
+}
+
+interface ExpandedFieldConfig {
+  name: string;
+  type: string;
+  defaultValue?: string;
+}
+
+/**
+ * Recursively flatten a schema into form field configs with dot-notation names.
+ * - "key": "type" → flat field
+ * - "key": {nested} → recurse with prefix
+ * - "key": [{template}] → single object field with defaultValue encoding the array
+ */
+function flattenSchema(
+  schema: Record<string, unknown>,
+  prefix: string
+): ExpandedFieldConfig[] {
+  const fields: ExpandedFieldConfig[] = [];
+
+  for (const [key, value] of Object.entries(schema)) {
+    const fullName = `${prefix}.${key}`;
+
+    if (typeof value === 'string') {
+      fields.push({ name: fullName, type: normalizeSchemaType(value) });
+    } else if (Array.isArray(value) && value.length === 1 && typeof value[0] === 'object') {
+      // Array of objects → single "object" field with JSON defaultValue
+      const templateObj = buildTemplateObject(value[0] as Record<string, unknown>);
+      fields.push({
+        name: fullName,
+        type: 'object',
+        defaultValue: JSON.stringify([templateObj])
+      });
+    } else if (value !== null && typeof value === 'object') {
+      // Nested object → recurse to create dot-notation fields
+      fields.push(...flattenSchema(value as Record<string, unknown>, fullName));
+    }
+  }
+
+  return fields;
+}
+
+/**
+ * Expand Variable to Fields button component.
+ * Allows selecting a process variable and pasting a key:type JSON schema
+ * to auto-generate individual form fields with dot-notation names.
+ * Uses DOM manipulation for state to avoid Preact instance conflicts.
+ */
+function ExpandVariableButton(props: { element: BpmnElement; id: string }) {
+  const { element } = props;
+  const translate = useService('translate');
+  const bpmnFactory = useService('bpmnFactory');
+  const commandStack = useService('commandStack');
+
+  const processVars = getProcessVariablesWithTypes(element);
+
+  const buttonStyle = {
+    width: '100%',
+    padding: '4px 8px',
+    background: 'var(--vscode-button-secondaryBackground, #3a3d41)',
+    color: 'var(--vscode-button-secondaryForeground, #ccc)',
+    border: 'none',
+    borderRadius: '3px',
+    cursor: 'pointer',
+    fontSize: '11px'
+  };
+
+  const handleToggle = (e: Event) => {
+    const btn = e.currentTarget as HTMLElement;
+    const container = btn.parentElement!;
+    const panel = container.querySelector('.expand-var-panel') as HTMLElement;
+    if (panel) {
+      btn.style.display = panel.style.display === 'none' ? 'block' : 'none';
+      panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+    }
+  };
+
+  const handleExpand = (e: Event) => {
+    const btn = e.currentTarget as HTMLElement;
+    const panel = btn.closest('.expand-var-panel') as HTMLElement;
+    const container = panel.parentElement!;
+    const triggerBtn = container.querySelector('.expand-var-trigger') as HTMLElement;
+    const errorEl = panel.querySelector('.expand-var-error') as HTMLElement;
+    const varSelect = panel.querySelector('.expand-var-select') as HTMLSelectElement;
+    const sectionSelect = panel.querySelector('.expand-var-section') as HTMLSelectElement;
+    const textarea = panel.querySelector('.expand-var-schema') as HTMLTextAreaElement;
+
+    const selectedVar = varSelect.value;
+    const section = sectionSelect.value;
+    const schemaText = textarea.value;
+
+    if (!selectedVar) {
+      errorEl.textContent = 'Select a process variable';
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (!schemaText.trim()) {
+      errorEl.textContent = 'Paste a key:type JSON schema';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const validationError = validateKeyTypeSchema(schemaText);
+    if (validationError) {
+      errorEl.textContent = validationError;
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    const schema = JSON.parse(schemaText) as Record<string, unknown>;
+    const fieldConfigs = flattenSchema(schema, selectedVar);
+    const formDef = ensureFormDefinition(element, bpmnFactory, commandStack);
+    const newFields: ModdleElement[] = [];
+
+    for (const fc of fieldConfigs) {
+      const attrs: Record<string, unknown> = {
+        name: fc.name,
+        type: fc.type,
+        section,
+        variable: selectedVar
+      };
+      if (fc.defaultValue) {
+        attrs.defaultValue = fc.defaultValue;
+      }
+      const field = bpmnFactory.create('utform:FormField', attrs);
+      field.$parent = formDef;
+      newFields.push(field);
+    }
+
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: formDef,
+      properties: {
+        fields: [...((formDef.fields || []) as ModdleElement[]), ...newFields]
+      }
+    });
+
+    // Reset and collapse
+    textarea.value = '';
+    varSelect.value = '';
+    sectionSelect.value = 'input';
+    errorEl.style.display = 'none';
+    panel.style.display = 'none';
+    triggerBtn.style.display = 'block';
+  };
+
+  const handleCancel = (e: Event) => {
+    const btn = e.currentTarget as HTMLElement;
+    const panel = btn.closest('.expand-var-panel') as HTMLElement;
+    const container = panel.parentElement!;
+    const triggerBtn = container.querySelector('.expand-var-trigger') as HTMLElement;
+    const errorEl = panel.querySelector('.expand-var-error') as HTMLElement;
+    const textarea = panel.querySelector('.expand-var-schema') as HTMLTextAreaElement;
+    const varSelect = panel.querySelector('.expand-var-select') as HTMLSelectElement;
+    const sectionSelect = panel.querySelector('.expand-var-section') as HTMLSelectElement;
+
+    textarea.value = '';
+    varSelect.value = '';
+    sectionSelect.value = 'input';
+    errorEl.style.display = 'none';
+    panel.style.display = 'none';
+    triggerBtn.style.display = 'block';
+  };
+
+  const handleInputChange = (e: Event) => {
+    const el = e.currentTarget as HTMLElement;
+    const panel = el.closest('.expand-var-panel') as HTMLElement;
+    const errorEl = panel.querySelector('.expand-var-error') as HTMLElement;
+    errorEl.style.display = 'none';
+  };
+
+  const panelStyle = 'padding: 8px 10px; display: none; flex-direction: column; gap: 6px;';
+  const labelCss = 'font-size: 11px; font-weight: 500; color: var(--vscode-foreground, #ccc); margin-bottom: 2px;';
+  const selectCss = 'width: 100%; padding: 4px 6px; background: var(--vscode-input-background, #3c3c3c); color: var(--vscode-input-foreground, #ccc); border: 1px solid var(--vscode-input-border, #555); border-radius: 3px; font-size: 12px;';
+  const textareaCss = 'width: 100%; min-height: 80px; padding: 6px; background: var(--vscode-input-background, #3c3c3c); color: var(--vscode-input-foreground, #ccc); border: 1px solid var(--vscode-input-border, #555); border-radius: 3px; font-size: 11px; font-family: monospace; resize: vertical;';
+  const errorCss = 'font-size: 11px; color: var(--vscode-errorForeground, #f48771); padding: 2px 0; display: none;';
+  const primaryBtnCss = 'flex: 1; padding: 4px 8px; background: var(--vscode-button-background, #0e639c); color: var(--vscode-button-foreground, #fff); border: none; border-radius: 3px; cursor: pointer; font-size: 11px;';
+  const cancelBtnCss = 'flex: 1; padding: 4px 8px; background: var(--vscode-button-secondaryBackground, #3a3d41); color: var(--vscode-button-secondaryForeground, #ccc); border: none; border-radius: 3px; cursor: pointer; font-size: 11px;';
+
+  return html`
+    <div style=${{ padding: '4px 10px' }}>
+      <button
+        type="button"
+        class="expand-var-trigger"
+        style=${buttonStyle}
+        onClick=${handleToggle}
+      >
+        ${translate('Expand Variable to Fields')}
+      </button>
+
+      <div class="expand-var-panel" style=${panelStyle}>
+        <div>
+          <div style=${labelCss}>${translate('Process Variable')}</div>
+          <select class="expand-var-select" style=${selectCss} onChange=${handleInputChange}>
+            <option value="">${translate('-- Select --')}</option>
+            ${processVars.map(v => html`<option value=${v.name}>${v.name} (${v.type})</option>`)}
+          </select>
+        </div>
+
+        <div>
+          <div style=${labelCss}>${translate('Section')}</div>
+          <select class="expand-var-section" style=${selectCss}>
+            <option value="input">${translate('Input (read-only)')}</option>
+            <option value="output">${translate('Output (editable)')}</option>
+          </select>
+        </div>
+
+        <div>
+          <div style=${labelCss}>${translate('Key:Type Schema (JSON)')}</div>
+          <textarea
+            class="expand-var-schema"
+            style=${textareaCss}
+            placeholder=${'{\n  "title": "string",\n  "approved": "boolean"\n}'}
+            onInput=${handleInputChange}
+          />
+        </div>
+
+        <div class="expand-var-error" style=${errorCss}></div>
+
+        <div style=${'display: flex; gap: 6px;'}>
+          <button type="button" style=${primaryBtnCss} onClick=${handleExpand}>
+            ${translate('Expand')}
+          </button>
+          <button type="button" style=${cancelBtnCss} onClick=${handleCancel}>
+            ${translate('Cancel')}
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 /**
  * Form Fields List Group
  */
@@ -1581,7 +1959,8 @@ export default class UserTaskPropertiesProvider {
         label: 'Form Generation',
         entries: [
           { id: 'userTask-generateForm', component: GenerateFormButton },
-          { id: 'userTask-importFromIO', component: ImportFromIOMappingsButton }
+          { id: 'userTask-importFromIO', component: ImportFromIOMappingsButton },
+          { id: 'userTask-expandVariable', component: ExpandVariableButton }
         ]
       });
 
