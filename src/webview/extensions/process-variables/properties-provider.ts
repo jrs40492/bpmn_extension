@@ -48,13 +48,15 @@ function getJavaType(type: string, customType?: string): string {
     case 'boolean':
       return 'java.lang.Boolean';
     case 'object':
-      return 'java.io.Serializable';
+      return 'java.lang.Object';
+    case 'map':
+      return 'java.util.Map';
     case 'array':
       return 'java.util.List';
     case 'custom':
-      return customType || 'java.io.Serializable';
+      return customType || 'java.lang.Object';
     default:
-      return 'java.io.Serializable';
+      return 'java.lang.Object';
   }
 }
 
@@ -78,8 +80,9 @@ function getTypeFromJava(structureRef: string | undefined): { type: string; cust
       return { type: 'boolean' };
     case 'Object':
     case 'java.lang.Object':
-    case 'java.io.Serializable':
       return { type: 'object' };
+    case 'java.util.Map':
+      return { type: 'map' };
     case 'java.util.List':
       return { type: 'array' };
     default:
@@ -591,6 +594,7 @@ function VariableType(props: { id: string; variable: any; element: any }) {
     { value: 'number', label: translate('Decimal') },
     { value: 'boolean', label: translate('Boolean') },
     { value: 'object', label: translate('Object') },
+    { value: 'map', label: translate('Map') },
     { value: 'array', label: translate('Array') },
     { value: 'custom', label: translate('Custom') }
   ];

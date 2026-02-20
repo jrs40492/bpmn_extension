@@ -662,7 +662,7 @@ function createAddInputMappingHandler(
       id: inputId,
       name: ''
     });
-    (dataInput as any).set('drools:dtype', 'java.io.Serializable');
+    (dataInput as any).set('drools:dtype', 'java.lang.String');
 
     // Ensure ioSpecification
     let ioSpec = bo.ioSpecification as ModdleElement | undefined;
@@ -814,9 +814,9 @@ function formTypeToDtype(type: string): string {
     case 'number':
       return 'java.lang.Double';
     case 'object':
-      return 'java.io.Serializable';
+      return 'java.lang.Object';
     default:
-      return 'java.io.Serializable';
+      return 'java.lang.Object';
   }
 }
 
@@ -1170,7 +1170,7 @@ function ImportFromIOMappingsButton(props: { element: BpmnElement; id: string })
     for (const m of inputMappings) {
       if (!m.inputName) continue;
       const targetRef = m.assoc.targetRef as ModdleElement | undefined;
-      const dtype = (targetRef as any)?.get?.('drools:dtype') || 'java.io.Serializable';
+      const dtype = (targetRef as any)?.get?.('drools:dtype') || 'java.lang.String';
       const field = bpmnFactory.create('utform:FormField', {
         name: m.inputName,
         type: dtypeToFormType(String(dtype)),
@@ -1184,9 +1184,9 @@ function ImportFromIOMappingsButton(props: { element: BpmnElement; id: string })
     for (const m of outputMappings) {
       if (!m.outputName) continue;
       const sourceRefs = (m.assoc.sourceRef || []) as (ModdleElement | string)[];
-      let dtype = 'java.io.Serializable';
+      let dtype = 'java.lang.String';
       if (sourceRefs.length > 0 && typeof sourceRefs[0] !== 'string') {
-        dtype = (sourceRefs[0] as any)?.get?.('drools:dtype') || 'java.io.Serializable';
+        dtype = (sourceRefs[0] as any)?.get?.('drools:dtype') || 'java.lang.String';
       }
       const field = bpmnFactory.create('utform:FormField', {
         name: m.outputName,
@@ -1285,7 +1285,7 @@ function inferDtype(value: unknown): string {
     return Number.isInteger(value) ? 'java.lang.Integer' : 'java.lang.Double';
   }
   if (typeof value === 'boolean') return 'java.lang.Boolean';
-  return 'java.io.Serializable';
+  return 'java.lang.String';
 }
 
 /**
@@ -1347,7 +1347,7 @@ function expandObjectField(field: { name: string; dtype: string; variable?: stri
       if (itemFields.length > 0) {
         objectFields.push({
           name: key,
-          dtype: 'java.io.Serializable',
+          dtype: 'java.lang.String',
           defaultValue: JSON.stringify(val),
           fieldKind: 'array',
           arrayItemFields: itemFields
@@ -1355,7 +1355,7 @@ function expandObjectField(field: { name: string; dtype: string; variable?: stri
       } else {
         objectFields.push({
           name: key,
-          dtype: 'java.io.Serializable',
+          dtype: 'java.lang.String',
           defaultValue: JSON.stringify(val)
         });
       }
@@ -1363,7 +1363,7 @@ function expandObjectField(field: { name: string; dtype: string; variable?: stri
       // Nested object — recurse
       const nested = expandObjectField({
         name: key,
-        dtype: 'java.io.Serializable',
+        dtype: 'java.lang.String',
         defaultValue: JSON.stringify(val)
       });
       objectFields.push(nested);
@@ -1435,16 +1435,16 @@ function requestGenerateForm(element: BpmnElement): void {
     const inputMappings = getInputMappings(bo);
     inputs = inputMappings.map(m => {
       const targetRef = m.assoc.targetRef as ModdleElement | undefined;
-      const dtype = (targetRef as any)?.get?.('drools:dtype') || 'java.io.Serializable';
+      const dtype = (targetRef as any)?.get?.('drools:dtype') || 'java.lang.String';
       return { name: m.inputName, dtype: String(dtype) };
     }).filter(f => f.name);
 
     const outputMappings = getOutputMappings(bo);
     outputs = outputMappings.map(m => {
       const sourceRefs = (m.assoc.sourceRef || []) as (ModdleElement | string)[];
-      let dtype = 'java.io.Serializable';
+      let dtype = 'java.lang.String';
       if (sourceRefs.length > 0 && typeof sourceRefs[0] !== 'string') {
-        dtype = (sourceRefs[0] as any)?.get?.('drools:dtype') || 'java.io.Serializable';
+        dtype = (sourceRefs[0] as any)?.get?.('drools:dtype') || 'java.lang.String';
       }
       return { name: m.outputName, dtype: String(dtype) };
     }).filter(f => f.name);

@@ -308,7 +308,7 @@ function getOrCreateMessage(
         // Create itemDefinition for the message
         itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
           id: itemDefId,
-          structureRef: 'java.io.Serializable'
+          structureRef: 'java.lang.Object'
         });
         itemDef.$parent = definitions;
 
@@ -356,7 +356,7 @@ function getOrCreateMessage(
   // Create itemDefinition for the message (required by jBPM)
   const itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
     id: itemDefId,
-    structureRef: 'java.io.Serializable'
+    structureRef: 'java.lang.Object'
   });
   itemDef.$parent = definitions;
 
@@ -518,9 +518,9 @@ function getJavaType(type: string): string {
     case 'boolean':
       return 'java.lang.Boolean';
     case 'object':
-      return 'java.io.Serializable';
+      return 'java.lang.Object';
     default:
-      return 'java.io.Serializable';
+      return 'java.lang.Object';
   }
 }
 
@@ -586,7 +586,7 @@ function ensureProcessProperty(
     // Create itemDefinition first
     const definitions = getDefinitions(element);
     const itemDefId = `_${propertyName}Item`;
-    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.io.Serializable', bpmnFactory, element, commandStack);
+    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.Object', bpmnFactory, element, commandStack);
 
     // Create property
     property = bpmnFactory.create('bpmn:Property', {
@@ -786,7 +786,7 @@ function setOutputMapping(
 
   // NOTE: We no longer update itemDefinition.structureRef to specific payload classes.
   // This was causing type mismatch errors in Kogito validation because not all related
-  // itemDefinitions were being updated consistently. Using java.io.Serializable everywhere
+  // itemDefinitions were being updated consistently. Using java.lang.Object everywhere
   // ensures compatibility, and the MessagePayloadExtractor listener handles proper
   // deserialization at runtime.
 }
@@ -1283,7 +1283,7 @@ const cleanedUpDefinitions = new WeakSet<object>();
  * This finds and removes:
  * - Orphaned itemDefinitions (with patterns like _Event_xxx_, _message_Event_xxx)
  * - Orphaned process properties (message_Event_xxx that don't correspond to existing events)
- * - Normalizes all structureRef values to java.io.Serializable to prevent type mismatch errors
+ * - Normalizes all structureRef values to java.lang.Object to prevent type mismatch errors
  *
  * @param element The currently selected element (used as context for commandStack)
  * @param definitions The BPMN definitions root element
@@ -1423,9 +1423,9 @@ function cleanupOrphanedMessageElements(
 }
 
 /**
- * Normalize all payload-related itemDefinition structureRef values to java.io.Serializable.
+ * Normalize all payload-related itemDefinition structureRef values to java.lang.Object.
  * This prevents Kogito type mismatch errors where the event's data output has a specific
- * payload class type but the process variable has java.io.Serializable or java.lang.String.
+ * payload class type but the process variable has java.lang.Object or java.lang.String.
  *
  * @param element The currently selected element (used as context for commandStack)
  * @param definitions The BPMN definitions root element
@@ -1445,13 +1445,12 @@ function normalizePayloadTypes(
       // If it's a specific payload class (contains a dot but not a standard java type), normalize it
       if (structureRef &&
           structureRef.includes('.') &&
-          !structureRef.startsWith('java.lang.') &&
-          structureRef !== 'java.io.Serializable') {
+          !structureRef.startsWith('java.lang.')) {
 
         commandStack.execute('element.updateModdleProperties', {
           element,
           moddleElement: el,
-          properties: { structureRef: 'java.io.Serializable' }
+          properties: { structureRef: 'java.lang.Object' }
         });
       }
     }
@@ -1515,7 +1514,7 @@ export default class MessageEventPropertiesProvider {
             // Create itemDefinition for the message
             itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
               id: itemDefId,
-              structureRef: 'java.io.Serializable'
+              structureRef: 'java.lang.Object'
             });
             itemDef.$parent = definitions;
 
@@ -1622,7 +1621,7 @@ export default class MessageEventPropertiesProvider {
               if (!itemDef) {
                 itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
                   id: itemDefId,
-                  structureRef: 'java.io.Serializable'
+                  structureRef: 'java.lang.Object'
                 });
                 itemDef.$parent = definitions;
 
@@ -1648,7 +1647,7 @@ export default class MessageEventPropertiesProvider {
                 name: 'event',
                 itemSubjectRef: itemDef
               });
-              dataOutput.set?.('drools:dtype', 'java.io.Serializable');
+              dataOutput.set?.('drools:dtype', 'java.lang.Object');
               dataOutput.$parent = catchBo;
 
               // Create output set
@@ -1667,7 +1666,7 @@ export default class MessageEventPropertiesProvider {
                 const varItemDefId = `_${messageVarId}Item`;
                 const varItemDef = bpmnFactory.create('bpmn:ItemDefinition', {
                   id: varItemDefId,
-                  structureRef: 'java.io.Serializable'
+                  structureRef: 'java.lang.Object'
                 });
                 varItemDef.$parent = definitions;
 
@@ -1733,7 +1732,7 @@ export default class MessageEventPropertiesProvider {
         // Clean up orphaned itemDefinitions, messages, and process properties
         cleanupOrphanedMessageElements(element, definitions, commandStack);
 
-        // Normalize all payload-related types to java.io.Serializable to prevent type mismatch errors
+        // Normalize all payload-related types to java.lang.String to prevent type mismatch errors
         normalizePayloadTypes(element, definitions, commandStack);
       }
 

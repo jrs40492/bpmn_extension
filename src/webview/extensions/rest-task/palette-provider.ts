@@ -412,7 +412,7 @@ export function updateResultOutputType(element: any, resultClass: string): void 
   for (const dataOutput of dataOutputs) {
     if (dataOutput.name === 'Result') {
       // Map ResultClass to the appropriate dtype
-      const dtype = resultClass || 'java.lang.String';
+      const dtype = resultClass || 'java.lang.Object';
       dataOutput.set('drools:dtype', dtype);
       console.log(`Updated Result output dtype to: ${dtype}`);
       return;
@@ -552,7 +552,7 @@ function findOrCreateProperty(element: any, variableName: string, bpmnFactory: a
   if (!itemDef) {
     itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
       id: itemDefId,
-      structureRef: variableType || 'java.io.Serializable'
+      structureRef: variableType || 'java.lang.Object'
     });
     itemDef.$parent = definitions;
     if (!definitions.rootElements) {
