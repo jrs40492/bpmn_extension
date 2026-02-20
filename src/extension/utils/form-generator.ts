@@ -848,7 +848,10 @@ export function generateFormConfig(
 
   const config = {
     schema: JSON.stringify(schema),
-    resources: {}
+    resources: {
+      styles: {},
+      scripts: {}
+    }
   };
 
   return JSON.stringify(config, null, 2) + '\n';

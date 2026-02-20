@@ -335,7 +335,7 @@ export class BpmnEditorProvider implements vscode.CustomTextEditorProvider {
   ): Promise<{ success: boolean; filePath?: string; error?: string }> {
     // Extract process ID from the BPMN XML
     const bpmnXml = document.getText();
-    const processIdMatch = /<bpmn2?:process[^>]*\sid\s*=\s*["']([^"']+)["']/i.exec(bpmnXml);
+    const processIdMatch = /<(?:bpmn2?:)?process[^>]*\sid\s*=\s*["']([^"']+)["']/i.exec(bpmnXml);
     const processId = processIdMatch?.[1] || 'process';
 
     // Sanitize task name for filename (remove spaces, special chars)
