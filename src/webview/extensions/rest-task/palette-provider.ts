@@ -552,7 +552,7 @@ function findOrCreateProperty(element: any, variableName: string, bpmnFactory: a
   if (!itemDef) {
     itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
       id: itemDefId,
-      structureRef: variableType || 'java.lang.Object'
+      structureRef: variableType || 'java.io.Serializable'
     });
     itemDef.$parent = definitions;
     if (!definitions.rootElements) {

@@ -624,7 +624,7 @@ function ensureProcessProperty(element: BpmnElement, propertyName: string, bpmnF
   if (!itemDef) {
     itemDef = bpmnFactory.create('bpmn:ItemDefinition', {
       id: itemDefId,
-      structureRef: 'java.lang.Object'
+      structureRef: 'java.io.Serializable'
     });
     itemDef.$parent = definitions;
     if (!definitions.rootElements) {
@@ -697,14 +697,14 @@ function setDmnInputMapping(element: BpmnElement, inputName: string, variableNam
     const itemDefId = `_${inputId}Item`;
 
     // Ensure itemDefinition exists
-    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.Object', bpmnFactory);
+    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.io.Serializable', bpmnFactory);
 
     dataInput = bpmnFactory.create('bpmn:DataInput', {
       id: inputId,
       name: inputName,
       itemSubjectRef: itemDef
     }) as DataInput;
-    dataInput.set?.('drools:dtype', 'java.lang.Object');
+    dataInput.set?.('drools:dtype', 'java.io.Serializable');
     dataInput.$parent = ioSpec;
 
     // Add to ioSpecification
@@ -858,14 +858,14 @@ function setDmnOutputMapping(element: BpmnElement, outputName: string, variableN
     const itemDefId = `_${outputId}Item`;
 
     // Ensure itemDefinition exists
-    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.lang.Object', bpmnFactory);
+    const itemDef = ensureItemDefinition(definitions, itemDefId, 'java.io.Serializable', bpmnFactory);
 
     dataOutput = bpmnFactory.create('bpmn:DataOutput', {
       id: outputId,
       name: outputName,
       itemSubjectRef: itemDef
     }) as DataOutput;
-    dataOutput.set?.('drools:dtype', 'java.lang.Object');
+    dataOutput.set?.('drools:dtype', 'java.io.Serializable');
     dataOutput.$parent = ioSpec;
 
     // Add to ioSpecification dataOutputs

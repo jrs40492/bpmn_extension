@@ -48,13 +48,13 @@ function getJavaType(type: string, customType?: string): string {
     case 'boolean':
       return 'java.lang.Boolean';
     case 'object':
-      return 'java.lang.Object';
+      return 'java.io.Serializable';
     case 'array':
       return 'java.util.List';
     case 'custom':
-      return customType || 'java.lang.Object';
+      return customType || 'java.io.Serializable';
     default:
-      return 'java.lang.Object';
+      return 'java.io.Serializable';
   }
 }
 
@@ -78,6 +78,7 @@ function getTypeFromJava(structureRef: string | undefined): { type: string; cust
       return { type: 'boolean' };
     case 'Object':
     case 'java.lang.Object':
+    case 'java.io.Serializable':
       return { type: 'object' };
     case 'java.util.List':
       return { type: 'array' };
