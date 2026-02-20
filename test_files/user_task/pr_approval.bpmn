@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:drools="http://www.jboss.org/drools" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:utform="http://bamoe.io/schema/user-task-form" xmlns:bamoe="http://bamoe.io/schema/process" id="_73B29CBC-4BAA-4960-B5A2-F2C5BE62173B" name="BPMN_30B1B41D-CB04-4D1B-A017-52C7C0F2A8CB" namespace="https://kie.org/bpmn/_002F418D-7392-4D08-91EA-55FB5BF0C9E7">
   <itemDefinition id="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" structureRef="String" />
-  <itemDefinition id="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" structureRef="java.io.Serializable" />
+  <itemDefinition id="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" structureRef="java.lang.String" />
   <itemDefinition id="_CC839138-83FC-4DF8-AF02-B11C573BAC96" structureRef="Boolean" />
   <process id="pr_approval" name="pr_approval" isExecutable="true" drools:packageName="com.cmm.pr">
     <extensionElements>
       <bamoe:processVariables>
-        <bamoe:variable name="pull_request" type="object" />
+        <bamoe:variable name="pull_request" />
         <bamoe:variable name="peer_reviewer" />
         <bamoe:variable name="em_reviewer" />
         <bamoe:variable name="peer_approved" type="boolean" />
@@ -122,7 +122,7 @@
         <dataInput id="_FD3F9DEC-75EB-4091-A64E-E4911B0E2EBD" itemSubjectRef="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" name="TaskName" drools:dtype="String" />
         <dataInput id="_6164B834-50CC-4FDA-83E1-AFC4D9865A5F" itemSubjectRef="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" name="CreatedBy" drools:dtype="String" />
         <dataInput id="_4E54F499-C50D-4264-8093-7D962BADBE34" itemSubjectRef="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" name="GroupId" drools:dtype="String" />
-        <dataInput id="_7D6E1B4B-9A17-4329-BD6D-E4F0FD877538" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request" drools:dtype="java.io.Serializable" />
+        <dataInput id="_7D6E1B4B-9A17-4329-BD6D-E4F0FD877538" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request" drools:dtype="java.lang.String" />
         <dataOutput id="_4205301A-2F86-4B96-B108-0FABC0343D86" itemSubjectRef="_CC839138-83FC-4DF8-AF02-B11C573BAC96" name="approved" drools:dtype="Boolean" />
         <inputSet id="_120EAFAB-62BF-4EBF-8E80-14459DEAE57C">
           <dataInputRefs>_FD3F9DEC-75EB-4091-A64E-E4911B0E2EBD</dataInputRefs>
@@ -169,7 +169,7 @@
       <incoming>_C835AFA2-6010-4FE3-9CD3-4A4948FE6EF9</incoming>
       <outgoing>_4E5E67AC-D9E0-4373-8BAD-EFA859F5861C</outgoing>
       <ioSpecification id="_4EBF9642-E1A8-4EDA-A8F4-F2BFE8E9D492">
-        <dataInput id="_7DA26EBC-7E53-447D-A4E3-6AF9B481980D" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request" drools:dtype="java.io.Serializable" />
+        <dataInput id="_7DA26EBC-7E53-447D-A4E3-6AF9B481980D" itemSubjectRef="_2E0E4BEF-23F4-4322-B0BE-B740B30BCFBA" name="pull_request" drools:dtype="java.lang.String" />
         <dataInput id="_36CCE691-DDF5-4780-8787-D9D03A9D9F7C" itemSubjectRef="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" name="TaskName" drools:dtype="String" />
         <dataInput id="_53A230B2-BA13-4FCA-B4C6-FEF86E3EF88C" itemSubjectRef="_E80B7CE5-8035-4095-9F3D-7A5EF101E12A" name="GroupId" drools:dtype="String" />
         <dataOutput id="_8FF21820-EB0C-4D8C-B5FB-4C242E554081" itemSubjectRef="_CC839138-83FC-4DF8-AF02-B11C573BAC96" name="approved" drools:dtype="Boolean" />
