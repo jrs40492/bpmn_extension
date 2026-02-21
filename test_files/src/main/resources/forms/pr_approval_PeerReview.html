@@ -60,7 +60,7 @@
         <input type="text" id="pull_request.testing_evidence" name="pull_request.testing_evidence" readonly />
       </div>
       <fieldset class="nested-fieldset">
-        <legend>Checks</legend>
+        <legend>Pull request.checks</legend>
       <template id="template-pull_request.checks">
         <div class="array-card">
           <div class="card-header">
@@ -102,39 +102,9 @@
       </fieldset>
       </fieldset>
     </fieldset>
-    <fieldset>
-      <legend>Outputs</legend>
-      <div class="form-field checkbox-field">
-        <label>
-          <input type="checkbox" id="approved" name="approved" />
-          Approved
-        </label>
-      </div>
-    </fieldset>
+
   </form>
   <script>
-    /* Date conversion helpers */
-    function toDateInputValue(v) {
-      if (!v) return "";
-      if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.substring(0, 10);
-      var d = new Date(v);
-      if (isNaN(d.getTime())) return "";
-      var mm = ("0" + (d.getMonth() + 1)).slice(-2);
-      var dd = ("0" + d.getDate()).slice(-2);
-      return d.getFullYear() + "-" + mm + "-" + dd;
-    }
-
-    function toDateTimeInputValue(v) {
-      if (!v) return "";
-      var d = new Date(v);
-      if (isNaN(d.getTime())) return v;
-      var mm = ("0" + (d.getMonth() + 1)).slice(-2);
-      var dd = ("0" + d.getDate()).slice(-2);
-      var hh = ("0" + d.getHours()).slice(-2);
-      var mi = ("0" + d.getMinutes()).slice(-2);
-      return d.getFullYear() + "-" + mm + "-" + dd + "T" + hh + ":" + mi;
-    }
-
     /* Array card utility functions */
     function addArrayCard(containerId, templateId) {
       var container = document.getElementById(containerId);
@@ -161,7 +131,7 @@
       if (data?.pull_request?.url !== undefined) document.getElementById("pull_request.url").value = data?.pull_request?.url ?? "";
       if (data?.pull_request?.title !== undefined) document.getElementById("pull_request.title").value = data?.pull_request?.title ?? "";
       if (data?.pull_request?.author !== undefined) document.getElementById("pull_request.author").value = data?.pull_request?.author ?? "";
-      if (data?.pull_request?.created_at !== undefined) document.getElementById("pull_request.created_at").value = toDateInputValue(data?.pull_request?.created_at ?? "");
+      if (data?.pull_request?.created_at !== undefined) document.getElementById("pull_request.created_at").value = data?.pull_request?.created_at ?? "";
       if (data?.pull_request?.testing_evidence !== undefined) document.getElementById("pull_request.testing_evidence").value = data?.pull_request?.testing_evidence ?? "";
       (function() {
         var arr = data?.pull_request?.checks;
@@ -181,7 +151,6 @@
         }
         renumberCards("array-pull_request.checks");
       })();
-      if (data.approved !== undefined) document.getElementById("approved").checked = !!data.approved;
     }
 
     function getFormData() {
@@ -206,7 +175,6 @@
         }
         formData.pull_request.checks = result;
       })();
-      formData.approved = document.getElementById("approved").checked;
       return formData;
     }
 
