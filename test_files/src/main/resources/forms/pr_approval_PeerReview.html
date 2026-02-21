@@ -102,7 +102,15 @@
       </fieldset>
       </fieldset>
     </fieldset>
-
+    <fieldset>
+      <legend>Outputs</legend>
+      <div class="form-field checkbox-field">
+        <label>
+          <input type="checkbox" id="approved" name="approved" />
+          Approved
+        </label>
+      </div>
+    </fieldset>
   </form>
   <script>
     /* Date conversion helpers */
@@ -173,6 +181,7 @@
         }
         renumberCards("array-pull_request.checks");
       })();
+      if (data.approved !== undefined) document.getElementById("approved").checked = !!data.approved;
     }
 
     function getFormData() {
@@ -197,6 +206,7 @@
         }
         formData.pull_request.checks = result;
       })();
+      formData.approved = document.getElementById("approved").checked;
       return formData;
     }
 
