@@ -16,40 +16,35 @@ npm version major   # 0.1.0 -> 1.0.0
 
 This updates `package.json` and creates a git commit + tag automatically.
 
-### 2. Set the VERSION variable
+### 2. Write release notes
+
+Create a release notes file and add your changes:
 
 ```bash
 VERSION=$(node -p "require('./package.json').version")
+touch release_notes/$VERSION.md
 ```
 
-This reads the version from `package.json` so it can be used in subsequent steps.
+Then open `release_notes/$VERSION.md` and write the release notes for this version.
 
-### 3. Build and package
+### 3. Get review and merge
+
+Push your branch, open a PR, and get it reviewed. Once approved, merge the PR into `main`.
+
+### 4. Pull main and build the package
 
 ```bash
+git checkout main
+git pull origin main
+VERSION=$(node -p "require('./package.json').version")
+git push origin v$VERSION
 npm install
 npm run package
 ```
 
 This produces a file named `bamoe-$VERSION.vsix`.
 
-### 4. Write release notes
-
-Create a release notes file and add your changes:
-
-```bash
-touch release_notes/$VERSION.md
-```
-
-Then open `release_notes/$VERSION.md` and write the release notes for this version.
-
-### 5. Push
-
-```bash
-git push origin main --tags
-```
-
-### 6. Create the GitHub Release
+### 5. Create the GitHub Release
 
 ```bash
 gh release create v$VERSION bamoe-$VERSION.vsix \
