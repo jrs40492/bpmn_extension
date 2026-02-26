@@ -317,6 +317,98 @@ function PriorityField(props: { element: BpmnElement; id: string }) {
 }
 
 // ============================================================================
+// SLA Due Date (drools:metaData extension)
+// ============================================================================
+
+const SLA_META_NAME = 'customSLADueDate';
+
+function getSLADueDate(bo: ModdleElement): string {
+  const extensionElements = bo.extensionElements as ModdleElement | undefined;
+  if (!extensionElements) return '';
+
+  const values = (extensionElements.values || []) as ModdleElement[];
+  const meta = values.find(
+    (v: ModdleElement) => v.$type === 'drools:metaData' && v.name === SLA_META_NAME
+  );
+  if (!meta) return '';
+
+  const metaValue = meta.metaValue as ModdleElement | undefined;
+  return metaValue?.body ? String(metaValue.body) : '';
+}
+
+function setSLADueDate(
+  element: BpmnElement,
+  bo: ModdleElement,
+  value: string,
+  commandStack: { execute: (cmd: string, ctx: Record<string, unknown>) => void },
+  bpmnFactory: { create: (type: string, attrs?: Record<string, unknown>) => ModdleElement }
+): void {
+  let extensionElements = bo.extensionElements as ModdleElement | undefined;
+
+  if (!extensionElements) {
+    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+    extensionElements!.$parent = bo;
+  }
+
+  const values = (extensionElements!.values || []) as ModdleElement[];
+  const existing = values.find(
+    (v: ModdleElement) => v.$type === 'drools:metaData' && v.name === SLA_META_NAME
+  );
+
+  if (!value) {
+    // Remove the metaData entry if value is cleared
+    if (existing) {
+      const idx = values.indexOf(existing);
+      if (idx >= 0) {
+        values.splice(idx, 1);
+      }
+    }
+  } else if (existing) {
+    // Update existing metaValue body
+    const metaValue = existing.metaValue as ModdleElement | undefined;
+    if (metaValue) {
+      metaValue.body = value;
+    }
+  } else {
+    // Create new drools:metaData + metaValue
+    const metaValue = bpmnFactory.create('drools:metaValue', { body: value });
+    const metaData = bpmnFactory.create('drools:metaData', {
+      name: SLA_META_NAME,
+      metaValue: metaValue
+    });
+    metaValue.$parent = metaData;
+    metaData.$parent = extensionElements;
+    values.push(metaData);
+  }
+
+  extensionElements!.values = values;
+  commandStack.execute('element.updateModdleProperties', {
+    element,
+    moddleElement: bo,
+    properties: { extensionElements }
+  });
+}
+
+function SLADueDateField(props: { element: BpmnElement; id: string }) {
+  const { element, id } = props;
+  const commandStack = useService('commandStack');
+  const translate = useService('translate');
+  const debounce = useService('debounceInput');
+  const bpmnFactory = useService('bpmnFactory');
+  const bo = getBusinessObject(element)!;
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('SLA Due Date'),
+    description: translate('Duration (e.g., 1d, P2D) or expression (e.g., #{variable})'),
+    getValue: () => getSLADueDate(bo),
+    setValue: (value: string) => setSLADueDate(element, bo, value, commandStack, bpmnFactory),
+    debounce
+  });
+}
+
+// ============================================================================
 // Data I/O Mapping Components
 // ============================================================================
 
@@ -1929,7 +2021,8 @@ export default class UserTaskPropertiesProvider {
           { id: 'userTask-groups', component: GroupsField, isEdited: () => !!getConfigValue(getBusinessObject(element)!, 'GroupId') },
           { id: 'userTask-createdBy', component: CreatedByField, isEdited: () => !!getConfigValue(getBusinessObject(element)!, 'CreatedBy') },
           { id: 'userTask-skippable', component: SkippableField, isEdited: () => !!getConfigValue(getBusinessObject(element)!, 'Skippable') },
-          { id: 'userTask-priority', component: PriorityField, isEdited: () => !!getConfigValue(getBusinessObject(element)!, 'Priority') }
+          { id: 'userTask-priority', component: PriorityField, isEdited: () => !!getConfigValue(getBusinessObject(element)!, 'Priority') },
+          { id: 'userTask-slaDueDate', component: SLADueDateField, isEdited: () => !!getSLADueDate(getBusinessObject(element)!) }
         ]
       });
 

@@ -120,6 +120,9 @@
           <utform:formField name="pull_request.testing_evidence" variable="pull_request" />
           <utform:formField name="pull_request.checks" type="object" defaultValue="[{&#34;name&#34;:&#34;&#34;,&#34;status&#34;:&#34;&#34;,&#34;description&#34;:&#34;&#34;}]" variable="pull_request" />
         </utform:formDefinition>
+        <drools:metaData name="customSLADueDate">
+          <drools:metaValue>2d</drools:metaValue>
+        </drools:metaData>
       </extensionElements>
       <incoming>_02F5789E-0E20-4838-B144-B913214D0E48</incoming>
       <outgoing>_C7906FD8-9D10-4E92-A6AF-BED5672AA4F2</outgoing>
