@@ -8,6 +8,20 @@ import css from 'rollup-plugin-css-only';
 
 const production = !process.env.ROLLUP_WATCH;
 
+// ids@3 only exports { Ids } (named), but bpmn-js-token-simulation
+// expects a default import. This plugin adds a default export shim.
+function idsDefaultExportPlugin() {
+  return {
+    name: 'ids-default-export',
+    transform(code, id) {
+      if (id.includes('ids/dist/index.js') && !code.includes('export default')) {
+        return code + '\nexport default Ids;\n';
+      }
+      return null;
+    }
+  };
+}
+
 // Extension bundle (Node.js)
 const extensionConfig = {
   input: 'src/extension/extension.ts',
@@ -58,6 +72,7 @@ const bpmnWebviewConfig = {
       sourceMap: true,
       inlineSources: !production
     }),
+    idsDefaultExportPlugin(),
     resolve({
       browser: true,
       preferBuiltins: false
