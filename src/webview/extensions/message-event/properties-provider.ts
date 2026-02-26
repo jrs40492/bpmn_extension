@@ -1442,7 +1442,7 @@ function normalizePayloadTypes(
     if (el.$type === 'bpmn:ItemDefinition') {
       const structureRef = (el as unknown as { structureRef?: string }).structureRef;
 
-      // If it's a specific payload class (contains a dot but not java.lang.), normalize it
+      // If it's a specific payload class (contains a dot but not a standard java type), normalize it
       if (structureRef &&
           structureRef.includes('.') &&
           !structureRef.startsWith('java.lang.')) {
@@ -1732,7 +1732,7 @@ export default class MessageEventPropertiesProvider {
         // Clean up orphaned itemDefinitions, messages, and process properties
         cleanupOrphanedMessageElements(element, definitions, commandStack);
 
-        // Normalize all payload-related types to java.lang.Object to prevent type mismatch errors
+        // Normalize all payload-related types to java.lang.String to prevent type mismatch errors
         normalizePayloadTypes(element, definitions, commandStack);
       }
 

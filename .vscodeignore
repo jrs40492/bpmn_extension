@@ -6,6 +6,8 @@ node_modules/**
 .github/**
 .idea/**
 .claude/**
+docs/**
+release_notes/**
 *.ts
 tsconfig*.json
 rollup.config.mjs

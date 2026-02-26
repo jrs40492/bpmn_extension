@@ -641,7 +641,7 @@ html, body {
 }
 
 /* Wrench/Configure - Blue */
-.djs-context-pad .bpmn-icon-scoped-tool::before {
+.djs-context-pad .bpmn-icon-screw-wrench::before {
   color: #1890ff !important;
 }
 
@@ -672,21 +672,6 @@ html, body {
 /* User Task icon */
 [data-element-id*="UserTask"] .djs-visual > path {
   fill: #1890ff !important;
-}
-
-/* Gateways - Gold */
-[data-element-id^="Gateway"] .djs-visual > polygon,
-[data-element-id*="Gateway"] .djs-visual > polygon,
-[data-element-id^="ExclusiveGateway"] .djs-visual > polygon,
-[data-element-id^="ParallelGateway"] .djs-visual > polygon,
-[data-element-id^="InclusiveGateway"] .djs-visual > polygon {
-  stroke: #faad14 !important;
-}
-
-/* Gateway markers */
-[data-element-id*="Gateway"] .djs-visual > path {
-  stroke: #faad14 !important;
-  fill: #faad14 !important;
 }
 
 /* Subprocess - Purple border */
@@ -1187,23 +1172,14 @@ html, body {
    Grid Styling
    ======================================== */
 
-.djs-grid-line {
-  stroke: var(--vscode-editorIndentGuide-background, #404040) !important;
-  stroke-width: 1px !important;
+/* Soften grid dot pattern — targets SVG circle elements used by diagram-js-grid */
+.djs-grid circle {
+  fill: var(--vscode-editorIndentGuide-background, #404040) !important;
+  opacity: 0.3 !important;
 }
 
 .djs-grid g.grid-container {
-  opacity: 0.5;
-}
-
-/* Make grid lines subtle */
-.djs-grid line {
-  stroke: rgba(255, 255, 255, 0.05) !important;
-}
-
-/* Major grid lines (every 100px) */
-.djs-grid line.major {
-  stroke: rgba(255, 255, 255, 0.1) !important;
+  opacity: 0.4;
 }
 
 /* ========================================

@@ -364,6 +364,16 @@ async function init(): Promise<void> {
     }
   );
 
+  // Grid toggle
+  const gridService = modeler.get('grid') as { toggle: (visible?: boolean) => void; isVisible: () => boolean } | undefined;
+  const btnGrid = document.getElementById('btn-grid');
+  if (btnGrid && gridService) {
+    btnGrid.addEventListener('click', () => {
+      gridService.toggle();
+      btnGrid.classList.toggle('active', gridService.isVisible());
+    });
+  }
+
   // Simulation toggle
   let simulationActive = false;
   const toggleSimulation = () => {
@@ -556,6 +566,15 @@ async function init(): Promise<void> {
       case 'gitDiffResponse':
         // Handle git diff response
         diffPanel.handleGitDiffResponse(message);
+        break;
+
+      case 'generateUserTaskFormResult':
+        // Log form generation result (VS Code notification handles user feedback)
+        if (message.success) {
+          console.log('[BAMOE] Form generated:', message.filePath);
+        } else {
+          console.error('[BAMOE] Form generation failed:', message.error);
+        }
         break;
     }
   });

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "type": "object",
+  "properties": {
+    "approved": { "type": "boolean", "output": true },
+    "CreatedBy": { "type": "string", "input": true },
+    "pull_request": { "$ref": "#/$defs/Map", "input": true }
+  },
+  "$defs": { "Map": { "type": "object" } }
+}

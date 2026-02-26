@@ -362,6 +362,22 @@ async function init(): Promise<void> {
         ruleAnalysisPanelVisible = true;
     }
 
+    // Grid toggle — grid service lives on the DRD active viewer
+    const btnGrid = document.getElementById('btn-grid');
+    if (btnGrid) {
+      btnGrid.addEventListener('click', () => {
+        const activeViewer = dmnModeler.getActiveViewer();
+        if (!activeViewer) return;
+        try {
+          const grid = activeViewer.get('grid') as { toggle: (visible?: boolean) => void; isVisible: () => boolean };
+          grid.toggle();
+          btnGrid.classList.toggle('active', grid.isVisible());
+        } catch (_e) {
+          // Grid module may not be available in decision table or literal expression views
+        }
+      });
+    }
+
     // Add toolbar button handlers
     document.getElementById('btn-search')?.addEventListener('click', toggleSearchPanel);
     document.getElementById('btn-test')?.addEventListener('click', toggleTestingPanel);

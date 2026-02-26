@@ -358,6 +358,10 @@ export class DmnEditorProvider implements vscode.CustomTextEditorProvider {
           <span class="toolbar-icon">📖</span>
           <span class="toolbar-label">FEEL</span>
         </button>
+        <button id="btn-grid" class="toolbar-btn active" title="Toggle Grid">
+          <span class="toolbar-icon">⊞</span>
+          <span class="toolbar-label">Grid</span>
+        </button>
       </div>
     </div>
     <div class="editor-main">

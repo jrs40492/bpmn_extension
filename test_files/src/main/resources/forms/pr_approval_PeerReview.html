@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PeerReview</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px; color: #333; background: #fafafa; }
+    h2 { margin-bottom: 20px; font-size: 1.4em; }
+    fieldset { border: 1px solid #ddd; border-radius: 6px; padding: 16px 20px; margin-bottom: 20px; background: #fff; }
+    legend { font-weight: 600; padding: 0 8px; font-size: 1.1em; }
+    .nested-fieldset { border: 1px solid #e8e8e8; border-radius: 4px; padding: 12px 16px; margin-bottom: 14px; background: #fafafa; }
+    .nested-fieldset legend { font-size: 0.95em; color: #555; }
+    .form-field { margin-bottom: 14px; }
+    .form-field label { display: block; margin-bottom: 4px; font-weight: 500; font-size: 0.9em; }
+    .form-field input[type="text"],
+    .form-field input[type="number"],
+    .form-field input[type="date"],
+    .form-field input[type="datetime-local"],
+    .form-field textarea { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95em; font-family: inherit; }
+    .form-field input[readonly],
+    .form-field textarea[readonly] { background: #f0f0f0; color: #666; }
+    .checkbox-field label { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9em; cursor: pointer; }
+    .checkbox-field input[type="checkbox"] { width: 18px; height: 18px; }
+    .array-list-container { display: flex; flex-direction: column; gap: 10px; }
+    .array-card { border: 1px solid #ddd; border-radius: 4px; padding: 12px; background: #fff; }
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .card-index { font-weight: 600; font-size: 0.85em; color: #666; }
+    .card-remove-btn { background: none; border: 1px solid #ddd; border-radius: 3px; color: #999; cursor: pointer; font-size: 1.1em; line-height: 1; padding: 2px 6px; }
+    .card-remove-btn:hover { color: #c00; border-color: #c00; }
+    .array-add-btn { margin-top: 8px; padding: 6px 14px; background: #f0f0f0; border: 1px dashed #ccc; border-radius: 4px; cursor: pointer; font-size: 0.9em; color: #555; }
+    .array-add-btn:hover { background: #e8e8e8; border-color: #aaa; }
+  </style>
+</head>
+<body>
+  <h2>PeerReview</h2>
+  <form id="taskForm">
+    <fieldset>
+      <legend>Inputs</legend>
+      <fieldset class="nested-fieldset">
+        <legend>Pull request</legend>
+      <div class="form-field">
+        <label for="pull_request.url">Url</label>
+        <input type="text" id="pull_request.url" name="pull_request.url" readonly />
+      </div>
+      <div class="form-field">
+        <label for="pull_request.title">Title</label>
+        <input type="text" id="pull_request.title" name="pull_request.title" readonly />
+      </div>
+      <div class="form-field">
+        <label for="pull_request.author">Author</label>
+        <input type="text" id="pull_request.author" name="pull_request.author" readonly />
+      </div>
+      <div class="form-field">
+        <label for="pull_request.created_at">Created at</label>
+        <input type="date" id="pull_request.created_at" name="pull_request.created_at" readonly />
+      </div>
+      <div class="form-field">
+        <label for="pull_request.testing_evidence">Testing evidence</label>
+        <input type="text" id="pull_request.testing_evidence" name="pull_request.testing_evidence" readonly />
+      </div>
+      <fieldset class="nested-fieldset">
+        <legend>Pull request.checks</legend>
+      <template id="template-pull_request.checks">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>
+          </div>
+          <div class="form-field">
+            <label>Name</label>
+            <input type="text" data-field="name" readonly />
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <input type="text" data-field="status" readonly />
+          </div>
+          <div class="form-field">
+            <label>Description</label>
+            <input type="text" data-field="description" readonly />
+          </div>
+        </div>
+      </template>
+        <div class="array-list-container" id="array-pull_request.checks">
+        <div class="array-card">
+          <div class="card-header">
+            <span class="card-index">#1</span>
+          </div>
+          <div class="form-field">
+            <label>Name</label>
+            <input type="text" data-field="name" value="" readonly />
+          </div>
+          <div class="form-field">
+            <label>Status</label>
+            <input type="text" data-field="status" value="" readonly />
+          </div>
+          <div class="form-field">
+            <label>Description</label>
+            <input type="text" data-field="description" value="" readonly />
+          </div>
+        </div>
+        </div>
+      </fieldset>
+      </fieldset>
+    </fieldset>
+
+  </form>
+  <script>
+    /* Array card utility functions */
+    function addArrayCard(containerId, templateId) {
+      var container = document.getElementById(containerId);
+      var template = document.getElementById(templateId);
+      if (!container || !template) return;
+      var clone = template.content.cloneNode(true);
+      container.appendChild(clone);
+      renumberCards(containerId);
+    }
+
+    function renumberCards(containerId) {
+      var container = document.getElementById(containerId);
+      if (!container) return;
+      var cards = container.querySelectorAll('.array-card');
+      for (var i = 0; i < cards.length; i++) {
+        var idx = cards[i].querySelector('.card-index');
+        if (idx) idx.textContent = '#' + (i + 1);
+      }
+    }
+
+    /* Kogito form lifecycle integration */
+    function setFormData(data) {
+      if (!data) return;
+      if (data?.pull_request?.url !== undefined) document.getElementById("pull_request.url").value = data?.pull_request?.url ?? "";
+      if (data?.pull_request?.title !== undefined) document.getElementById("pull_request.title").value = data?.pull_request?.title ?? "";
+      if (data?.pull_request?.author !== undefined) document.getElementById("pull_request.author").value = data?.pull_request?.author ?? "";
+      if (data?.pull_request?.created_at !== undefined) document.getElementById("pull_request.created_at").value = data?.pull_request?.created_at ?? "";
+      if (data?.pull_request?.testing_evidence !== undefined) document.getElementById("pull_request.testing_evidence").value = data?.pull_request?.testing_evidence ?? "";
+      (function() {
+        var arr = data?.pull_request?.checks;
+        if (!Array.isArray(arr)) return;
+        var container = document.getElementById("array-pull_request.checks");
+        var template = document.getElementById("template-pull_request.checks");
+        if (!container || !template) return;
+        container.innerHTML = "";
+        for (var i = 0; i < arr.length; i++) {
+          var clone = template.content.cloneNode(true);
+          var card = clone.querySelector(".array-card");
+          var item = arr[i] || {};
+          var inp = card.querySelector('[data-field="name"]'); if (inp) inp.value = item["name"] != null ? item["name"] : "";
+          var inp = card.querySelector('[data-field="status"]'); if (inp) inp.value = item["status"] != null ? item["status"] : "";
+          var inp = card.querySelector('[data-field="description"]'); if (inp) inp.value = item["description"] != null ? item["description"] : "";
+          container.appendChild(clone);
+        }
+        renumberCards("array-pull_request.checks");
+      })();
+    }
+
+    function getFormData() {
+      var formData = {};
+      formData.pull_request = formData.pull_request || {};
+      formData.pull_request.url = document.getElementById("pull_request.url").value;
+      formData.pull_request.title = document.getElementById("pull_request.title").value;
+      formData.pull_request.author = document.getElementById("pull_request.author").value;
+      formData.pull_request.created_at = document.getElementById("pull_request.created_at").value;
+      formData.pull_request.testing_evidence = document.getElementById("pull_request.testing_evidence").value;
+      (function() {
+        var container = document.getElementById("array-pull_request.checks");
+        if (!container) return;
+        var cards = container.querySelectorAll(".array-card");
+        var result = [];
+        for (var i = 0; i < cards.length; i++) {
+          var item = {};
+          var inp = cards[i].querySelector('[data-field="name"]'); if (inp) item["name"] = inp.value;
+          var inp = cards[i].querySelector('[data-field="status"]'); if (inp) item["status"] = inp.value;
+          var inp = cards[i].querySelector('[data-field="description"]'); if (inp) item["description"] = inp.value;
+          result.push(item);
+        }
+        formData.pull_request.checks = result;
+      })();
+      return formData;
+    }
+
+    function validateForm() {
+      /* Add custom validation logic here */
+    }
+
+    var formApi = window.Form.openForm({
+      onOpen: function(data, context) {
+        setFormData(data);
+      }
+    });
+    formApi.beforeSubmit = function() { validateForm(); };
+    formApi.afterSubmit = function(response) {};
+    formApi.getFormData = function() { return getFormData(); };
+  </script>
+</body>
+</html>

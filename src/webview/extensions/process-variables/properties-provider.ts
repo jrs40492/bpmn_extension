@@ -37,7 +37,7 @@ function getVariables(element: any): any[] {
 }
 
 // Map our type values to Java types for IBM BAMOE compatibility
-function getJavaType(type: string): string {
+function getJavaType(type: string, customType?: string): string {
   switch (type) {
     case 'string':
       return 'java.lang.String';
@@ -49,10 +49,135 @@ function getJavaType(type: string): string {
       return 'java.lang.Boolean';
     case 'object':
       return 'java.lang.Object';
+    case 'map':
+      return 'java.util.Map';
     case 'array':
       return 'java.util.List';
+    case 'custom':
+      return customType || 'java.lang.Object';
     default:
       return 'java.lang.Object';
+  }
+}
+
+// Map Java type (structureRef) back to our type system
+function getTypeFromJava(structureRef: string | undefined): { type: string; customType?: string } {
+  if (!structureRef) return { type: 'string' };
+  switch (structureRef) {
+    case 'String':
+    case 'java.lang.String':
+      return { type: 'string' };
+    case 'Integer':
+    case 'java.lang.Integer':
+      return { type: 'integer' };
+    case 'Double':
+    case 'Float':
+    case 'java.lang.Double':
+    case 'java.lang.Float':
+      return { type: 'number' };
+    case 'Boolean':
+    case 'java.lang.Boolean':
+      return { type: 'boolean' };
+    case 'Object':
+    case 'java.lang.Object':
+      return { type: 'object' };
+    case 'java.util.Map':
+      return { type: 'map' };
+    case 'java.util.List':
+      return { type: 'array' };
+    default:
+      return { type: 'custom', customType: structureRef };
+  }
+}
+
+// Track which elements have already been synced to avoid redundant work on re-renders
+const syncedElements = new WeakSet();
+
+// Sync bpmn:Property elements into bamoe:ProcessVariables so they display in the panel.
+// Uses direct model mutations (not commandStack) because this is an internal consistency
+// operation — it mirrors data that already exists in the XML. Direct mutations avoid
+// polluting the undo stack, triggering re-render loops, and marking the document dirty.
+function syncBpmnPropertiesToVariables(element: any, bpmnFactory: any): void {
+  const bo = getBusinessObject(element);
+  if (!bo) return;
+
+  // Only sync once per element to avoid redundant work on re-renders
+  if (syncedElements.has(bo)) return;
+  syncedElements.add(bo);
+
+  const bpmnProperties = bo.properties || [];
+  if (bpmnProperties.length === 0) return;
+
+  // Ensure extensionElements exists (direct mutation)
+  let extensionElements = bo.extensionElements;
+  if (!extensionElements) {
+    extensionElements = bpmnFactory.create('bpmn:ExtensionElements', { values: [] });
+    extensionElements.$parent = bo;
+    bo.extensionElements = extensionElements;
+  }
+
+  // Ensure ProcessVariables container exists (direct mutation)
+  let processVariables = getProcessVariables(element);
+  if (!processVariables) {
+    processVariables = bpmnFactory.create('bamoe:ProcessVariables', { variables: [] });
+    processVariables.$parent = extensionElements;
+    if (!extensionElements.values) {
+      extensionElements.values = [];
+    }
+    extensionElements.values.push(processVariables);
+  }
+
+  // Find bpmn:Property entries that don't have a corresponding bamoe:Variable
+  const existingVariables = processVariables.variables || [];
+  const existingNames = new Set(existingVariables.map((v: any) => v.name));
+
+  for (const prop of bpmnProperties) {
+    const name = prop.name || prop.id;
+    if (!name || existingNames.has(name)) continue;
+
+    const structureRef = prop.itemSubjectRef?.structureRef;
+    const typeInfo = getTypeFromJava(structureRef);
+
+    const variableProps: any = {
+      name,
+      type: typeInfo.type,
+      required: false
+    };
+    if (typeInfo.customType) {
+      variableProps.customType = typeInfo.customType;
+    }
+    const variable = bpmnFactory.create('bamoe:Variable', variableProps);
+    variable.$parent = processVariables;
+
+    if (!processVariables.variables) {
+      processVariables.variables = [];
+    }
+    processVariables.variables.push(variable);
+  }
+
+  // Reconcile existing bamoe:Variables with their bpmn:Property types.
+  // If a bpmn:Property has a custom structureRef (e.g. com.cmm.pr.PullRequest) but
+  // the bamoe:Variable says type="object", update it to type="custom" with the FQN.
+  const variablesByName = new Map<string, any>();
+  for (const v of (processVariables.variables || [])) {
+    if (v.name) variablesByName.set(v.name, v);
+  }
+
+  for (const prop of bpmnProperties) {
+    const name = prop.name || prop.id;
+    if (!name) continue;
+    const variable = variablesByName.get(name);
+    if (!variable) continue;
+
+    const structureRef = prop.itemSubjectRef?.structureRef;
+    if (!structureRef) continue;
+
+    const typeInfo = getTypeFromJava(structureRef);
+    // Only upgrade to custom if the property has a custom type and the variable doesn't already reflect it
+    if (typeInfo.type === 'custom' && variable.type !== 'custom') {
+      variable.type = 'custom';
+      variable.customType = typeInfo.customType;
+    }
   }
 }
 
@@ -71,10 +196,10 @@ function findItemDefinition(definitions: any, id: string): any {
   return rootElements.find((elem: any) => elem.$type === 'bpmn:ItemDefinition' && elem.id === id);
 }
 
-// Find a property by id in the process
-function findProperty(bo: any, id: string): any {
+// Find a property by id or name in the process
+function findProperty(bo: any, name: string): any {
   const properties = bo.properties || [];
-  return properties.find((prop: any) => prop.id === id);
+  return properties.find((prop: any) => prop.id === name || prop.name === name);
 }
 
 // Variable entry component - renders the fields for a single variable
@@ -92,6 +217,13 @@ function VariableEntry(props: { idPrefix: string; variable: any; element: any })
     {
       id: `${idPrefix}-type`,
       component: VariableType,
+      variable,
+      idPrefix,
+      element
+    },
+    {
+      id: `${idPrefix}-customType`,
+      component: VariableCustomType,
       variable,
       idPrefix,
       element
@@ -182,7 +314,7 @@ function ensureBpmnPropertyAndItemDefinition(
   if (!definitions) return;
 
   const variableType = variable.type || 'string';
-  const javaType = getJavaType(variableType);
+  const javaType = getJavaType(variableType, variable.customType);
   const itemDefinitionId = `_${newName}Item`;
 
   // Check if we're renaming (oldName exists and is different)
@@ -380,6 +512,58 @@ function escapeRegExp(string: string): string {
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Update bpmn:itemDefinition and user task dataInputs when variable type changes
+function updateItemDefinitionType(
+  element: any,
+  variableName: string | undefined,
+  type: string,
+  customType: string | undefined,
+  commandStack: any
+): void {
+  if (!variableName) return;
+
+  const bo = getBusinessObject(element);
+  const definitions = getDefinitions(bo);
+  const javaType = getJavaType(type, customType);
+
+  // Find itemDefinition via property reference first, then by ID pattern
+  const property = findProperty(bo, variableName);
+  let itemDefinition = property?.itemSubjectRef;
+  if (!itemDefinition && definitions) {
+    itemDefinition = findItemDefinition(definitions, `_${variableName}Item`);
+  }
+
+  if (itemDefinition) {
+    itemDefinition.structureRef = javaType;
+  }
+
+  // Update drools:dtype on user task dataInputs that reference this variable
+  if (bo.flowElements) {
+    for (const flowElement of bo.flowElements) {
+      if (flowElement.$type !== 'bpmn:UserTask') continue;
+      const ioSpec = flowElement.ioSpecification;
+      if (!ioSpec?.dataInputs) continue;
+
+      for (const dataInput of ioSpec.dataInputs) {
+        if (dataInput.name === variableName ||
+            (itemDefinition && dataInput.itemSubjectRef === itemDefinition)) {
+          dataInput.set?.('drools:dtype', javaType);
+          if (itemDefinition) {
+            dataInput.itemSubjectRef = itemDefinition;
+          }
+        }
+      }
+    }
+
+    // Force a change notification
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: bo,
+      properties: { name: bo.name || '' }
+    });
+  }
+}
+
 // Variable Type field
 function VariableType(props: { id: string; variable: any; element: any }) {
   const { id, variable, element } = props;
@@ -389,26 +573,19 @@ function VariableType(props: { id: string; variable: any; element: any }) {
   const getValue = () => variable.type || 'string';
 
   const setValue = (value: string) => {
+    const updateProps: any = { type: value };
+    // Clear customType when switching away from custom
+    if (value !== 'custom') {
+      updateProps.customType = undefined;
+    }
     commandStack.execute('element.updateModdleProperties', {
       element,
       moddleElement: variable,
-      properties: { type: value }
+      properties: updateProps
     });
 
     // Update the bpmn:itemDefinition structureRef for IBM BAMOE compatibility
-    const variableName = variable.name;
-    if (variableName) {
-      const bo = getBusinessObject(element);
-      const definitions = getDefinitions(bo);
-      if (definitions) {
-        const itemDefinitionId = `_${variableName}Item`;
-        const itemDefinition = findItemDefinition(definitions, itemDefinitionId);
-        if (itemDefinition) {
-          const javaType = getJavaType(value);
-          itemDefinition.structureRef = javaType;
-        }
-      }
-    }
+    updateItemDefinitionType(element, variable.name, value, value === 'custom' ? variable.customType : undefined, commandStack);
   };
 
   const getOptions = () => [
@@ -417,7 +594,9 @@ function VariableType(props: { id: string; variable: any; element: any }) {
     { value: 'number', label: translate('Decimal') },
     { value: 'boolean', label: translate('Boolean') },
     { value: 'object', label: translate('Object') },
-    { value: 'array', label: translate('Array') }
+    { value: 'map', label: translate('Map') },
+    { value: 'array', label: translate('Array') },
+    { value: 'custom', label: translate('Custom') }
   ];
 
   return SelectEntry({
@@ -427,6 +606,39 @@ function VariableType(props: { id: string; variable: any; element: any }) {
     getValue,
     setValue,
     getOptions
+  });
+}
+
+// Variable Custom Type field (fully qualified Java class name)
+function VariableCustomType(props: { id: string; variable: any; element: any }) {
+  const { id, variable, element } = props;
+  const commandStack = useService('commandStack');
+  const translate = useService('translate');
+  const debounce = useService('debounceInput');
+
+  // Only show when type is 'custom'
+  if (variable.type !== 'custom') return null;
+
+  const getValue = () => variable.customType || '';
+
+  const setValue = (value: string) => {
+    commandStack.execute('element.updateModdleProperties', {
+      element,
+      moddleElement: variable,
+      properties: { customType: value }
+    });
+
+    // Update the bpmn:itemDefinition structureRef
+    updateItemDefinitionType(element, variable.name, 'custom', value, commandStack);
+  };
+
+  return TextFieldEntry({
+    id,
+    element,
+    label: translate('Java Class'),
+    getValue,
+    setValue,
+    debounce
   });
 }
 
@@ -521,6 +733,9 @@ function ProcessVariablesGroup(props: { element: any; injector: any }) {
   const commandStack = injector.get('commandStack');
   const translate = injector.get('translate');
 
+  // Sync any existing bpmn:Property elements into bamoe:ProcessVariables
+  syncBpmnPropertiesToVariables(element, bpmnFactory);
+
   const variables = getVariables(element);
 
   const items = variables.map((variable: any, index: number) => {
@@ -570,8 +785,11 @@ function createRemoveHandler(commandStack: any, element: any, variable: any) {
       const bo = getBusinessObject(element);
       const definitions = getDefinitions(bo);
 
-      // Remove bpmn:property from process
+      // Remove bpmn:property from process (follow its itemSubjectRef to find the itemDefinition)
       const property = findProperty(bo, variableName);
+      const itemDefinition = property?.itemSubjectRef
+        || (definitions ? findItemDefinition(definitions, `_${variableName}Item`) : null);
+
       if (property && bo.properties) {
         const newProperties = bo.properties.filter((p: any) => p !== property);
         commandStack.execute('element.updateModdleProperties', {
@@ -582,17 +800,59 @@ function createRemoveHandler(commandStack: any, element: any, variable: any) {
       }
 
       // Remove bpmn:itemDefinition from definitions
-      if (definitions) {
-        const itemDefinitionId = `_${variableName}Item`;
-        const itemDefinition = findItemDefinition(definitions, itemDefinitionId);
-        if (itemDefinition && definitions.rootElements) {
-          const newRootElements = definitions.rootElements.filter((e: any) => e !== itemDefinition);
-          commandStack.execute('element.updateModdleProperties', {
-            element,
-            moddleElement: definitions,
-            properties: { rootElements: newRootElements }
-          });
+      if (definitions && itemDefinition && definitions.rootElements) {
+        const newRootElements = definitions.rootElements.filter((e: any) => e !== itemDefinition);
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: definitions,
+          properties: { rootElements: newRootElements }
+        });
+      }
+
+      // Clean up user task dataInputs that reference the deleted variable
+      if (bo.flowElements) {
+        for (const flowElement of bo.flowElements) {
+          if (flowElement.$type !== 'bpmn:UserTask') continue;
+          const ioSpec = flowElement.ioSpecification;
+          if (!ioSpec?.dataInputs) continue;
+
+          const staleInputs = ioSpec.dataInputs.filter((di: any) =>
+            di.name === variableName ||
+            (itemDefinition && di.itemSubjectRef === itemDefinition)
+          );
+
+          if (staleInputs.length === 0) continue;
+
+          const staleInputIds = new Set(staleInputs.map((di: any) => di.id));
+
+          // Remove the dataInputs
+          ioSpec.dataInputs = ioSpec.dataInputs.filter((di: any) => !staleInputIds.has(di.id));
+
+          // Remove from inputSet refs
+          const inputSets = ioSpec.inputSets || [];
+          for (const inputSet of inputSets) {
+            if (inputSet.dataInputRefs) {
+              inputSet.dataInputRefs = inputSet.dataInputRefs.filter(
+                (ref: any) => !staleInputIds.has(typeof ref === 'string' ? ref : ref?.id)
+              );
+            }
+          }
+
+          // Remove dataInputAssociations that target the stale inputs
+          if (flowElement.dataInputAssociations) {
+            flowElement.dataInputAssociations = flowElement.dataInputAssociations.filter((assoc: any) => {
+              const targetId = typeof assoc.targetRef === 'string' ? assoc.targetRef : assoc.targetRef?.id;
+              return !staleInputIds.has(targetId);
+            });
+          }
         }
+
+        // Force a change notification
+        commandStack.execute('element.updateModdleProperties', {
+          element,
+          moddleElement: bo,
+          properties: { name: bo.name || '' }
+        });
       }
     }
   };

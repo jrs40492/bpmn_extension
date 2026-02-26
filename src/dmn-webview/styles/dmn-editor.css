@@ -2727,3 +2727,17 @@ svg defs marker path {
 .dmn-definitions {
     color: #2b2b2b;
 }
+
+/* ========================================
+   Grid Styling
+   ======================================== */
+
+/* Soften grid dot pattern — targets SVG circle elements used by diagram-js-grid */
+.djs-grid circle {
+  fill: var(--vscode-editorIndentGuide-background, #404040) !important;
+  opacity: 0.3 !important;
+}
+
+.djs-grid g.grid-container {
+  opacity: 0.4;
+}

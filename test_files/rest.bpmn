@@ -63,13 +63,13 @@
       <bpmn:outgoing>Flow_191lbsq</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_1du2ysb" sourceRef="Gateway_1dpe896" targetRef="Event_1lf3s38">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision == "OK"</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision == "INACTIVE"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:boundaryEvent id="Event_0pll7s0" attachedToRef="Activity_0as8h27">
       <bpmn:compensateEventDefinition id="CompensateEventDefinition_0txa29h"/>
     </bpmn:boundaryEvent>
     <bpmn:sequenceFlow id="Flow_191lbsq" sourceRef="Gateway_1dpe896" targetRef="Event_0n168m6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision != "OK"</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">decision != "INACTIVE"</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:scriptTask id="Activity_02jwcaw" name="Step 5 compensate" isForCompensation="true" scriptFormat="java">
       <bpmn:script>int current = (int) kcontext.getVariable("count");

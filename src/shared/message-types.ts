@@ -42,7 +42,15 @@ export interface DmnFilesMessage {
   files: DmnFileInfo[];
 }
 
-export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage | CreateDmnFileResultMessage | GitDiffResponseMessage;
+// Extension -> Webview: Result of user task form generation
+export interface GenerateUserTaskFormResultMessage {
+  type: 'generateUserTaskFormResult';
+  success: boolean;
+  filePath?: string;
+  error?: string;
+}
+
+export type ExtensionToWebviewMessage = InitMessage | UpdateMessage | DmnFilesMessage | GenerateMessageClassesResultMessage | CreateDmnFileResultMessage | GitDiffResponseMessage | GenerateUserTaskFormResultMessage;
 
 // Webview -> Extension messages
 export interface ReadyMessage {
@@ -110,7 +118,44 @@ export interface RequestGitDiffMessage {
   type: 'requestGitDiff';
 }
 
-export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage | CreateDmnFileMessage | RequestGitDiffMessage;
+// Webview -> Extension: Request to generate form files for a user task
+export interface GenerateUserTaskFormMessage {
+  type: 'generateUserTaskForm';
+  taskId: string;
+  taskName: string;
+  inputs: Array<{
+    name: string;
+    dtype: string;
+    variable?: string;
+    defaultValue?: string;
+    fieldKind?: 'flat' | 'object' | 'array';
+    arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+    objectFields?: Array<{
+      name: string;
+      dtype: string;
+      defaultValue?: string;
+      fieldKind?: 'flat' | 'object' | 'array';
+      arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+    }>;
+  }>;
+  outputs: Array<{
+    name: string;
+    dtype: string;
+    variable?: string;
+    defaultValue?: string;
+    fieldKind?: 'flat' | 'object' | 'array';
+    arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+    objectFields?: Array<{
+      name: string;
+      dtype: string;
+      defaultValue?: string;
+      fieldKind?: 'flat' | 'object' | 'array';
+      arrayItemFields?: Array<{ name: string; dtype: string; defaultValue?: string }>;
+    }>;
+  }>;
+}
+
+export type WebviewToExtensionMessage = ReadyMessage | ChangeMessage | ValidationMessage | RequestDmnFilesMessage | GenerateMessageClassesMessage | CreateDmnFileMessage | RequestGitDiffMessage | GenerateUserTaskFormMessage;
 
 // Validation types
 export interface ValidationIssue {
