@@ -364,6 +364,16 @@ async function init(): Promise<void> {
     }
   );
 
+  // Grid toggle
+  const gridService = modeler.get('grid') as { toggle: (visible?: boolean) => void; isVisible: () => boolean } | undefined;
+  const btnGrid = document.getElementById('btn-grid');
+  if (btnGrid && gridService) {
+    btnGrid.addEventListener('click', () => {
+      gridService.toggle();
+      btnGrid.classList.toggle('active', gridService.isVisible());
+    });
+  }
+
   // Simulation toggle
   let simulationActive = false;
   const toggleSimulation = () => {

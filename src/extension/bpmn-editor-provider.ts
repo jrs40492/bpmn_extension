@@ -1022,6 +1022,10 @@ ${inputEdges}
           <span class="toolbar-icon">▶️</span>
           <span class="toolbar-label">Simulate</span>
         </button>
+        <button id="btn-grid" class="toolbar-btn active" title="Toggle Grid">
+          <span class="toolbar-icon">⊞</span>
+          <span class="toolbar-label">Grid</span>
+        </button>
       </div>
       <div class="toolbar-group">
         <button id="btn-comments" class="toolbar-btn" title="Comments">
