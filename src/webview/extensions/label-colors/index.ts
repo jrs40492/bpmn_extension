@@ -146,6 +146,14 @@ class LabelColorsModule {
         });
       }
     });
+
+    // Re-apply colors when entering/exiting token simulation mode
+    // The simulation's NeutralElementColors module strips all colors on enter
+    eventBus.on('tokenSimulation.toggleMode', () => {
+      requestAnimationFrame(() => {
+        colorizeAllLabels(elementRegistry, canvas);
+      });
+    });
   }
 }
 

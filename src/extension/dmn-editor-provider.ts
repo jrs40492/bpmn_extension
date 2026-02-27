@@ -335,14 +335,6 @@ export class DmnEditorProvider implements vscode.CustomTextEditorProvider {
   <div class="editor-container">
     <div class="toolbar">
       <div class="toolbar-group">
-        <button id="btn-undo" class="toolbar-btn" title="Undo (Ctrl+Z)">
-          <span class="toolbar-icon">↩</span>
-        </button>
-        <button id="btn-redo" class="toolbar-btn" title="Redo (Ctrl+Y)">
-          <span class="toolbar-icon">↪</span>
-        </button>
-      </div>
-      <div class="toolbar-group">
         <div class="toolbar-tabs" id="view-tabs"></div>
       </div>
       <div class="toolbar-group">
