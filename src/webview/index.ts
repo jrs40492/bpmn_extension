@@ -380,7 +380,7 @@ async function init(): Promise<void> {
     try {
       const toggleMode = modeler.get('toggleMode');
       toggleMode.toggleMode();
-      simulationActive = toggleMode.isActive();
+      simulationActive = !simulationActive;
       updateSimulationButton();
     } catch (e) {
       console.warn('Simulation toggle failed:', e);
@@ -395,6 +395,11 @@ async function init(): Promise<void> {
       if (label) {
         label.textContent = simulationActive ? 'Stop' : 'Simulate';
       }
+    }
+    // Move validation status bar so it doesn't overlap simulation playback controls
+    const validationBar = document.getElementById('validation-status-bar');
+    if (validationBar) {
+      validationBar.classList.toggle('simulation-active', simulationActive);
     }
   };
 

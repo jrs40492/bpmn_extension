@@ -197,6 +197,13 @@ html, body {
   to { transform: rotate(360deg); }
 }
 
+/* Move validation bar when simulation is active to avoid overlapping playback speed controls */
+.validation-status-bar.simulation-active {
+  left: auto;
+  right: 20px;
+  transform: none;
+}
+
 /* Hide bpmn.io branding */
 .bjs-powered-by {
   display: none !important;
